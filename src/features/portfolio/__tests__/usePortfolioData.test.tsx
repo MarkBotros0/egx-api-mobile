@@ -139,7 +139,8 @@ describe("usePortfolioData", () => {
     const { release, requests } = holdFirstAnalysis(fetchMock);
     await act(async () => {
       void api.refresh();
-    });
+      expect(api.analyzing).toBe(false);
+  });
     await waitFor(() => expect(requests.count).toBe(1));
     await act(async () => {
       await api.deleteHolding("lotA");
@@ -156,6 +157,7 @@ describe("usePortfolioData", () => {
     await renderWithProviders(<Probe version={0} />);
     await waitFor(() => expect(api.analysis).not.toBeNull());
     const before = api.analysis;
+    expect(before?.disclaimer).not.toBe("older");
     const { release } = holdFirstAnalysis(fetchMock);
     let refreshing!: Promise<void>;
     await act(async () => {
@@ -168,6 +170,42 @@ describe("usePortfolioData", () => {
       await refreshing;
     });
     expect(api.analyzing).toBe(false);
-    expect(api.analysis).not.toBe(before);
+    expect(api.analysis?.disclaimer).toBe("older");
+  });
+
+  it("does not stay analysing when the reload after a mutation fails", async () => {
+    const fetchMock = mockPortfolioApi({
+      extra: [{ method: "GET", path: "/portfolio", status: 200, body: portfolio() }],
+    });
+    const { release, requests } = holdFirstAnalysis(fetchMock);
+    await renderWithProviders(<Probe version={0} />);
+    await waitFor(() => expect(requests.count).toBe(1));
+    const original = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).split("?")[0].endsWith("/portfolio") && (init?.method ?? "GET") === "GET"
+        ? ({ ok: false, status: 500, json: async () => ({ detail: "db down" }) } as Response)
+        : original(input, init),
+    );
+    await act(async () => {
+      await api.deleteHolding("lotA");
+    });
+    expect(api.error).toBe("db down");
+    expect(api.analyzing).toBe(false);
+    await act(async () => {
+      release();
+    });
+    expect(api.analyzing).toBe(false);
+  });
+
+  it("clears a portfolio load error once a later load succeeds", async () => {
+    mockPortfolioApi({ extra: [{ method: "GET", path: "/portfolio", status: 500, body: { detail: "db down" } }] });
+    await renderWithProviders(<Probe version={0} />);
+    await waitFor(() => expect(api.error).toBe("db down"));
+    mockPortfolioApi();
+    await act(async () => {
+      await api.refresh();
+    });
+    expect(api.error).toBeNull();
+    expect(api.portfolio).not.toBeNull();
   });
 });

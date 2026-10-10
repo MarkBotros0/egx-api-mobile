@@ -54,15 +54,28 @@ export function usePortfolioData(weightsVersion: number): PortfolioData {
   const salesSeq = useRef(0);
   const analysisSeq = useRef(0);
 
+  // The message of the last failed portfolio load, so a later successful load
+  // clears exactly that error and not an analysis/delete error still on screen.
+  const loadError = useRef<string | null>(null);
+
+  /** Resolves true when this call's result was applied. */
   const loadPortfolio = useCallback(async () => {
     const seq = ++portfolioSeq.current;
     setPortfolioLoading(true);
     try {
       const p = await fetchPortfolio();
-      if (seq !== portfolioSeq.current) return;
+      if (seq !== portfolioSeq.current) return false;
       setPortfolio(p);
+      const failed = loadError.current;
+      loadError.current = null;
+      if (failed !== null) setError((prev) => (prev === failed ? null : prev));
+      return true;
     } catch (e) {
-      if (seq === portfolioSeq.current) setError(errorMessage(e, "Could not load your portfolio"));
+      if (seq === portfolioSeq.current) {
+        loadError.current = errorMessage(e, "Could not load your portfolio");
+        setError(loadError.current);
+      }
+      return false;
     } finally {
       if (seq === portfolioSeq.current) setPortfolioLoading(false);
     }
@@ -135,10 +148,13 @@ export function usePortfolioData(weightsVersion: number): PortfolioData {
   const refreshAfterMutation = useCallback(async () => {
     // The old analysis describes holdings that just changed: drop it, and
     // invalidate any in-flight analysis so it cannot put it back.
-    analysisSeq.current++;
+    const seq = ++analysisSeq.current;
     setAnalysis(null);
     setAnalyzing(true);
-    await loadPortfolio();
+    const ok = await loadPortfolio();
+    // A failed reload leaves `portfolio` unchanged, so the analysis effect may
+    // never run to lower the flag; do it here unless a newer analysis owns it.
+    if (!ok && seq === analysisSeq.current) setAnalyzing(false);
   }, [loadPortfolio]);
 
   // Pull-to-refresh: unlike a mutation the holdings are not known to be stale,
