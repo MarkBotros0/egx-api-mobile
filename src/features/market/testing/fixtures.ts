@@ -1,5 +1,14 @@
 import type { CompositeBatchResponse, DashboardResponse, DashboardRow, MarketRegime } from "@/shared/api";
-import type { Ticker } from "@/shared/types";
+import type {
+  AnalysisResponse,
+  CategoryScore,
+  DivergenceInfo,
+  EntryExit,
+  ForecastCalibration,
+  KeyLevels,
+  StockForecast,
+  Ticker,
+} from "@/shared/types";
 
 /** Test data shared by every market test. Not a test file. */
 
@@ -110,3 +119,128 @@ export const REGIME: MarketRegime = {
     },
   },
 };
+
+const cat = (score: number | null, reasons: string[] = []): CategoryScore => ({
+  score,
+  weight: 12.5,
+  effective_weight: score === null ? 0 : 14.3,
+  weighted_contribution: 0,
+  reasons,
+});
+
+const noDivergence = (): DivergenceInfo => ({
+  bullish: false, bearish: false, hidden_bullish: false, hidden_bearish: false, detail: null,
+});
+
+export const KEY_LEVELS: KeyLevels = {
+  current_price: 82.5,
+  nearest_support: { price: 80, distance_pct: -3.03, strength: 3, bars_ago: 4 },
+  nearest_resistance: { price: 85, distance_pct: 3.03, strength: 1, bars_ago: 63 },
+  room_to_support_pct: 3.03,
+  room_to_resistance_pct: 3.03,
+  clear_air_above: false,
+};
+
+export const ENTRY_EXIT: EntryExit = {
+  entry_zone: {
+    active: true,
+    confidence: "high",
+    price_range: { low: 80, high: 81.5 },
+    suggested_stop_loss: 77.3,
+    reasons: ["Tested support at 80.00 (3 touches)", "RSI 48 — not overbought"],
+  },
+  exit_zone: { active: false, confidence: null, price_range: null, reasons: [] },
+};
+
+const CAL: ForecastCalibration = {
+  fitted_at: "2026-09-01", n_observations: 48210, universe: "EGX", sigma_window: 63, fit_horizon_days: 21,
+};
+
+export const FORECAST: StockForecast = {
+  expected_move: {
+    daily_pct: 1.8, weekly_pct: 4.1, monthly_pct: 8.3,
+    daily_coverage_pct: 79, weekly_coverage_pct: 76.2, monthly_coverage_pct: 72.9,
+    method: "egx_sigma", calibration: CAL,
+  },
+  outcome_band: {
+    days: 2,
+    current_price: 100,
+    method: "egx_quantiles",
+    calibration: CAL,
+    bands: [
+      { coverage_pct: 50, z: 0.67, lo: [95, 90], hi: [105, 110], outside_pct: 50 },
+      { coverage_pct: 90, z: 1.64, lo: [90, 80], hi: [110, 120], outside_pct: 10 },
+    ],
+    endpoint: { coverage_pct: 90, lo: 80, hi: 120 },
+  },
+};
+
+export function makeAnalysis(o: Partial<AnalysisResponse> = {}): AnalysisResponse {
+  const nulls = [null, null, null];
+  return {
+    symbol: "COMI",
+    interval: "Daily",
+    bars: 200,
+    ohlcv: {
+      dates: ["2026-09-01", "2026-09-02", "2026-09-03"],
+      open: [80, 81, 82],
+      high: [81, 82, 83.5],
+      low: [79, 80, 81],
+      close: [81, 81.3, 82.5],
+      volume: [1_000_000, 1_200_000, 1_500_000],
+    },
+    indicators: {
+      sma_20: [null, 81, 82], sma_50: nulls, sma_200: nulls, ema_12: [80, 81, 82], ema_26: nulls,
+      rsi: [null, 55, 62.4], macd_line: [0.1, 0.2, 0.3], macd_signal: [0.1, 0.1, 0.2],
+      macd_histogram: [0, 0.1, 0.1], bollinger_upper: [85, 86, 87], bollinger_middle: [80, 81, 82],
+      bollinger_lower: [75, 76, 77], daily_returns: [null, 0.01, 0.02], volatility: [null, 0.018, 0.021],
+      cumulative_returns: [0, 0.01, 0.031], atr: [null, 1.8, 2.06], obv: [100, 200, 300],
+      stochastic_k: [50, 60, 70], stochastic_d: [50, 55, 60], adx: nulls, plus_di: nulls,
+      minus_di: nulls, mfi: nulls,
+    },
+    stats: {
+      current_price: 82.5, previous_close: 81.3, change: 1.2, change_pct: 1.48,
+      high_52w: 90, low_52w: 60, avg_volume: 1_250_000,
+    },
+    beta: 1.12,
+    support_resistance: {
+      supports: [{ price: 80, strength: 3 }, { price: 78, strength: 2 }, { price: 75, strength: 1 }, { price: 70, strength: 1 }],
+      resistances: [{ price: 85, strength: 2 }],
+    },
+    fibonacci: { high: 90, low: 60, levels: { "0.382": 78.5, "0.5": 75, "0.618": 71.5 } },
+    crossovers: { golden_cross: "2026-08-20", death_cross: null, current_signal: "golden_cross", days_since_cross: 12 },
+    composite_score: {
+      score: 72,
+      signal: "Strong",
+      categories: {
+        trend: cat(80, ["Price above SMA 50", "ADX 28 — trending"]),
+        momentum: cat(65),
+        volume: cat(55),
+        volatility: cat(60),
+        divergence: cat(null),
+        quality: cat(70),
+        risk_adjusted: cat(50),
+        relative_strength: cat(75),
+      },
+      weights: {},
+      macro_adjustment: null,
+      macro_context: null,
+    },
+    divergences: { rsi: noDivergence(), macd: noDivergence() },
+    volume_price: { classification: "normal", price_change_pct: 1.48, volume_ratio: 1.1 },
+    multi_timeframe: { daily_trend: "up", weekly_trend: "up", aligned: true, alignment_score: 1 },
+    bb_squeeze: false,
+    key_levels: KEY_LEVELS,
+    entry_exit: ENTRY_EXIT,
+    trendlines: {
+      support: { values: [null, 80.5, 81], anchors: [], direction: "up", slope_pct_per_bar: 0.3 },
+      resistance: null,
+    },
+    pe: {
+      company_name: "Commercial International Bank", pe_ratio: 9.14, dividend_yield: 3.2,
+      loss_making: false, fetched_at: "2026-09-01T03:00:00Z",
+    },
+    forecast: FORECAST,
+    ...o,
+  };
+}
