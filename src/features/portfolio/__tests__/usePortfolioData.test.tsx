@@ -139,8 +139,7 @@ describe("usePortfolioData", () => {
     const { release, requests } = holdFirstAnalysis(fetchMock);
     await act(async () => {
       void api.refresh();
-      expect(api.analyzing).toBe(false);
-  });
+    });
     await waitFor(() => expect(requests.count).toBe(1));
     await act(async () => {
       await api.deleteHolding("lotA");
@@ -150,6 +149,7 @@ describe("usePortfolioData", () => {
       release();
     });
     expect(api.analysis?.disclaimer).toBe("newer");
+    expect(api.analyzing).toBe(false);
   });
 
   it("keeps the current analysis on screen while a refresh loads the next one", async () => {
