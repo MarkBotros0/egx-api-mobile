@@ -34,13 +34,24 @@ export function PositionCard({ position: h, expanded, onToggle, onEdit, onReques
   // A position whose price feed is down must stay sellable — recording a sale
   // or a dividend needs no price.
   if (h.error) {
+    const errorLot = h.lots.length === 1 ? h.lots[0] : null;
     return (
       <Card>
         <AppText className="font-mono-semibold text-xs text-white">{h.symbol}</AppText>
         <AppText className="mt-1 font-sans text-xs text-loss">{h.error}</AppText>
-        <View className="mt-3 flex-row gap-3 border-t border-white/5 pt-3">
-          <View className="flex-1"><Button label="Sell" variant="secondary" onPress={() => onSell(h.symbol)} /></View>
-          <View className="flex-1"><Button label="Dividend" variant="ghost" onPress={() => onAddDividend(h)} /></View>
+        {/* Several lots: per-lot Edit/Delete. One lot: the same pair as the priced card. */}
+        <LotList position={h} onEdit={onEdit} onRequestDelete={onRequestDelete} />
+        <View className="mt-3 flex-row flex-wrap gap-2 border-t border-white/5 pt-3">
+          {errorLot?.id ? (
+            <View className="min-w-[70px] flex-1"><Button label="Edit" variant="secondary" onPress={() => onEdit(errorLot.id as string)} /></View>
+          ) : null}
+          <View className="min-w-[70px] flex-1"><Button label="Sell" variant="secondary" onPress={() => onSell(h.symbol)} /></View>
+          <View className="min-w-[70px] flex-1"><Button label="Dividend" variant="ghost" onPress={() => onAddDividend(h)} /></View>
+          {errorLot?.id ? (
+            <View className="min-w-[70px] flex-1">
+              <Button label="Delete" variant="danger" onPress={() => onRequestDelete({ id: errorLot.id as string, symbol: h.symbol })} />
+            </View>
+          ) : null}
         </View>
       </Card>
     );

@@ -25,7 +25,7 @@ export function contentSpacer(fabBottom: number): number {
   return fabBottom + FAB_SIZE + 8;
 }
 
-export type PortfolioView = "loading" | "empty" | "sold_out" | "holdings";
+export type PortfolioView = "loading" | "error" | "empty" | "sold_out" | "holdings";
 
 export function portfolioView(s: {
   portfolioLoading: boolean;
@@ -34,7 +34,9 @@ export function portfolioView(s: {
   salesError: string | null;
   sales: SalesResponse | null;
 }): PortfolioView {
-  if (s.portfolioLoading && !s.portfolio) return "loading";
+  // No portfolio yet: still loading, or the load FAILED. A failed load says
+  // nothing about what the user owns, so it must never fall through to "empty".
+  if (!s.portfolio) return s.portfolioLoading ? "loading" : "error";
   if ((s.portfolio?.portfolio.length ?? 0) > 0) return "holdings";
   // "Never traded" needs PROOF: sales loaded, no error, and both ledgers empty.
   const neverTraded =

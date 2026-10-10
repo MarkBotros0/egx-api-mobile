@@ -81,6 +81,16 @@ describe("HoldingsList", () => {
     expect(handlers.onSell).toHaveBeenCalledWith("COMI");
   });
 
+  it("lets an all-error position be deleted after confirmation", async () => {
+    const { render, handlers } = setup([holding({ id: "bad", error: "No data for COMI" })]);
+    await render();
+    autoConfirm("Delete");
+    await fireEvent.press(screen.getByText("Delete"));
+    await waitFor(() => expect(handlers.onDelete).toHaveBeenCalledWith("bad"));
+    await fireEvent.press(screen.getByText("Edit"));
+    expect(handlers.onEdit).toHaveBeenCalledWith("bad");
+  });
+
   it("shows a low-confidence zone as a plain hint", async () => {
     const lowEntry = {
       entry_zone: { active: true, confidence: "low" as const, price_range: { low: 50, high: 52 }, suggested_stop_loss: 47.5, reasons: [] },

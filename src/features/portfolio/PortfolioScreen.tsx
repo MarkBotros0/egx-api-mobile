@@ -52,6 +52,10 @@ export function PortfolioScreen() {
   const view = portfolioView(data);
   const busy = data.analyzing || data.portfolioLoading;
 
+  // Without a portfolio there is nothing to analyse: reload it (refresh() also
+  // reloads sales); with one, only the analysis failed.
+  const retry = () => void (data.portfolio ? data.analyze() : data.refresh());
+
   const openAdd = () => {
     setHoldingError(null);
     setHoldingSheet({ editingId: null });
@@ -151,7 +155,7 @@ export function PortfolioScreen() {
           </View>
         </View>
 
-        {data.error && <ErrorState message={data.error} onRetry={() => void data.analyze()} />}
+        {data.error && <ErrorState message={data.error} onRetry={retry} />}
 
         {data.salesError && (
           <View className="flex-row flex-wrap items-center gap-2 rounded-xl border border-loss/20 bg-loss/5 px-4 py-2">
@@ -165,6 +169,11 @@ export function PortfolioScreen() {
             <ChartSkeleton height={192} />
             <TableSkeleton rows={4} />
           </>
+        )}
+
+        {/* Only the ErrorState above: no CTA that implies the user owns nothing. */}
+        {view === "error" && !data.error && (
+          <ErrorState message="Could not load your portfolio" onRetry={retry} />
         )}
 
         {view === "empty" && (

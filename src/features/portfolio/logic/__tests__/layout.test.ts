@@ -46,6 +46,11 @@ describe("portfolioView", () => {
     expect(portfolioView({ ...base, portfolioLoading: true })).toBe("holdings");
   });
 
+  it("reports a failed first load as an error, never as empty", () => {
+    expect(portfolioView({ ...base, portfolioLoading: false, portfolio: null })).toBe("error");
+    expect(portfolioView({ ...base, portfolioLoading: false, portfolio: null, sales: NO_SALES })).toBe("error");
+  });
+
   it("shows the never-traded state only when sales are KNOWN to be empty", () => {
     const empty = { ...base, portfolio: portfolio([]) };
     expect(portfolioView({ ...empty, sales: NO_SALES })).toBe("empty");

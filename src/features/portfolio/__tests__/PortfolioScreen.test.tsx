@@ -1,7 +1,8 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { mockFetch } from "@/test-utils/fetch";
 import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi, sent } from "@/features/portfolio/testing/api";
-import { NO_SALES, analysisResponse, portfolio } from "@/features/portfolio/testing/fixtures";
+import { LOT_A, NO_SALES, analysisResponse, holdingFromRow, portfolio } from "@/features/portfolio/testing/fixtures";
 import { PortfolioScreen } from "../PortfolioScreen";
 
 /** Every text node of the rendered tree, in document order. */
@@ -100,5 +101,27 @@ describe("PortfolioScreen", () => {
     await fireEvent.press(screen.getByText("Try again"));
     await waitFor(() => expect(sent(fetchMock, "GET", "/portfolio_analysis")).toHaveLength(2));
     expect(await screen.findByText("Analysis timed out")).toBeTruthy();
+  });
+
+  it("shows a failed portfolio load as an error and Retry reloads it", async () => {
+    mockPortfolioApi({ extra: [{ method: "GET", path: "/portfolio", status: 500, body: { detail: "Portfolio down" } }] });
+    await renderWithProviders(<PortfolioScreen />);
+    expect(await screen.findByText("Portfolio down")).toBeTruthy();
+    expect(screen.queryByText("No holdings yet")).toBeNull();
+    expect(screen.queryByText("Add Your First Stock")).toBeNull();
+    mockFetch("GET", "/portfolio", portfolio(), 200);
+    await fireEvent.press(screen.getByText("Try again"));
+    expect(await screen.findByText("COMI")).toBeTruthy();
+    expect(screen.queryByText("Portfolio down")).toBeNull();
+  });
+
+  it("prefills the edit sheet from the lot", async () => {
+    mockPortfolioApi({ portfolio: portfolio([LOT_A]), analysis: analysisResponse({ holdings: [holdingFromRow(LOT_A)] }) });
+    await renderWithProviders(<PortfolioScreen />);
+    await openComi();
+    await fireEvent.press(screen.getByText("Edit"));
+    expect(screen.getByText("Edit Holding")).toBeTruthy();
+    expect(screen.getByDisplayValue(String(LOT_A.quantity))).toBeTruthy();
+    expect(screen.getByDisplayValue(String(LOT_A.buy_price))).toBeTruthy();
   });
 });
