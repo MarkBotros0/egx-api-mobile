@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { PortfolioScreen } from "@/features/portfolio/PortfolioScreen";
 
-export default function PortfolioRoute() {
-  return <ComingSoon title="Portfolio" plan={4} />;
+export default function PortfolioTab() {
+  return <PortfolioScreen />;
 }
