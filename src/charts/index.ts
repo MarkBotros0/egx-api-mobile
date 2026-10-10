@@ -10,3 +10,14 @@ export {
   type AllocationSlice,
 } from "./Allocation";
 export { CompositeGauge, scoreColor, type CompositeGaugeProps } from "./CompositeGauge";
+export {
+  PRICE_OVERLAY_COLORS,
+  PriceChart,
+  TREND_RESISTANCE_STROKE,
+  TREND_SUPPORT_STROKE,
+  buildPriceSeries,
+  priceRefLines,
+  type PriceChartProps,
+  type PriceDataPoint,
+  type PriceOverlays,
+} from "./PriceChart";
