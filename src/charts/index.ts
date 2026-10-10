@@ -21,3 +21,5 @@ export {
   type PriceDataPoint,
   type PriceOverlays,
 } from "./PriceChart";
+export { VolumeChart, volumeBarColors, type VolumeChartProps, type VolumeDataPoint } from "./VolumeChart";
+export { IndicatorPanel, type IndicatorDataPoint, type IndicatorPanelProps } from "./IndicatorPanel";
