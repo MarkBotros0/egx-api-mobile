@@ -24,6 +24,8 @@ export function Pill({ label, active = false, onPress, tone = "accent" }: { labe
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
+      // Visual height mirrors the web; hitSlop makes the touch target 44pt (36 + 4 + 4).
+      hitSlop={{ top: 4, bottom: 4 }}
       disabled={!onPress}
       onPress={onPress}
       className={`min-h-[36px] justify-center rounded-full border px-3 ${active ? ACTIVE[tone] : "border-white/10 bg-white/5"}`}

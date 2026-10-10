@@ -19,6 +19,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
             accessibilityRole="button"
             accessibilityLabel={o.label}
             accessibilityState={{ selected: active }}
+            // Visual height mirrors the web; hitSlop makes the touch target 44pt (40 + 2 + 2).
+            hitSlop={{ top: 2, bottom: 2 }}
             onPress={() => onChange(o.value)}
             className={`min-h-[40px] flex-1 items-center justify-center rounded-md ${active ? "bg-accent/20" : ""}`}
           >

@@ -1,5 +1,7 @@
 import { Text, type TextProps } from "react-native";
 
+import { mergeTextClasses } from "./textClasses";
+
 type Variant = "body" | "muted" | "label" | "title" | "mono";
 
 const VARIANT: Record<Variant, string> = {
@@ -12,5 +14,5 @@ const VARIANT: Record<Variant, string> = {
 
 /** The only way text is rendered: RN has no inherited default font. */
 export function AppText({ className = "", variant = "body", ...rest }: TextProps & { className?: string; variant?: Variant }) {
-  return <Text className={`${VARIANT[variant]} ${className}`} {...rest} />;
+  return <Text className={mergeTextClasses(VARIANT[variant], className)} {...rest} />;
 }
