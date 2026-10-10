@@ -1,3 +1,4 @@
+import { __resetTokenCache } from "./src/auth/tokenStore";
 import { installFetchMock } from "./src/test-utils/fetch";
 import { __resetSecureStore } from "./src/test-utils/secureStoreMock";
 
@@ -9,4 +10,5 @@ jest.mock("expo-secure-store", () => require("./src/test-utils/secureStoreMock")
 beforeEach(() => {
   installFetchMock();
   __resetSecureStore();
+  __resetTokenCache();
 });

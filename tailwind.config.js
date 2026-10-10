@@ -3,6 +3,7 @@
 // the two apps cannot drift. Fonts: React Native cannot synthesise weights for
 // custom fonts, so each weight is its own family — use font-sans-semibold,
 // never font-semibold.
+// The .ts file resolves because Tailwind/NativeWind load this config through jiti (a plain `node` require would fail).
 const { COLORS } = require("./src/shared/theme");
 
 module.exports = {

@@ -4,7 +4,16 @@ import { setupApi } from "@/lib/apiSetup";
 import { fetchMe, LoginError, loginRequest } from "@/shared/api";
 import type { AuthUser } from "@/shared/auth";
 
-import { clearSession, loadSession, saveSession } from "./tokenStore";
+import { clearSession, currentToken, loadSession, saveSession } from "./tokenStore";
+
+/** A captive portal / half-open connection can leave /auth/me pending forever; stop waiting after this. */
+export const BOOT_AUTH_TIMEOUT_MS = 8000;
+
+// API setup happens at module load so the base URL and token getter are in
+// place before any child renders or effect runs (child effects run before the
+// provider's own). The 401 handler forwards to whichever provider is mounted.
+let unauthorizedHandler: (() => void) | null = null;
+setupApi(() => unauthorizedHandler?.());
 
 interface AuthCtx {
   user: AuthUser | null;
@@ -33,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setupApi(signOutLocally);
+    unauthorizedHandler = signOutLocally;
     let cancelled = false;
 
     (async () => {
@@ -43,22 +52,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (cached && !cancelled) setUser(cached);
-      try {
-        // Re-read the role from the DB on every boot, like the web.
-        const fresh = await fetchMe();
-        if (cancelled) return;
-        setUser(fresh);
-        await saveSession(token, fresh);
-      } catch {
-        // A 401 already signed us out through signOutLocally. A network error
-        // keeps the cached session so the app still opens offline.
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+      // Re-read the role from the DB on every boot, like the web. A 401 signs
+      // us out through signOutLocally; a network error or timeout keeps the
+      // cached session so the app still opens offline.
+      const refresh = fetchMe()
+        .then(async (fresh) => {
+          // The reply may land after the timeout; never resurrect or
+          // overwrite a session that changed (logout / 401) in the meantime.
+          if (cancelled || currentToken() !== token) return;
+          setUser(fresh);
+          await saveSession(token, fresh);
+        })
+        .catch(() => {});
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, BOOT_AUTH_TIMEOUT_MS);
+      });
+      await Promise.race([refresh, timeout]);
+      clearTimeout(timer);
+      if (!cancelled) setIsLoading(false);
     })();
 
     return () => {
       cancelled = true;
+      if (unauthorizedHandler === signOutLocally) unauthorizedHandler = null;
     };
   }, [signOutLocally]);
 

@@ -3,9 +3,9 @@ import * as SecureStore from "expo-secure-store";
 import { useEffect } from "react";
 import { Text } from "react-native";
 
-import { AuthProvider, useAuth } from "@/auth/AuthProvider";
+import { AuthProvider, BOOT_AUTH_TIMEOUT_MS, useAuth } from "@/auth/AuthProvider";
 import { fetchTickers } from "@/shared/api";
-import { mockFetch, mockFetchNetworkError } from "@/test-utils/fetch";
+import { mockFetch, mockFetchHandler, mockFetchNetworkError } from "@/test-utils/fetch";
 
 let auth: ReturnType<typeof useAuth>;
 
@@ -125,5 +125,43 @@ describe("AuthProvider", () => {
     await act(() => auth.logout());
     expect(screen.getByTestId("state")).toHaveTextContent("out");
     expect(await SecureStore.getItemAsync("egx.auth.user")).toBeNull();
+  });
+
+  describe("boot timeout", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("keeps the cached session and stops loading when /auth/me never answers", async () => {
+      await storeSession();
+      mockFetchHandler("GET", "/auth/me", () => new Promise(() => {}));
+      await renderAuth();
+      expect(screen.getByTestId("state")).toHaveTextContent("loading");
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(BOOT_AUTH_TIMEOUT_MS);
+      });
+      expect(screen.getByTestId("state")).toHaveTextContent("in:alice:user");
+    });
+
+    it("ignores a late /auth/me reply after the user logged out", async () => {
+      await storeSession();
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      mockFetchHandler("GET", "/auth/me", async () => {
+        await gate;
+        return { status: 200, body: { id: "u1", username: "alice", role: "admin" } };
+      });
+      await renderAuth();
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(BOOT_AUTH_TIMEOUT_MS);
+      });
+      expect(screen.getByTestId("state")).toHaveTextContent("in:alice:user");
+      await act(() => auth.logout());
+      await act(async () => {
+        release();
+        await jest.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByTestId("state")).toHaveTextContent("out");
+      expect(await SecureStore.getItemAsync("egx.auth.token")).toBeNull();
+    });
   });
 });

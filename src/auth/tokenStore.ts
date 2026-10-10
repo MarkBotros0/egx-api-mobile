@@ -15,6 +15,11 @@ export function currentToken(): string | null {
   return cachedToken;
 }
 
+/** Test-only: drop the in-memory token mirror between tests. */
+export function __resetTokenCache(): void {
+  cachedToken = null;
+}
+
 export interface StoredSession {
   token: string | null;
   user: AuthUser | null;
