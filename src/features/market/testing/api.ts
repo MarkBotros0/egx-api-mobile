@@ -37,6 +37,7 @@ const DEFAULTS: Record<string, Route> = {
   "/market_regime": REGIME,
   "/dashboard": DASHBOARD,
   "/analysis": batch({}),
+  "/pe": () => ({ last_successful_fetch: new Date().toISOString(), last_attempt_status: "ok" }),
 };
 
 async function resolveRoute(route: Route, url: URL, init?: RequestInit) {
