@@ -12,3 +12,7 @@ beforeEach(() => {
   __resetSecureStore();
   __resetTokenCache();
 });
+
+// Reanimated under Jest (worklets must be mocked before setUpTests runs).
+jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
+require("react-native-reanimated").setUpTests();

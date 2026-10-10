@@ -9,3 +9,4 @@ export {
   type AllocationProps,
   type AllocationSlice,
 } from "./Allocation";
+export { CompositeGauge, scoreColor, type CompositeGaugeProps } from "./CompositeGauge";
