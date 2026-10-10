@@ -1,8 +1,9 @@
-import type { CompositeBatchResponse, DashboardResponse, DashboardRow, MarketRegime } from "@/shared/api";
+import type { CompositeBatchResponse, DashboardResponse, DashboardRow, MarketRegime, RiskResponse } from "@/shared/api";
 import type {
   AnalysisResponse,
   CategoryScore,
   DivergenceInfo,
+  DividendHistoryResponse,
   EntryExit,
   ForecastCalibration,
   KeyLevels,
@@ -244,3 +245,42 @@ export function makeAnalysis(o: Partial<AnalysisResponse> = {}): AnalysisRespons
     ...o,
   };
 }
+
+export const RISK: RiskResponse = {
+  data: [
+    {
+      symbol: "COMI",
+      measured_at: "2026-09-02T21:00:00Z",
+      sigma_63_ann_pct: 24.4,
+      sigma_ewma_ann_pct: 23,
+      beta: 1.05,
+      turnover_egp: 120_000_000,
+      traded_share: 1,
+      last_price: 82.5,
+      tradeable: true,
+      pct_rank: 18.2,
+      quintile: 1,
+      band: "calm",
+      band_label: "Calm",
+      historical: { future_vol_ann_pct: 24.3, median_max_drawdown_pct: 11.6, p90_max_drawdown_pct: 21.2 },
+    },
+  ],
+  n_symbols: 160,
+  n_ranked: 140,
+  oldest_measurement: "2026-09-02T21:00:00Z",
+  calibration: {
+    fitted_at: "2026-09-01", n_observations: 9120, n_symbols: 140, lookback_days: 63,
+    forward_days: 126, vol_predicts_vol_ic: 0.56, vol_predicts_drawdown_ic: 0.43,
+  },
+};
+
+export const DIVIDEND_HISTORY: DividendHistoryResponse = {
+  symbol: "COMI",
+  dividends: Array.from({ length: 12 }, (_, i) => ({
+    ex_date: `${2026 - i}-04-07`,
+    amount: 6 - i * 0.25,
+    year: 2026 - i,
+  })),
+  cadence: { last_ex_date: "2026-04-07", typical_month: 4, typical_month_name: "April", payments_per_year: 1, count: 12 },
+  status: "ok",
+};
