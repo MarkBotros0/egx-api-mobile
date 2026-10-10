@@ -1,6 +1,6 @@
 import { mockFetchHandler } from "@/test-utils/fetch";
 import { DEFAULT_WEIGHTS, FALLBACK_WEIGHT_PRESETS } from "@/shared/constants";
-import { batch, DASHBOARD, DIVIDEND_HISTORY, REGIME, TICKERS } from "./fixtures";
+import { batch, DASHBOARD, DIVIDEND_HISTORY, makeAnalysis, REGIME, TICKERS } from "./fixtures";
 
 /**
  * The ONE place market tests touch the Plan 1 fetch mock. Routes are keyed by
@@ -36,7 +36,13 @@ const DEFAULTS: Record<string, Route> = {
   },
   "/market_regime": REGIME,
   "/dashboard": DASHBOARD,
-  "/analysis": batch({}),
+  "/analysis": (url: URL) =>
+    url.searchParams.get("mode") === "batch"
+      ? batch({})
+      : makeAnalysis({
+          interval: url.searchParams.get("interval") ?? "Daily",
+          bars: Number(url.searchParams.get("bars") ?? 200),
+        }),
   // An unmeasured symbol is a 404 — a normal state, the card renders nothing.
   "/risk": reply(404, { detail: "Not measured yet" }),
   "/dividend_history": DIVIDEND_HISTORY,

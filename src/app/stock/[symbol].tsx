@@ -1,13 +1,15 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { parseInterval } from "@/features/market/logic/stockDetail";
+import { StockDetailScreen } from "@/features/market/StockDetailScreen";
 
 export default function StockRoute() {
-  const { symbol } = useLocalSearchParams<{ symbol: string }>();
+  const params = useLocalSearchParams<{ symbol: string; interval?: string }>();
+  const symbol = String(params.symbol ?? "").toUpperCase();
   return (
     <>
-      <Stack.Screen options={{ title: symbol ?? "" }} />
-      <ComingSoon title={symbol ?? "Stock"} plan={3} />
+      <Stack.Screen options={{ title: symbol }} />
+      {/* Keyed so moving to another stock starts from fresh state (card expand state included). */}
+      <StockDetailScreen key={symbol} symbol={symbol} initialInterval={parseInterval(params.interval)} />
     </>
   );
 }
