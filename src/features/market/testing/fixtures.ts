@@ -1,4 +1,4 @@
-import type { CompositeBatchResponse, DashboardResponse, DashboardRow } from "@/shared/api";
+import type { CompositeBatchResponse, DashboardResponse, DashboardRow, MarketRegime } from "@/shared/api";
 import type { Ticker } from "@/shared/types";
 
 /** Test data shared by every market test. Not a test file. */
@@ -78,3 +78,35 @@ export function batch(
 ): CompositeBatchResponse {
   return { scores, errors };
 }
+
+export const REGIME: MarketRegime = {
+  mean_score: 52.3,
+  n_symbols: 61,
+  band: "mixed",
+  label: "Mixed",
+  summary: "About half the market is in good technical shape.",
+  horizon_days: 63,
+  hist_median_3m_pct: 2.1,
+  hist_positive_rate: 0.58,
+  observations: 140,
+  association_rho: 0.12,
+  association_t: 1.1,
+  association_n: 140,
+  association_significant: false,
+  universe_size: 79,
+  breadth: {
+    n_symbols: 70,
+    enough_data: true,
+    pct_above_sma200: 62,
+    pct_oversold: 9,
+    mean_rsi: 51,
+    evidence: {
+      horizon_days: 63,
+      strongest_leg: "pct_oversold",
+      strongest_rho: -0.19,
+      strongest_t: -2.44,
+      significant_at_project_bar: false,
+      note: "",
+    },
+  },
+};
