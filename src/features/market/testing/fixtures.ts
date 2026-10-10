@@ -8,6 +8,7 @@ import type {
   EntryExit,
   ForecastCalibration,
   KeyLevels,
+  NewsResponse,
   StockForecast,
   Ticker,
 } from "@/shared/types";
@@ -295,4 +296,26 @@ export const COMPARE: CompareResponse = {
     COMI: { total_return: 12.34, volatility: 0.025, max_drawdown: -8.2 },
     TMGH: { total_return: -5, volatility: 0.031, max_drawdown: -14.1 },
   },
+};
+
+const HOUR = 3_600_000;
+const hoursAgoIso = (h: number) => new Date(Date.now() - h * HOUR).toISOString();
+
+export const NEWS: NewsResponse = {
+  your_stocks: [
+    { id: "n1", title: "CIB posts record quarterly profit", provider: "reuters", published_at: hoursAgoIso(2), url: "https://www.tradingview.com/news/n1", symbols: ["COMI"] },
+    { id: "n2", title: "Sodic signs facility with CIB", provider: "zawya", published_at: hoursAgoIso(72), url: "https://www.tradingview.com/news/n2", symbols: ["OCDI", "COMI"] },
+  ],
+  market: [
+    { id: "m1", title: "EGX30 closes higher", provider: "lse", published_at: hoursAgoIso(30), url: "https://www.tradingview.com/news/m1", symbols: [] },
+  ],
+  coverage: {
+    symbols_requested: 5,
+    symbols_with_news: 3,
+    symbols_without_news: ["ESRS", "EKHO"],
+    symbols_over_cap: [],
+    window_days: 30,
+  },
+  fetched_at: new Date().toISOString(),
+  status: "partial",
 };

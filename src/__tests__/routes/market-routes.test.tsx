@@ -3,6 +3,7 @@ import { router, Stack } from "expo-router";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import CompareRoute from "@/app/compare";
 import DashboardRoute from "@/app/(tabs)/index";
+import NewsRoute from "@/app/(tabs)/news";
 import StockRoute from "@/app/stock/[symbol]";
 
 // Screens are replaced by stubs that print what the route passed them.
@@ -26,6 +27,12 @@ jest.mock("@/features/market/CompareScreen", () => {
   const { createElement: h } = jest.requireActual("react");
   const { Text } = jest.requireActual("react-native");
   return { CompareScreen: () => h(Text, null, "compare-screen") };
+});
+
+jest.mock("@/features/market/NewsScreen", () => {
+  const { createElement: h } = jest.requireActual("react");
+  const { Text } = jest.requireActual("react-native");
+  return { NewsScreen: () => h(Text, null, "news-screen") };
 });
 
 const layout = () => createElement(Stack);
@@ -56,4 +63,9 @@ it("starts fresh state when the same route moves to another stock", async () => 
 it("mounts the compare screen", async () => {
   await renderRouter({ _layout: layout, compare: CompareRoute }, { initialUrl: "/compare" });
   expect(await screen.findByText("compare-screen")).toBeTruthy();
+});
+
+it("mounts the news screen", async () => {
+  await renderRouter({ _layout: layout, news: NewsRoute }, { initialUrl: "/news" });
+  expect(await screen.findByText("news-screen")).toBeTruthy();
 });
