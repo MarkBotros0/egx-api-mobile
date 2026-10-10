@@ -17,6 +17,11 @@ export function NewsScreen() {
     <Screen scroll={false} edges={["top"]}>
       <RefreshableScroll testID="news-scroll" refreshing={news.refreshing} onRefresh={news.refresh} contentClassName="px-4 py-6 pb-10">
         <AppText className="font-sans-bold text-2xl text-white">News</AppText>
+        {news.refreshError && (
+          <AppText className="text-xs text-white/50" testID="refresh-error">
+            Couldn&apos;t refresh — showing the last loaded data
+          </AppText>
+        )}
 
         {news.loading ? (
           <View className="mt-6 gap-3">

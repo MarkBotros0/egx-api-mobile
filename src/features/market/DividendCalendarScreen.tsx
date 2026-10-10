@@ -160,6 +160,11 @@ export function DividendCalendarScreen() {
   return (
     <Screen scroll={false}>
       <RefreshableScroll testID="dividends-scroll" refreshing={cal.refreshing} onRefresh={cal.refresh} contentClassName="gap-4 px-4 py-4 pb-10">
+        {cal.refreshError && (
+          <AppText className="text-xs text-white/50" testID="refresh-error">
+            Couldn&apos;t refresh — showing the last loaded data
+          </AppText>
+        )}
         {data && (
           <AppText className="text-xs text-white/40">
             {`${data.count} EGX ${data.count === 1 ? "stock" : "stocks"} with a dividend on record`}

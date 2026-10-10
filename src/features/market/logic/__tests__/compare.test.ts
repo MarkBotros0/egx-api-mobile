@@ -75,3 +75,12 @@ describe("buildCompareSeries", () => {
     expect(buildCompareSeries(null, ["COMI"])).toEqual([]);
   });
 });
+
+describe("rangeEndingAt month clamping", () => {
+  it("clamps to the last day of a shorter month", () => {
+    expect(rangeEndingAt(new Date(2026, 7, 31), 6).start).toBe("2026-02-28");
+    expect(rangeEndingAt(new Date(2026, 9, 31), 6).start).toBe("2026-04-30");
+    expect(rangeEndingAt(new Date(2026, 2, 31), 1).start).toBe("2026-02-28");
+    expect(rangeEndingAt(new Date(2028, 7, 31), 6).start).toBe("2028-02-29");
+  });
+});

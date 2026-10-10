@@ -58,3 +58,13 @@ it("pull-to-refresh fetches again", async () => {
   await userEvent.pullToRefresh(screen.getByTestId("news-scroll"));
   await waitFor(() => expect(requestsTo(fetchMock, "/news")).toHaveLength(2));
 });
+
+it("keeps the news on screen when a refresh fails", async () => {
+  let calls = 0;
+  mockMarketApi({ "/news": () => (++calls === 1 ? NEWS : fail(502, "upstream down")) });
+  await renderWithProviders(<NewsScreen />);
+  await screen.findByText("CIB posts record quarterly profit");
+  await userEvent.pullToRefresh(screen.getByTestId("news-scroll"));
+  expect(await screen.findByText("Couldn't refresh — showing the last loaded data")).toBeTruthy();
+  expect(screen.getByText("CIB posts record quarterly profit")).toBeTruthy();
+});

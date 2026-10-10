@@ -110,6 +110,22 @@ it("retries a timed-out symbol once after the delay", async () => {
   await waitFor(() => expect(screen.getByTestId("card-COMI").props.children).toBe("live:61:70"));
 });
 
+it("cancels a pending retry when unmounted", async () => {
+  jest.useFakeTimers();
+  const fetchMock = mockMarketApi({
+    "/dashboard": makeDashboard([]),
+    "/analysis": batch({}, [{ symbol: "COMI", error: "upstream timeout" }]),
+  });
+  const view = await renderWithProviders(<Harness symbols={["COMI"]} />);
+  await waitFor(() => expect(screen.getByTestId("card-COMI").props.children).toBe("failed:-:-"));
+  const before = requestsTo(fetchMock, "/analysis").length;
+  await view.unmount();
+  await act(async () => {
+    jest.advanceTimersByTime(COMPOSITE_RETRY_DELAY_MS * 2);
+  });
+  expect(requestsTo(fetchMock, "/analysis")).toHaveLength(before);
+});
+
 it("asks for the selected interval", async () => {
   const fetchMock = mockMarketApi();
   await renderWithProviders(<Harness symbols={["COMI"]} interval="Weekly" />);

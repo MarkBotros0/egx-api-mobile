@@ -102,3 +102,13 @@ it("refetches after the score weights are saved", async () => {
   await fireEvent.press(screen.getByText("Save"));
   await waitFor(() => expect(analysisCalls(fetchMock)).toHaveLength(2));
 });
+
+it("keeps the analysis on screen when a refresh fails", async () => {
+  let calls = 0;
+  mockMarketApi({ "/analysis": () => (++calls === 1 ? makeAnalysis() : fail(500, "down")) });
+  await renderWithProviders(<StockDetailScreen symbol="COMI" initialInterval="Daily" />);
+  await screen.findByText("Technical Condition");
+  await userEvent.pullToRefresh(screen.getByTestId("stock-scroll"));
+  expect(await screen.findByText("Couldn't refresh — showing the last loaded data")).toBeTruthy();
+  expect(screen.getByText("Technical Condition")).toBeTruthy();
+});

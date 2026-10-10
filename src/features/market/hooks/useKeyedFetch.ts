@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Settled<T> {
   key: string;
   data: T | null;
   error: string | null;
+  refreshError: string | null;
 }
 
 export interface KeyedFetchState<T> {
   data: T | null;
   error: string | null;
+  /** A pull-to-refresh failed; `data` still holds the earlier result. */
+  refreshError: string | null;
   /** No result for the current inputs yet, and nothing to show meanwhile. */
   loading: boolean;
   /** A pull-to-refresh is running; `data` still holds the previous result. */
@@ -31,16 +34,25 @@ export function useKeyedFetch<T>(baseKey: string, fetcher: () => Promise<T>): Ke
   const [pullKey, setPullKey] = useState<string | null>(null);
   const [settled, setSettled] = useState<Settled<T> | null>(null);
   const key = `${baseKey}#${nonce}`;
+  const pullKeyRef = useRef<string | null>(null);
+  const lastGoodRef = useRef<{ baseKey: string; data: T } | null>(null);
 
   useEffect(() => {
     let alive = true;
     fetcher()
       .then((data) => {
-        if (alive) setSettled({ key, data, error: null });
+        if (!alive) return;
+        lastGoodRef.current = { baseKey, data };
+        setSettled({ key, data, error: null, refreshError: null });
       })
       .catch((e: unknown) => {
-        if (alive) {
-          setSettled({ key, data: null, error: e instanceof Error ? e.message : "Request failed" });
+        if (!alive) return;
+        const message = e instanceof Error ? e.message : "Request failed";
+        const prev = lastGoodRef.current;
+        if (pullKeyRef.current === key && prev && prev.baseKey === baseKey) {
+          setSettled({ key, data: prev.data, error: null, refreshError: message });
+        } else {
+          setSettled({ key, data: null, error: message, refreshError: null });
         }
       });
     return () => {
@@ -55,11 +67,13 @@ export function useKeyedFetch<T>(baseKey: string, fetcher: () => Promise<T>): Ke
   const pulling = !current && pullKey === key;
 
   const refresh = useCallback(() => {
+    pullKeyRef.current = `${baseKey}#${nonce + 1}`;
     setPullKey(`${baseKey}#${nonce + 1}`);
     setNonce((n) => n + 1);
   }, [baseKey, nonce]);
 
   const reload = useCallback(() => {
+    pullKeyRef.current = null;
     setPullKey(null);
     setNonce((n) => n + 1);
   }, []);
@@ -67,7 +81,8 @@ export function useKeyedFetch<T>(baseKey: string, fetcher: () => Promise<T>): Ke
   return {
     data: current ? current.data : pulling ? (settled?.data ?? null) : null,
     error: current ? current.error : null,
-    loading: !current && !pulling,
+    refreshError: current ? current.refreshError : null,
+    loading: !current && (!pulling || !settled?.data),
     refreshing: pulling,
     refresh,
     reload,

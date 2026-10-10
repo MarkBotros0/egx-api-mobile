@@ -21,7 +21,10 @@ export function isIsoDate(s: string): boolean {
 /** `months` back from `now`, both ends as LOCAL dates. */
 export function rangeEndingAt(now: Date, months: number): { start: string; end: string } {
   const d = new Date(now);
+  const day = d.getDate();
+  d.setDate(1);
   d.setMonth(d.getMonth() - months);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
   return { start: localDateKey(d), end: localDateKey(now) };
 }
 

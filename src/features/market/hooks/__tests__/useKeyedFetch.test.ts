@@ -73,3 +73,29 @@ describe("useKeyedFetch", () => {
     await waitFor(() => expect(result.current.data).toBe(7));
   });
 });
+
+describe("useKeyedFetch refresh failures", () => {
+  it("refresh rejects: old data kept, refreshError set", async () => {
+    const fetcher = jest.fn().mockResolvedValueOnce(1).mockRejectedValueOnce(new Error("boom"));
+    const { result } = await renderHook(() => useKeyedFetch("a", fetcher));
+    await waitFor(() => expect(result.current.data).toBe(1));
+    await act(async () => result.current.refresh());
+    await waitFor(() => expect(result.current.refreshError).toBe("boom"));
+    expect(result.current.data).toBe(1);
+    expect(result.current.error).toBeNull();
+    expect(result.current.refreshing).toBe(false);
+  });
+
+  it("refresh from error: loading true, then data", async () => {
+    const second = deferred<number>();
+    const fetcher = jest.fn().mockRejectedValueOnce(new Error("boom")).mockReturnValueOnce(second.promise);
+    const { result } = await renderHook(() => useKeyedFetch("a", fetcher));
+    await waitFor(() => expect(result.current.error).toBe("boom"));
+    await act(async () => result.current.refresh());
+    expect(result.current.loading).toBe(true);
+    expect(result.current.data).toBeNull();
+    await act(async () => second.resolve(5));
+    await waitFor(() => expect(result.current.data).toBe(5));
+    expect(result.current.refreshError).toBeNull();
+  });
+});

@@ -158,7 +158,7 @@ export function CompareScreen() {
                     Max DD
                   </LearnTerm>
                 </View>
-                {Object.entries(data.stats).map(([sym, s]) => (
+                {Object.entries(data.stats).filter(([sym]) => selected.includes(sym)).map(([sym, s]) => (
                   <View key={sym} className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
                     <AppText className="mb-2 font-mono text-sm text-white">{sym}</AppText>
                     <View className="flex-row gap-3">

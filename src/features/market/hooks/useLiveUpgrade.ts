@@ -53,6 +53,14 @@ export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: stri
     setCards(demoteLive);
   }, [o.weightsVersion, o.refreshKey, interval, setCards]);
 
+  // Unmount cancels a pending retry timer and any in-flight batch.
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+    },
+    [],
+  );
+
   const upgrade = useCallback(
     (symbols: string[]) => {
       const runId = runIdRef.current;
@@ -64,10 +72,11 @@ export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: stri
         maxAttempts: COMPOSITE_MAX_ATTEMPTS,
       });
       if (!toFetch.length) return;
+      const inFlight = inFlightRef.current;
 
       for (const s of toFetch) {
         const sym = s.toUpperCase();
-        inFlightRef.current.add(sym);
+        inFlight.add(sym);
         attemptsRef.current.set(sym, (attemptsRef.current.get(sym) ?? 0) + 1);
       }
 
@@ -97,7 +106,7 @@ export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: stri
           }
         })
         .finally(() => {
-          for (const s of toFetch) inFlightRef.current.delete(s.toUpperCase());
+          for (const s of toFetch) inFlight.delete(s.toUpperCase());
         });
     },
     [interval, noFeed, setCards]

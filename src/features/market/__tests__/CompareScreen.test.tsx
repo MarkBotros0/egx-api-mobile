@@ -97,3 +97,14 @@ it("shows the API error", async () => {
   expect(await screen.findByText("No data for range")).toBeTruthy();
   await waitFor(() => expect(screen.queryByTestId("chart-CompareChart")).toBeNull());
 });
+
+it("drops a removed stock's stat card", async () => {
+  await renderCompare();
+  await addSymbol("comi", "COMI");
+  await addSymbol("talaat", "TMGH");
+  await fireEvent.press(screen.getByText("Compare"));
+  expect(await screen.findByText("-5.00%")).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText("Remove TMGH"));
+  expect(screen.queryByText("-5.00%")).toBeNull();
+  expect(screen.getByText("+12.34%")).toBeTruthy();
+});

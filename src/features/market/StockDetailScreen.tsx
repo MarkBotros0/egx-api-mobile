@@ -93,6 +93,11 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
         contentClassName="gap-4 px-4 py-4 pb-10"
       >
         <IntervalBarsControls interval={interval} bars={bars} onInterval={setChartInterval} onBars={setBars} />
+        {analysis.refreshError && (
+          <AppText className="text-xs text-white/50" testID="refresh-error">
+            Couldn&apos;t refresh — showing the last loaded data
+          </AppText>
+        )}
 
         {analysis.loading ? (
           <View className="gap-4">
