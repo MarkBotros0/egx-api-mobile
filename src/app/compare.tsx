@@ -1,5 +1,11 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { Stack } from "expo-router";
+import { CompareScreen } from "@/features/market/CompareScreen";
 
 export default function CompareRoute() {
-  return <ComingSoon title="Compare" plan={3} />;
+  return (
+    <>
+      <Stack.Screen options={{ title: "Compare Stocks" }} />
+      <CompareScreen />
+    </>
+  );
 }

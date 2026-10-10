@@ -2,6 +2,7 @@ import type { CompositeBatchResponse, DashboardResponse, DashboardRow, MarketReg
 import type {
   AnalysisResponse,
   CategoryScore,
+  CompareResponse,
   DivergenceInfo,
   DividendHistoryResponse,
   EntryExit,
@@ -283,4 +284,15 @@ export const DIVIDEND_HISTORY: DividendHistoryResponse = {
   })),
   cadence: { last_ex_date: "2026-04-07", typical_month: 4, typical_month_name: "April", payments_per_year: 1, count: 12 },
   status: "ok",
+};
+
+export const COMPARE: CompareResponse = {
+  symbols: ["COMI", "TMGH"],
+  dates: ["2026-04-12", "2026-10-08"],
+  COMI: [100, 112.34],
+  TMGH: [100, 95],
+  stats: {
+    COMI: { total_return: 12.34, volatility: 0.025, max_drawdown: -8.2 },
+    TMGH: { total_return: -5, volatility: 0.031, max_drawdown: -14.1 },
+  },
 };

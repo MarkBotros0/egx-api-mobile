@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { router, Stack } from "expo-router";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import CompareRoute from "@/app/compare";
 import DashboardRoute from "@/app/(tabs)/index";
 import StockRoute from "@/app/stock/[symbol]";
 
@@ -20,6 +21,11 @@ jest.mock("@/features/market/StockDetailScreen", () => {
       return h(Text, { onPress: () => setTaps(taps + 1) }, `${symbol}|${initialInterval}|${taps}`);
     },
   };
+});
+jest.mock("@/features/market/CompareScreen", () => {
+  const { createElement: h } = jest.requireActual("react");
+  const { Text } = jest.requireActual("react-native");
+  return { CompareScreen: () => h(Text, null, "compare-screen") };
 });
 
 const layout = () => createElement(Stack);
@@ -45,4 +51,9 @@ it("starts fresh state when the same route moves to another stock", async () => 
   expect(await screen.findByText("COMI|Daily|1")).toBeTruthy();
   await act(async () => router.setParams({ symbol: "ETEL" }));
   expect(await screen.findByText("ETEL|Daily|0")).toBeTruthy();
+});
+
+it("mounts the compare screen", async () => {
+  await renderRouter({ _layout: layout, compare: CompareRoute }, { initialUrl: "/compare" });
+  expect(await screen.findByText("compare-screen")).toBeTruthy();
 });
