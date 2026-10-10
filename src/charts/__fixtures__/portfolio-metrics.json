@@ -1,0 +1,9 @@
+{
+  "sector_allocation": {
+    "Banks": 42.5,
+    "Telecommunications": 21.3,
+    "Real Estate": 18.2,
+    "Food & Beverage": 12,
+    "Industrials": 6
+  }
+}
