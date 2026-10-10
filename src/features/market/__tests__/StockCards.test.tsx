@@ -9,7 +9,7 @@ import { StatsPanel } from "../StatsPanel";
 import { fail, mockMarketApi, requestsTo } from "../testing/api";
 import { ENTRY_EXIT, KEY_LEVELS, makeAnalysis } from "../testing/fixtures";
 
-jest.mock("expo-router", () => require("@/features/market/testing/expoRouterMock"));
+jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
 const d = makeAnalysis();
 
