@@ -50,7 +50,7 @@ const HIST_DOWN = withAlpha(CHART.loss, 0.4);
 
 const fixed1 = (v: number) => v.toFixed(1);
 const fixed3 = (v: number) => v.toFixed(3);
-const grouped = (v: number) => v.toLocaleString();
+const grouped = (v: number) => v.toLocaleString("en-US");
 
 function Header({
   term,

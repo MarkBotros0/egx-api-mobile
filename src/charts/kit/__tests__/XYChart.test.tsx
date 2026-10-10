@@ -100,4 +100,34 @@ describe("XYChart", () => {
     expect(screen.getByTestId("xy-chart-svg")).toBeTruthy();
     expect(screen.queryByTestId("chart-readout")).toBeNull();
   });
+
+  describe("after the data shrinks under a visible crosshair", () => {
+    const mk = (n: number) => ({
+      labels: Array.from({ length: n }, (_, i) => `d${i}`),
+      series: [{ kind: "line", id: "s", name: "S", values: Array.from({ length: n }, (_, i) => i), color: "#fff" }] as XYSeries[],
+    });
+    const shrink = async () => {
+      const long = mk(10);
+      await render(<XYChart labels={long.labels} series={long.series} height={150} />);
+      await layoutChart("xy-chart");
+      await scrubChart("xy-chart", 336);
+      expect(screen.getByText("d9")).toBeTruthy();
+      const short = mk(3);
+      await screen.rerender(<XYChart labels={short.labels} series={short.series} height={150} />);
+      expect(screen.queryByTestId("chart-readout")).toBeNull();
+      return { long, short };
+    };
+
+    it("shows the readout on the very next tap (the hidden index is cleared)", async () => {
+      await shrink();
+      await tapChart("xy-chart", 336);
+      expect(screen.getByTestId("chart-readout")).toBeTruthy();
+    });
+
+    it("does not resurrect the crosshair when the data grows back", async () => {
+      const { long } = await shrink();
+      await screen.rerender(<XYChart labels={long.labels} series={long.series} height={150} />);
+      expect(screen.queryByTestId("chart-readout")).toBeNull();
+    });
+  });
 });

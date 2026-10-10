@@ -66,7 +66,7 @@ export function monteCarloSeries(data: MonteCarloResult): { labels: string[]; se
 }
 
 const dayTitle = (label: string) => `Day ${label}`;
-const egpReadout = (v: number) => `${v.toLocaleString()} EGP`;
+const egpReadout = (v: number) => `${v.toLocaleString("en-US")} EGP`;
 
 function Tile({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (

@@ -46,6 +46,8 @@ function lerpColor(a: string, b: string, t: number): string {
   return `#${((r << 16) | (g << 8) | bl).toString(16).padStart(6, "0")}`;
 }
 
+const NO_SCORE_TEXT = "rgba(255,255,255,0.3)";
+
 /**
  * Colour for a composite score. Bands are lower-bound-inclusive, matching
  * `scoreBand` and the backend's `classify_signal` — a score of 60 is a green
@@ -53,6 +55,9 @@ function lerpColor(a: string, b: string, t: number): string {
  * scoreColor; keep the two identical.
  */
 export function scoreColor(score: number): string {
+  // Diverges from the web on purpose: there NaN yields "#000000" (invisible
+  // text); here it gets the no-score colour. ±Infinity still clamps to the ends.
+  if (Number.isNaN(score)) return NO_SCORE_TEXT;
   switch (scoreBand(score)) {
     case "strong_sell":
       return lerpColor("#ff3355", "#ff6644", score / SCORE_STRONG_SELL_MAX);
@@ -74,7 +79,6 @@ const SIZES = {
 } as const;
 
 const TRACK = "rgba(255,255,255,0.07)";
-const NO_SCORE_TEXT = "rgba(255,255,255,0.3)";
 const SIGNAL_TEXT = "rgba(255,255,255,0.6)";
 
 /** Tailwind animate-pulse: opacity 1 → 0.5 → 1, 2s, forever. */

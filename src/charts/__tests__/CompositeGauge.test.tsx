@@ -24,6 +24,12 @@ describe("scoreColor (lower-bound-inclusive bands, as the backend's classify_sig
   });
 });
 
+describe("scoreColor non-finite input", () => {
+  it("returns the no-score colour for NaN, not black", () => {
+    expect(scoreColor(NaN)).toBe("rgba(255,255,255,0.3)");
+  });
+});
+
 describe("CompositeGauge", () => {
   it("announces the rounded score and the condition word", async () => {
     await renderChart(<CompositeGauge score={71.6} signal="Strong" size="lg" />);

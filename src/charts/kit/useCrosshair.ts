@@ -13,6 +13,14 @@ import { nearestIndex } from "./scales";
  */
 export function useCrosshair(xs: readonly number[], testID: string) {
   const [index, setIndex] = useState<number | null>(null);
+  // A different bar count means different data: forget the selection instead
+  // of masking it (a masked index would eat the next tap and could reappear
+  // if the data grew back). Adjusting state during render is React's pattern.
+  const [count, setCount] = useState(xs.length);
+  if (count !== xs.length) {
+    setCount(xs.length);
+    setIndex(null);
+  }
 
   const gesture = useMemo(() => {
     const at = (x: number) => {
