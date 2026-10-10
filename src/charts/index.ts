@@ -32,3 +32,11 @@ export {
   outcomeToneClass,
   type MonteCarloChartProps,
 } from "./MonteCarloChart";
+export {
+  CorrelationHeatmap,
+  cellColorClass,
+  cellTextClass,
+  correlationPairs,
+  type CorrelationHeatmapProps,
+  type CorrelationPair,
+} from "./CorrelationHeatmap";
