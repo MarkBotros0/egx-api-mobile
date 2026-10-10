@@ -27,6 +27,7 @@ const app = {
   compare: () => <Text>COMPARE</Text>,
   dividends: () => <Text>DIVIDENDS</Text>,
   calibration: () => <Text>CALIBRATION</Text>,
+  "dev/charts": () => null,
 };
 
 async function signedInAs(role: "user" | "admin") {

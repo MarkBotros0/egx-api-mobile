@@ -53,7 +53,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "verify": "npm run check:shared && npm run typecheck && npm run lint && jest --ci"
+    "verify": "npm run check:shared && npm run typecheck && npm run lint && jest --ci",
+    "gen:chart-fixtures": "node scripts/gen-chart-fixtures.mjs"
   },
   "private": true
 }
