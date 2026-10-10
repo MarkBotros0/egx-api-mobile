@@ -23,6 +23,11 @@ export function mockFetch(method: string, path: string | RegExp, body: unknown, 
   routes.push({ method: method.toUpperCase(), path, body, status });
 }
 
+/** Register a fallback: any mockFetch for the same route, registered before or after, overrides it. */
+export function prependMockFetch(method: string, path: string | RegExp, body: unknown, status = 200): void {
+  routes.unshift({ method: method.toUpperCase(), path, body, status });
+}
+
 /** Answer with a function of the request — for routes whose reply depends on the query or body. */
 export function mockFetchHandler(method: string, path: string | RegExp, handler: Handler): void {
   routes.push({ method: method.toUpperCase(), path, body: null, status: 200, handler });

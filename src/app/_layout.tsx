@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
+import { AppProviders } from "@/providers/AppProviders";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { APP_FONTS } from "@/ui/fonts";
 
@@ -39,5 +40,9 @@ function BootGate() {
   }, [ready]);
 
   if (!ready) return null;
-  return <RootNavigator />;
+  return (
+    <AppProviders>
+      <RootNavigator />
+    </AppProviders>
+  );
 }
