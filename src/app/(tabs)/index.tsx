@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { DashboardScreen } from "@/features/market/DashboardScreen";
 
 export default function DashboardRoute() {
-  return <ComingSoon title="Dashboard" plan={3} />;
+  return <DashboardScreen />;
 }

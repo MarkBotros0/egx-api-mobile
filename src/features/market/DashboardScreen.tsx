@@ -1,0 +1,253 @@
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, RefreshControl, useWindowDimensions, View } from "react-native";
+import { router } from "expo-router";
+import { routes } from "@/lib/links";
+import { useScoreWeights } from "@/providers/scoreWeights";
+import { useTickers } from "@/providers/tickers";
+import { useWatchlist } from "@/providers/watchlist";
+import { CARDS_PER_PAGE } from "@/shared/constants";
+import { COLORS } from "@/shared/theme";
+import type { Ticker } from "@/shared/types";
+import { AppText, Button, CardSkeleton, EmptyState, IconButton, Screen, TextField } from "@/ui";
+import { DashboardControls } from "./DashboardControls";
+import { useDashboardSnapshot } from "./hooks/useDashboardSnapshot";
+import { useLiveUpgrade } from "./hooks/useLiveUpgrade";
+import { useNow } from "./hooks/useNow";
+import { upgradeQueue, watchlistPriceData } from "./logic/cards";
+import {
+  ALL_SECTORS,
+  filterDividendPayers,
+  filterTickers,
+  pageSlice,
+  sortTickers,
+  splitByFeed,
+  type CompositeInterval,
+  type SortKey,
+} from "./logic/dashboardFilters";
+import { agoLabel, isEgxOpen, isTodaysSession, sessionLabel } from "./logic/marketClock";
+import { MarketRegimeCard } from "./MarketRegimeCard";
+import { StockCard } from "./StockCard";
+import { WatchlistPanel } from "./WatchlistPanel";
+
+/**
+ * Port of the web dashboard (`egx-api-fe/src/app/page.tsx`).
+ * - Pull-to-refresh replaces the Refresh button and sends `fresh`.
+ * - "Load More" becomes FlatList `onEndReached` + a footer button.
+ * - The sidebar (market condition, watchlist) sits above the grid.
+ * - The search field is pinned above the list (the web's sticky bar).
+ */
+export function DashboardScreen() {
+  const { tickers, loading } = useTickers();
+  const { version: weightsVersion } = useScoreWeights();
+  const { symbols: watchlistSymbols } = useWatchlist();
+  const now = useNow();
+  const { width } = useWindowDimensions();
+  const columns = width >= 400 ? 2 : 1; // the web's min-[400px]:grid-cols-2
+
+  const [index, setIndex] = useState("EGX30");
+  const [sector, setSector] = useState<string>(ALL_SECTORS);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("Default");
+  const [dividendOnly, setDividendOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const [showComposite, setShowComposite] = useState(true);
+  const [compositeInterval, setCompositeInterval] = useState<CompositeInterval>("Daily");
+  const [showNoFeed, setShowNoFeed] = useState(false);
+
+  // Any filter change returns to page 1 (the web did this in an effect).
+  function resetting<T>(set: (v: T) => void) {
+    return (v: T) => {
+      set(v);
+      setPage(1);
+    };
+  }
+
+  const snap = useDashboardSnapshot(weightsVersion);
+  const filtered = useMemo(
+    () => filterTickers(tickers, { index, sector, search }),
+    [tickers, index, sector, search]
+  );
+  const { quoted, unquoted } = useMemo(() => splitByFeed(filtered, snap.noFeed), [filtered, snap.noFeed]);
+  const payers = useMemo(
+    () => filterDividendPayers(quoted, snap.cards, dividendOnly),
+    [quoted, snap.cards, dividendOnly]
+  );
+  const sorted = useMemo(() => sortTickers(payers, snap.cards, sort), [payers, snap.cards, sort]);
+  const { visible, hasMore, remaining } = pageSlice(sorted, page, CARDS_PER_PAGE);
+
+  const { upgrade } = useLiveUpgrade({
+    symbols: upgradeQueue(visible, watchlistSymbols, tickers),
+    enabled: showComposite,
+    snapshotLoaded: snap.snapshotLoaded,
+    noFeed: snap.noFeed,
+    interval: compositeInterval,
+    weightsVersion,
+    refreshKey: snap.refreshKey,
+    setCards: snap.setCards,
+  });
+
+  const priceData = useMemo(() => watchlistPriceData(snap.cards), [snap.cards]);
+  // One clock reading for the whole grid, so every card flips together.
+  const marketClosed = !isEgxOpen(now);
+  const today = new Date(now);
+  const extra = useMemo(
+    () => ({ cards: snap.cards, now, showComposite, compositeInterval }),
+    [snap.cards, now, showComposite, compositeInterval]
+  );
+  const loadMore = () => {
+    if (hasMore) setPage((p) => p + 1);
+  };
+
+  const renderCard = (t: Ticker) => {
+    const c = snap.cards[t.symbol.toUpperCase()];
+    return (
+      <StockCard
+        symbol={t.symbol}
+        name={t.name}
+        sector={t.sector}
+        price={c?.price}
+        change={c?.change}
+        changePct={c?.changePct}
+        sparklineData={c?.sparkline}
+        compositeScore={showComposite ? (c?.score ?? null) : null}
+        compositeSignal={showComposite ? (c?.signal ?? null) : null}
+        // Independent of the score toggle: a different axis (movement).
+        riskBand={c?.riskBand}
+        riskBandLabel={c?.riskBandLabel}
+        interval={showComposite ? compositeInterval : undefined}
+        changeInterval={showComposite ? compositeInterval : "Daily"}
+        state={c?.state ?? "loading"}
+        asOf={sessionLabel(c?.barDate)}
+        isToday={isTodaysSession(c?.barDate, today)}
+        fetchedAgo={agoLabel(c?.fetchedAt, now)}
+        marketClosed={marketClosed}
+        onRetry={() => upgrade([t.symbol])}
+      />
+    );
+  };
+
+  const header = (
+    <View className="gap-4 px-1.5 pb-3">
+      <MarketRegimeCard />
+      <WatchlistPanel tickers={tickers} priceData={priceData} />
+      <DashboardControls
+        index={index}
+        onIndex={resetting(setIndex)}
+        sector={sector}
+        onSector={resetting(setSector)}
+        quotedCount={quoted.length}
+        unquotedCount={unquoted.length}
+        sort={sort}
+        onSort={resetting(setSort)}
+        dividendOnly={dividendOnly}
+        onToggleDividend={() => resetting(setDividendOnly)(!dividendOnly)}
+        showComposite={showComposite}
+        onToggleComposite={() => setShowComposite((v) => !v)}
+        interval={compositeInterval}
+        onInterval={setCompositeInterval}
+      />
+    </View>
+  );
+
+  const footer = (
+    <View className="gap-4 px-1.5 pt-3">
+      {hasMore && (
+        <Button label={`Load more (${remaining} remaining)`} variant="secondary" onPress={loadMore} />
+      )}
+      {/* Listed, not quoted: collapsed rather than removed, so a reader
+          searching for one finds it and is told why it has no price. */}
+      {!loading && unquoted.length > 0 && (
+        <View className="border-t border-white/5 pt-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showNoFeed }}
+            onPress={() => setShowNoFeed((v) => !v)}
+            className="min-h-[44px] flex-row items-center justify-between gap-2"
+          >
+            <AppText className="flex-1 text-sm text-white/40">
+              {`No feed data (${unquoted.length})`}
+              <AppText className="text-xs text-white/25">{"  listed, but not quoted by the data source"}</AppText>
+            </AppText>
+            <AppText className="text-xs text-white/40">{showNoFeed ? "Hide" : "Show"}</AppText>
+          </Pressable>
+          {showNoFeed && (
+            <View className="mt-3 gap-3">
+              {unquoted.map((t) => (
+                <View key={t.symbol}>{renderCard(t)}</View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+
+  return (
+    <Screen scroll={false} edges={["top"]}>
+      <View className="gap-3 border-b border-white/5 bg-charcoal-dark px-4 pb-3 pt-4">
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1">
+            <AppText className="font-sans-bold text-2xl text-white">EGX Market Overview</AppText>
+            <AppText className="mt-1 text-sm text-white/40">
+              Tap any card for detailed analysis. Pull down to refresh prices.
+            </AppText>
+          </View>
+          <View className="flex-row gap-2">
+            <IconButton icon="swap-horizontal" accessibilityLabel="Compare stocks" onPress={() => router.push(routes.compare)} />
+            <IconButton icon="calendar-outline" accessibilityLabel="Dividend calendar" onPress={() => router.push(routes.dividends)} />
+          </View>
+        </View>
+        <TextField
+          label="Search"
+          testID="dashboard-search"
+          placeholder="Filter by name or symbol..."
+          value={search}
+          onChangeText={resetting(setSearch)}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+
+      <FlatList
+        key={`cols-${columns}`}
+        testID="dashboard-list"
+        data={loading ? [] : visible}
+        numColumns={columns}
+        keyExtractor={(t) => t.symbol}
+        extraData={extra}
+        renderItem={({ item }) => (
+          <View style={{ width: columns === 2 ? "50%" : "100%" }} className="p-1.5">
+            {renderCard(item)}
+          </View>
+        )}
+        contentContainerClassName="px-2.5 pb-8 pt-3"
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          loading ? (
+            <View className="gap-3 px-1.5">
+              {Array.from({ length: 6 }, (_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </View>
+          ) : (
+            <View className="px-1.5">
+              <EmptyState title="No stocks found matching your filters." />
+            </View>
+          )
+        }
+        ListFooterComponent={footer}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={snap.refreshing}
+            onRefresh={snap.refresh}
+            tintColor={COLORS.accent}
+            colors={[COLORS.accent]}
+          />
+        }
+      />
+    </Screen>
+  );
+}
