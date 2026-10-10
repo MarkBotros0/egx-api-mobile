@@ -1,0 +1,66 @@
+import { act, screen } from "@testing-library/react-native";
+import { renderRouter } from "expo-router/testing-library";
+import { Slot } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { Text } from "react-native";
+
+import { AuthProvider } from "@/auth/AuthProvider";
+import { fetchTickers } from "@/shared/api";
+import { RootNavigator } from "@/navigation/RootNavigator";
+import { mockFetch } from "@/test-utils/fetch";
+
+function Layout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
+  );
+}
+
+const app = {
+  _layout: Layout,
+  login: () => <Text>LOGIN</Text>,
+  "(tabs)/_layout": Slot,
+  "(tabs)/index": () => <Text>DASHBOARD</Text>,
+  "stock/[symbol]": () => <Text>STOCK</Text>,
+  admin: () => <Text>ADMIN</Text>,
+  compare: () => <Text>COMPARE</Text>,
+  dividends: () => <Text>DIVIDENDS</Text>,
+  calibration: () => <Text>CALIBRATION</Text>,
+};
+
+async function signedInAs(role: "user" | "admin") {
+  await SecureStore.setItemAsync("egx.auth.token", "tok");
+  await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "1", username: "a", role }));
+  mockFetch("GET", "/auth/me", { id: "1", username: "a", role });
+}
+
+describe("route guard", () => {
+  it("sends a signed-out visitor to login, even from a deep link", async () => {
+    await renderRouter(app, { initialUrl: "/stock/COMI" });
+    expect(await screen.findByText("LOGIN")).toBeTruthy();
+  });
+
+  it("lets a signed-in user through", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/stock/COMI" });
+    expect(await screen.findByText("STOCK")).toBeTruthy();
+  });
+
+  it("keeps a non-admin out of /admin", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/admin" });
+    expect(await screen.findByText("DASHBOARD")).toBeTruthy();
+  });
+
+  it("drops to login when the session dies mid-use", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/" });
+    expect(await screen.findByText("DASHBOARD")).toBeTruthy();
+    mockFetch("GET", "/tickers", { detail: "expired" }, 401);
+    await act(async () => {
+      await fetchTickers().catch(() => {});
+    });
+    expect(await screen.findByText("LOGIN")).toBeTruthy();
+  });
+});
