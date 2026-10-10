@@ -4,6 +4,7 @@ import type {
   CategoryScore,
   CompareResponse,
   DivergenceInfo,
+  DividendCalendarResponse,
   DividendHistoryResponse,
   EntryExit,
   ForecastCalibration,
@@ -318,4 +319,16 @@ export const NEWS: NewsResponse = {
   },
   fetched_at: new Date().toISOString(),
   status: "partial",
+};
+
+export const CALENDAR: DividendCalendarResponse = {
+  stocks: [
+    { symbol: "COMI", name: "Commercial International Bank", dividend_yield: 3.2, ex_date: "2026-04-07", amount: 6 },
+    { symbol: "ETEL", name: "Telecom Egypt", dividend_yield: 5.1, ex_date: "2026-04-07", amount: 1.5 },
+    { symbol: "SWDY", name: null, dividend_yield: null, ex_date: "2026-04-20", amount: 0.9 },
+    { symbol: "ABUK", name: "ABUK", dividend_yield: 8.5, ex_date: "2025-05-11", amount: 12 },
+  ],
+  count: 4,
+  as_of: "2026-10-09",
+  status: "ok",
 };

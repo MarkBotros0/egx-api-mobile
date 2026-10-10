@@ -3,6 +3,7 @@ import { router, Stack } from "expo-router";
 import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import CompareRoute from "@/app/compare";
 import DashboardRoute from "@/app/(tabs)/index";
+import DividendsRoute from "@/app/dividends";
 import NewsRoute from "@/app/(tabs)/news";
 import StockRoute from "@/app/stock/[symbol]";
 
@@ -33,6 +34,12 @@ jest.mock("@/features/market/NewsScreen", () => {
   const { createElement: h } = jest.requireActual("react");
   const { Text } = jest.requireActual("react-native");
   return { NewsScreen: () => h(Text, null, "news-screen") };
+});
+
+jest.mock("@/features/market/DividendCalendarScreen", () => {
+  const { createElement: h } = jest.requireActual("react");
+  const { Text } = jest.requireActual("react-native");
+  return { DividendCalendarScreen: () => h(Text, null, "dividends-screen") };
 });
 
 const layout = () => createElement(Stack);
@@ -68,4 +75,9 @@ it("mounts the compare screen", async () => {
 it("mounts the news screen", async () => {
   await renderRouter({ _layout: layout, news: NewsRoute }, { initialUrl: "/news" });
   expect(await screen.findByText("news-screen")).toBeTruthy();
+});
+
+it("mounts the dividend calendar", async () => {
+  await renderRouter({ _layout: layout, dividends: DividendsRoute }, { initialUrl: "/dividends" });
+  expect(await screen.findByText("dividends-screen")).toBeTruthy();
 });
