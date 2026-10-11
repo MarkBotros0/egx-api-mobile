@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { LearnScreen } from "@/features/learn/LearnScreen";
 
 export default function LearnRoute() {
-  return <ComingSoon title="Learn" plan={5} />;
+  return <LearnScreen />;
 }
