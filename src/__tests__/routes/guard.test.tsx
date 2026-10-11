@@ -27,6 +27,7 @@ const app = {
   compare: () => <Text>COMPARE</Text>,
   dividends: () => <Text>DIVIDENDS</Text>,
   calibration: () => <Text>CALIBRATION</Text>,
+  alerts: () => <Text>ALERTS</Text>,
   "dev/charts": () => null,
 };
 
@@ -52,6 +53,17 @@ describe("route guard", () => {
     await signedInAs("user");
     await renderRouter(app, { initialUrl: "/admin" });
     expect(await screen.findByText("DASHBOARD")).toBeTruthy();
+  });
+
+  it("keeps a signed-out visitor out of /alerts", async () => {
+    await renderRouter(app, { initialUrl: "/alerts" });
+    expect(await screen.findByText("LOGIN")).toBeTruthy();
+  });
+
+  it("lets a signed-in user open /alerts", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/alerts" });
+    expect(await screen.findByText("ALERTS")).toBeTruthy();
   });
 
   it("drops to login when the session dies mid-use", async () => {
