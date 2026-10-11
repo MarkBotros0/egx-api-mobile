@@ -1,5 +1,11 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { Stack } from "expo-router";
+import { AdminScreen } from "@/features/admin/AdminScreen";
 
 export default function AdminRoute() {
-  return <ComingSoon title="Users" plan={5} />;
+  return (
+    <>
+      <Stack.Screen options={{ title: "Users" }} />
+      <AdminScreen />
+    </>
+  );
 }

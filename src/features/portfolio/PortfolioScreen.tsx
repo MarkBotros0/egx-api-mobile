@@ -19,7 +19,7 @@ import { AddDividendForm } from "./forms/AddDividendForm";
 import { AddHoldingForm } from "./forms/AddHoldingForm";
 import { SellHoldingForm } from "./forms/SellHoldingForm";
 import { dividendSymbolOptions, type DividendPayload } from "./logic/dividend";
-import { errorMessage } from "./logic/format";
+import { errorMessage } from "@/lib/errors";
 import type { HoldingPayload } from "./logic/holdingForm";
 import { contentSpacer, portfolioView } from "./logic/layout";
 import { sellPositionFor, type SaleSubmit } from "./logic/sale";

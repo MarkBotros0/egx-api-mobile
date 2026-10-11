@@ -1,0 +1,102 @@
+# EGX Analytics — mobile (Expo) — guide for Claude
+
+React Native port of the EGX Analytics web app (`../egx-api-fe`, Next.js) — the
+Egyptian Exchange analysis/portfolio app. **The port changes the rendering, never
+the rules.** Product rules live in `../egx-api-fe/CLAUDE.md`; read that screen's
+section before touching a screen. Expo specifics: @AGENTS.md (do not trust
+training data for Expo APIs — read `https://docs.expo.dev/versions/v57.0.0/`).
+
+Binding plan set: `docs/superpowers/plans/2026-10-10-00-roadmap.md` (+ plans 01–05).
+
+## Stack and commands
+
+Expo SDK 57 · RN 0.86 · React 19.2 · TS 6 · Expo Router (`src/app`) · NativeWind 4.2.7
+(Tailwind 3) · react-native-svg + d3 charts · Jest (`jest-expo`) + RNTL 14.
+
+| Command | What |
+|---|---|
+| `npx expo install <pkg>` | ONLY way to add deps (`-- --dev` for dev deps). Exception: `tailwindcss@^3.4.17` |
+| `npm run verify` | `check:shared` + `typecheck` + `lint` (`expo lint`) + `jest --ci` — green before every commit |
+| `npm run sync:shared` / `check:shared` | copy / diff `../egx-api-fe/src/app/lib/*` → `src/shared/` |
+| `npm run icons` | regenerate `assets/*.png` from the web logo SVG |
+| `npm run gen:chart-fixtures` | regenerate `src/charts/__fixtures__` |
+| `npx expo start` | dev server — **always in tmux**: `tmux new -d -s egx-mobile-metro "npx expo start 2>&1 \| tee ~/logs/egx-mobile-metro.log"` |
+
+Long-running commands (Metro, long test runs, EAS builds) go in tmux with output in
+`~/logs/egx-mobile-<task>.log`; tell the user the session name and log path.
+`expo lint`/`expo start` may rewrite `tsconfig.json` — revert it if unintended.
+
+## Layout
+
+- `src/app/` — routes ONLY (no tests, no components). Tabs: Dashboard, Portfolio, Learn, News.
+  `src/navigation/` holds the root navigator.
+- `src/shared/` — **GENERATED, never edit.** Change `../egx-api-fe/src/app/lib/`, commit
+  there, `npm run sync:shared` here, commit here. Must stay platform-neutral.
+- `src/ui/` UI kit (`Screen`, `Card`, `Sheet`, `Button`, `TextField`, …) · `src/charts/` chart kit ·
+  `src/auth/`, `src/providers/` (app-wide state).
+- `src/features/<name>/` — one folder per area: `admin`, `auth`, `calibration`, `common`
+  (shared widgets), `learn`, `market` (dashboard, stock, compare, news, dividends),
+  `portfolio`, `shell`.
+- `src/lib/` — small helpers: `env` (`apiBaseUrl`, `feBaseUrl`), `links` (`learnHref`,
+  `stockHref`, `routes`), `errors` (`errorMessage`), `dates`, `zones`, `apiSetup`.
+  `pct` lives in `@/features/market/logic/format`.
+- `src/test-utils/` — `render.tsx` (`renderWithProviders`), `renderScreen.tsx`
+  (`renderScreen`), `safeArea.tsx` (`TestSafeArea`), `fetch.ts`, and the shared jest
+  mocks `datePickerMock`, `sliderMock`, `asyncStorageMock`, `sheetMock`, `secureStoreMock`
+  (load with `jest.requireActual` inside `jest.mock` factories). Reuse, don't retype.
+- Tests in `__tests__/` beside the code (`*.test.ts(x)`); route tests in `src/__tests__/routes/`.
+- Import across folders with `@/…`; relative only within a folder.
+
+## Rules that are easy to break
+
+- `gain`/`loss` (and Learn's `V.up`/`V.down`) mean a real direction in the data, never decoration.
+  Hexes only from `COLORS` (`@/shared/theme`) or `V` (`@/shared/learnVisuals`).
+- Score labels are condition words (`scoreBand`/`SCORE_BAND_LABEL`), never Buy/Sell.
+- Fonts are families: `font-sans`, `-medium`, `-semibold`, `-bold`, `font-mono`, `font-mono-semibold`.
+- NativeWind: em tracking → px, relative leading → px, `space-y` → `gap`, no `md:`/`hover:`.
+- Never `{n && <X/>}` with a number/string `n` — use a ternary.
+- Touch targets ≥ 44pt. Safe areas via `Screen` only, which already applies `px-4`
+  (screens must not add their own outer `px-4`); screens under a stack header pass
+  `edges={[]}`. Widths come from layout, never `Dimensions` at module scope.
+- Everything must run in **Expo Go** (no custom native modules).
+- Money inputs accept 3 decimals; share counts are integers.
+
+## Learn
+
+Content is the SHARED `@/shared/curriculum` (web `lib/curriculum.ts`), diagrams are
+`VisualSpec` objects rendered by `src/features/learn/LearnVisual.tsx` (twin of the web's
+`components/learn/LearnVisual.tsx` — a new kind needs a case in both). Edit content in
+the web repo only.
+- Anchors are a public contract: 9 hyphenated module ids, underscore concept ids; never
+  rename/drop (pinned by `sharedCurriculum.test.ts`). Deep link = `learnHref(id)` →
+  `/learn?concept=<id>`; module ids and title slugs work too; the param is cleared
+  after handling so the same link works twice.
+- Seeded `walk()`, never `Math.random()`; gradient ids from `useId()` (sanitised).
+- Cards rest VISIBLE; the only animation is the deep-link flash ring over an opaque card.
+- Widgets import their formula (`@/shared/learnWidgets` → `constants`); curriculum strings
+  interpolate `T_BILL_RATE_PCT`.
+- Search: `searchConcepts`/`normalizeSearch` fold punctuation on both sides.
+- Progress: AsyncStorage key `egx.learn.progress`, keyed by `conceptKey()`; storage failures
+  are swallowed; taps before hydration are replayed.
+- LiveChart: ONE shared COMI fetch, armed by FlatList viewability, silent fallback to the diagram.
+
+## Admin
+
+Header button beside Log out (admins only) → `/admin`, guarded by `Stack.Protected guard={isAdmin}`
+plus an in-screen "Admins only". No role picker (admin = server `AUTH_ADMINS`). You cannot
+disable/delete yourself. Generated passwords are shown once; copy block
+`Link/Username/Password`, link from `EXPO_PUBLIC_FE_BASE_URL`.
+
+## Environment and release
+
+`.env` (gitignored; see `.env.example`): `EXPO_PUBLIC_API_BASE_URL` (via `apiBaseUrl()`),
+`EXPO_PUBLIC_FE_BASE_URL` (via `feBaseUrl()`). EAS builds read them from EAS environments,
+not `.env`. Bundle id `com.markbotros.egxanalytics` is a proposal the user must confirm
+before the first store build. Build/submit steps: `docs/release.md`.
+
+## Git
+
+Remote `origin` = github.com/MarkBotros0/egx-api-mobile (default branch `main`). Push only
+when asked: `gh auth switch --hostname github.com --user MarkBotros0 && git push`. Commit trailer:
+`Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` +
+`Claude-Session: https://claude.ai/code/session_01XDkAB7UCK8WyT267W5ZxNV`.

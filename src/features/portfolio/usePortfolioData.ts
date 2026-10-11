@@ -13,7 +13,7 @@ import {
 } from "@/shared/api";
 import type { Portfolio, PortfolioAnalysisResponse, SalesResponse } from "@/shared/types";
 import type { DividendPayload } from "./logic/dividend";
-import { errorMessage } from "./logic/format";
+import { errorMessage } from "@/lib/errors";
 import type { HoldingPayload } from "./logic/holdingForm";
 import type { SaleSubmit, SellPosition } from "./logic/sale";
 

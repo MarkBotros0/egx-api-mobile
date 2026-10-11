@@ -1,5 +1,11 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { Stack } from "expo-router";
+import { CalibrationScreen } from "@/features/calibration/CalibrationScreen";
 
 export default function CalibrationRoute() {
-  return <ComingSoon title="Calibration" plan={5} />;
+  return (
+    <>
+      <Stack.Screen options={{ title: "Checking our work" }} />
+      <CalibrationScreen />
+    </>
+  );
 }
