@@ -1,6 +1,6 @@
-# EGX Analytics — mobile
+# Borsa Compass — mobile
 
-Expo (SDK 57) React Native client for EGX Analytics. The backend is `../egx-api-be`;
+Expo (SDK 57) React Native client for Borsa Compass (formerly EGX Analytics). The backend is `../egx-api-be`;
 the web client `../egx-api-fe` owns the shared API client, types and maths in
 `src/app/lib/`, copied here into `src/shared/` (never edit it here).
 

@@ -1,4 +1,4 @@
-# Releasing EGX Analytics (mobile)
+# Releasing Borsa Compass (mobile)
 
 Everything here is run by a person with the Expo / Apple / Google accounts. Nothing
 in this file has been executed yet: the preview build and the device checklist are
@@ -6,8 +6,9 @@ run by the user.
 
 ## 0. Once per machine / project
 
-1. Confirm the bundle id `com.markbotros.egxanalytics` (an UNCONFIRMED proposal; app.json `ios.bundleIdentifier`,
-   `android.package`). It cannot change after the first store upload.
+1. The bundle id is `com.markbotros.borsacompass` (app.json `ios.bundleIdentifier`,
+   `android.package`, chosen with the name "Borsa Compass"). It cannot change after the
+   first store upload — check the name is free on both stores before that.
 2. `npx eas-cli@latest login` (interactive).
 3. `npx eas-cli@latest init` — creates the EAS project and writes
    `expo.extra.eas.projectId` (and `owner`) into `app.json`. Commit that change.
@@ -60,9 +61,9 @@ Build numbers are remote and auto-incremented (`appVersionSource: remote`); bump
 ## 4. Store submission (documented, not executed)
 
 **Google Play**
-1. Play Console → Create app "EGX Analytics", default language, app/free.
+1. Play Console → Create app "Borsa Compass", default language, app/free.
 2. Complete App content: privacy policy URL (the app stores a username, portfolio
-   holdings, sales, dividends and a watchlist on the EGX Analytics backend; no ads, no
+   holdings, sales, dividends and a watchlist on the Borsa Compass backend; no ads, no
    third-party analytics), Data safety form to match, content rating questionnaire,
    target audience (adults), "financial features": informational only — the app gives
    no investment advice (the composite score is educational).
@@ -79,7 +80,7 @@ Build numbers are remote and auto-incremented (`appVersionSource: remote`); bump
 
 **Apple App Store**
 1. Apple Developer Program membership; App Store Connect → New App, bundle id
-   `com.markbotros.egxanalytics`, name "EGX Analytics" (must be unique on the store).
+   `com.markbotros.borsacompass`, name "Borsa Compass" (must be unique on the store).
 2. `npx eas-cli@latest submit -p ios --latest` (EAS asks for the Apple ID / creates an
    App Store Connect API key) → build appears in TestFlight.
 3. App Privacy answers (same data as above, linked to the user, not used for tracking),

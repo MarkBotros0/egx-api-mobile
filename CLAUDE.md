@@ -1,6 +1,6 @@
-# EGX Analytics — mobile (Expo) — guide for Claude
+# Borsa Compass — mobile (Expo) — guide for Claude
 
-React Native port of the EGX Analytics web app (`../egx-api-fe`, Next.js) — the
+Borsa Compass (formerly "EGX Analytics") — React Native port of the web app (`../egx-api-fe`, Next.js) — the
 Egyptian Exchange analysis/portfolio app. **The port changes the rendering, never
 the rules.** Product rules live in `../egx-api-fe/CLAUDE.md`; read that screen's
 section before touching a screen. Expo specifics: @AGENTS.md (do not trust
@@ -91,8 +91,8 @@ disable/delete yourself. Generated passwords are shown once; copy block
 
 `.env` (gitignored; see `.env.example`): `EXPO_PUBLIC_API_BASE_URL` (via `apiBaseUrl()`),
 `EXPO_PUBLIC_FE_BASE_URL` (via `feBaseUrl()`). EAS builds read them from EAS environments,
-not `.env`. Bundle id `com.markbotros.egxanalytics` is a proposal the user must confirm
-before the first store build. Build/submit steps: `docs/release.md`.
+not `.env`. App name "Borsa Compass", bundle id / package `com.markbotros.borsacompass`, scheme
+`borsacompass` — chosen 2026-10-11; the id is permanent after the first store upload. Build/submit steps: `docs/release.md`.
 
 ## Git
 

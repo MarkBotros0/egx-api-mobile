@@ -14,11 +14,11 @@ function pngSize(rel: string) {
 }
 
 const BG = "#0a0a0f";
-const ID = "com.markbotros.egxanalytics";
+const ID = "com.markbotros.borsacompass";
 
 describe("app.json", () => {
-  it("is called EGX Analytics and is dark", () => {
-    expect(expo.name).toBe("EGX Analytics");
+  it("is called Borsa Compass and is dark", () => {
+    expect(expo.name).toBe("Borsa Compass");
     expect(expo.userInterfaceStyle).toBe("dark");
     expect(expo.backgroundColor).toBe(BG);
     expect(expo.orientation).toBe("portrait");

@@ -16,7 +16,7 @@ export function LearnHero({ doneCount, total, onReset }: { doneCount: number; to
   return (
     <View className="mb-7 pt-6">
       <AppText className="mb-3 font-mono text-[10px] uppercase tracking-[2px] text-white/30">
-        EGX Analytics · Learn
+        Borsa Compass · Learn
       </AppText>
       <AppText accessibilityRole="header" className="font-sans-bold text-[26px] leading-[30px] text-white">
         {"Learn the EGX,\n"}
