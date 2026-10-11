@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi } from "@/features/portfolio/testing/api";
 import { TICKERS } from "@/features/portfolio/testing/fixtures";
-import { todayIso } from "@/features/portfolio/logic/format";
+import { todayIso } from "@/lib/dates";
 import { AddHoldingForm } from "../AddHoldingForm";
 
 afterEach(() => jest.useRealTimers());

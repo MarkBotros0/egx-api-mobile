@@ -1,10 +1,9 @@
 /**
  * Colour bands and copy for the analysis cards, ported from RiskDashboard,
- * PortfolioSummary, MacroCard and PEFreshnessBanner on the web. The class
+ * PortfolioSummary and MacroCard on the web. The class
  * names are Tailwind strings NativeWind resolves; `yellow-400`/`green-400`
  * come from Tailwind's default palette.
  */
-import type { PEFeedStatus } from "@/shared/api";
 import {
   CURRENT_DD_CAUTION,
   CURRENT_DD_NEUTRAL,
@@ -91,22 +90,6 @@ export function macroDetails(data: MacroData): { rate?: string; fx?: string; egx
 
 export function formatMacroValue(v: number): string {
   return v > 1000 ? egp(v) : String(v);
-}
-
-export const PE_STALE_AFTER_HOURS = 48;
-
-export function peStalenessMessage(status: PEFeedStatus | null, nowMs: number): string | null {
-  if (!status?.last_successful_fetch) return null;
-  const last = Date.parse(status.last_successful_fetch);
-  if (Number.isNaN(last)) return null;
-  const ageHours = (nowMs - last) / 36e5;
-  if (ageHours < PE_STALE_AFTER_HOURS) return null;
-  const days = Math.floor(ageHours / 24);
-  const attempt =
-    status.last_attempt_status && status.last_attempt_status !== "ok"
-      ? ` Last attempt: ${status.last_attempt_status}.`
-      : "";
-  return `P/E data last updated ${days} day${days === 1 ? "" : "s"} ago — the EGX feed may be temporarily unavailable.${attempt}`;
 }
 
 /** Totals cover only priced holdings; silently dropping one used to show a phantom loss. */

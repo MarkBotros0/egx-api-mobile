@@ -1,8 +1,8 @@
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-import { AppText } from "@/ui";
-import { dateToIso, isoToDate } from "@/features/portfolio/logic/format";
+import { AppText } from "./AppText";
+import { dateToIso, isoToDate } from "@/lib/dates";
 
 export interface DateFieldProps {
   label: string;

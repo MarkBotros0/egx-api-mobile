@@ -1,3 +1,4 @@
+import { dateToIso } from "@/lib/dates";
 import { dayMonth } from "./format";
 
 /**
@@ -19,14 +20,6 @@ export function sessionLabel(iso: string | null | undefined): string | null {
   return label === m[0] ? null : label;
 }
 
-export function localDateKey(d: Date): string {
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
 /**
  * Is this bar today's session? Decides whether the card may call the price a
  * "close" — today's bar is still moving while the EGX is open. Compared on the
@@ -34,7 +27,7 @@ export function localDateKey(d: Date): string {
  */
 export function isTodaysSession(barDate: string | null | undefined, now: Date = new Date()): boolean {
   if (!barDate) return false;
-  return barDate.slice(0, 10) === localDateKey(now);
+  return barDate.slice(0, 10) === dateToIso(now);
 }
 
 /** Epoch ms → "14s ago" / "3m 14s ago" / "18h 22m ago" / "3d ago". */

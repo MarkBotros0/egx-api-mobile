@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { fetchPEFeedStatus } from "@/shared/api";
 import { AppText } from "@/ui";
-import { peStalenessMessage } from "./logic/display";
+import { peStalenessMessage } from "./peFreshness";
 
 /** Best-effort: a failed status fetch shows nothing and never blocks the page. */
 export function PEFreshnessBanner() {
@@ -23,8 +23,8 @@ export function PEFreshnessBanner() {
 
   if (!message) return null;
   return (
-    <View className="rounded-lg border border-amber-400/30 bg-amber-400/5 px-3 py-2">
-      <AppText className="font-sans text-xs text-amber-400">{message}</AppText>
+    <View className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2">
+      <AppText className="text-xs text-amber-200/80">{message}</AppText>
     </View>
   );
 }

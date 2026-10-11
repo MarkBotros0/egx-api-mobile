@@ -4,9 +4,9 @@ import {
   changeIntervalNote,
   isEgxOpen,
   isTodaysSession,
-  localDateKey,
   sessionLabel,
 } from "../marketClock";
+import { dateToIso } from "@/lib/dates";
 
 describe("sessionLabel", () => {
   it("formats a bare ISO date as day + short month", () => {
@@ -27,7 +27,7 @@ describe("sessionLabel", () => {
 describe("isTodaysSession", () => {
   const now = new Date(2026, 8, 3, 11, 0); // 3 Sep 2026, local time
   it("is true for today's local date", () => {
-    expect(localDateKey(now)).toBe("2026-09-03");
+    expect(dateToIso(now)).toBe("2026-09-03");
     expect(isTodaysSession("2026-09-03", now)).toBe(true);
   });
   it("is false for a past session and for no date", () => {

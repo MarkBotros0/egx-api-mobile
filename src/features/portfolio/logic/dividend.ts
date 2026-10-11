@@ -5,7 +5,7 @@
  * landed, net of withholding tax; `shares` is optional and display-only.
  */
 import type { PortfolioHolding, Sale } from "@/shared/types";
-import { todayIso } from "./format";
+import { todayIso } from "@/lib/dates";
 import { parseMoney, parseShares } from "./money";
 
 export interface DividendSymbolOption {

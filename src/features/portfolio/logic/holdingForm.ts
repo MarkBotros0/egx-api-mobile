@@ -6,7 +6,7 @@
  */
 import { TICKER_SEARCH_LIMIT } from "@/shared/constants";
 import type { PortfolioHolding, Ticker } from "@/shared/types";
-import { todayIso } from "./format";
+import { todayIso } from "@/lib/dates";
 import { parseMoney, parseShares } from "./money";
 
 export type TickerValidation = "idle" | "validating" | "valid" | "invalid" | "error";

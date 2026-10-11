@@ -11,7 +11,7 @@ import { AddFab, useFabBottom } from "./AddFab";
 import { AdvicePanel } from "./AdvicePanel";
 import { HoldingsList } from "./HoldingsList";
 import { MacroCard } from "./MacroCard";
-import { PEFreshnessBanner } from "./PEFreshnessBanner";
+import { PEFreshnessBanner } from "@/features/common/PEFreshnessBanner";
 import { PortfolioSummary } from "./PortfolioSummary";
 import { RealizedSection } from "./RealizedSection";
 import { RiskDashboard } from "./RiskDashboard";

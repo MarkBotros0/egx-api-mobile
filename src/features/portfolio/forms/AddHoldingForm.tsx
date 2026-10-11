@@ -3,8 +3,8 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { validateTicker } from "@/shared/api";
 import { TICKER_VALIDATION_DEBOUNCE_MS } from "@/shared/constants";
 import type { Ticker } from "@/shared/types";
-import { AppText, Button, TextField } from "@/ui";
-import { todayIso } from "@/features/portfolio/logic/format";
+import { AppText, Button, DateField, TextField } from "@/ui";
+import { todayIso } from "@/lib/dates";
 import {
   buildHoldingPayload,
   filterTickers,
@@ -15,7 +15,6 @@ import {
   type ResolvedTicker,
   type TickerValidation,
 } from "@/features/portfolio/logic/holdingForm";
-import { DateField } from "./DateField";
 import { FormError } from "./FormError";
 import { FormScroll } from "./FormScroll";
 import { useSingleFlight } from "./useSingleFlight";

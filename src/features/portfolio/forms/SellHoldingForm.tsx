@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { AppText, Button, TextField } from "@/ui";
-import { pnlTone, signed, signedPct, todayIso } from "@/features/portfolio/logic/format";
+import { AppText, Button, DateField, TextField } from "@/ui";
+import { pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
+import { todayIso } from "@/lib/dates";
 import { previewSale, sellDateError, type SaleSubmit, type SellPosition } from "@/features/portfolio/logic/sale";
-import { DateField } from "./DateField";
 import { FormError } from "./FormError";
 import { FormScroll } from "./FormScroll";
 import { useSingleFlight } from "./useSingleFlight";

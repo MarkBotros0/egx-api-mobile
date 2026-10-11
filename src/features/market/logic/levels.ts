@@ -1,3 +1,4 @@
+import { isStrongZone } from "@/lib/zones";
 import type { NearestLevel, ZoneConfidence } from "@/shared/types";
 
 /** A level from last week and one from last spring are not equally relevant. */
@@ -61,7 +62,7 @@ const BADGES: Record<"entry" | "exit", Record<ZoneConfidence, { label: string; b
 };
 
 export function zoneTone(kind: "entry" | "exit", confidence: ZoneConfidence | null): ZoneTone {
-  const strong = confidence === "high" || confidence === "medium";
+  const strong = isStrongZone(confidence);
   const isEntry = kind === "entry";
   return {
     strong,

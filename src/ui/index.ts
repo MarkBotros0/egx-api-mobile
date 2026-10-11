@@ -2,6 +2,7 @@ export { AppText } from "./AppText";
 export { Button } from "./Button";
 export { Card } from "./Card";
 export { confirm } from "./confirm";
+export { DateField } from "./DateField";
 export { IconButton } from "./IconButton";
 export { LearnTerm } from "./LearnTerm";
 export { Pill, PillRow } from "./Pill";
