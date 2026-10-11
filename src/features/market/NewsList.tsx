@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { stockHref } from "@/lib/links";
 import type { NewsItem } from "@/shared/types";
 import { AppText } from "@/ui";
-import { isFresh, relativeAge, sourceName } from "./logic/news";
+import { isFresh, relativeAge, sourceName, storySite } from "./logic/news";
 
 /**
  * No gain/loss colour anywhere: a headline carries no direction and no
@@ -27,10 +27,10 @@ function NewsCard({ item, now }: { item: NewsItem; now: Date }) {
         </View>
       </View>
 
-      {/* The story lives on TradingView: it opens off-app, and says so. */}
+      {/* The story lives on the publisher's site: it opens off-app, and says where. */}
       <Pressable
         accessibilityRole="link"
-        accessibilityHint="Opens on tradingview.com"
+        accessibilityHint={`Opens on ${storySite(item.url)}`}
         onPress={() => void Linking.openURL(item.url)}
         className="mt-2.5 min-h-[44px] flex-row items-start gap-2"
       >

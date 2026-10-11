@@ -1,5 +1,5 @@
 import { NEWS } from "@/features/market/testing/fixtures";
-import { isFresh, newsCaveats, relativeAge, sourceName, yourStocksEmptyNote } from "../news";
+import { isFresh, newsCaveats, relativeAge, sourceName, storySite, yourStocksEmptyNote } from "../news";
 
 const now = new Date("2026-10-10T12:00:00Z");
 const ago = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
@@ -25,7 +25,16 @@ describe("sourceName", () => {
     expect(sourceName("dow-jones")).toBe("Dow Jones");
     expect(sourceName("lse")).toBe("LSE");
     expect(sourceName("reuters")).toBe("Reuters");
+    expect(sourceName("arab-finance")).toBe("Arab Finance");
     expect(sourceName(null)).toBe("Wire");
+  });
+});
+
+describe("storySite", () => {
+  it("names the site a story opens on", () => {
+    expect(storySite("https://www.tradingview.com/news/n1")).toBe("tradingview.com");
+    expect(storySite("https://www.arabfinance.com/en/news/newdetails/48489")).toBe("arabfinance.com");
+    expect(storySite("not a url")).toBe("the publisher's site");
   });
 });
 

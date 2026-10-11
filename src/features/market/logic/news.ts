@@ -29,6 +29,12 @@ export function sourceName(provider: string | null): string {
     .join(" ");
 }
 
+/** "https://www.arabfinance.com/en/…" → "arabfinance.com": where a story opens. */
+export function storySite(url: string): string {
+  const m = /^[a-z]+:\/\/(?:www\.)?([^/?#:]+)/i.exec(url);
+  return m ? m[1].toLowerCase() : "the publisher's site";
+}
+
 /** What ISN'T here, kept visible rather than silently dropped. */
 export function newsCaveats(data: NewsResponse): string[] {
   const { coverage } = data;
