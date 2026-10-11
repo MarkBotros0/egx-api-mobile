@@ -43,13 +43,20 @@ it("filters by search text", async () => {
   expect(screen.getByTestId("stockcard-ETEL")).toBeTruthy();
 });
 
-it("sorts by score and explains what the score is", async () => {
+it("opens sorted by score and explains what the score is", async () => {
   await renderDashboard();
-  await fireEvent.press(screen.getByText("Score"));
   await waitFor(() =>
     expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-ETEL", "stockcard-TMGH", "stockcard-ABUK"])
   );
   expect(screen.getByText(/does not predict price/)).toBeTruthy();
+});
+
+it("Default restores the ticker-file order", async () => {
+  await renderDashboard();
+  await fireEvent.press(screen.getByText("Default"));
+  await waitFor(() =>
+    expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-TMGH", "stockcard-ETEL", "stockcard-ABUK"])
+  );
 });
 
 it("filters to dividend payers", async () => {

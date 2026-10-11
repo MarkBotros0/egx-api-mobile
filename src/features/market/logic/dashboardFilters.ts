@@ -12,6 +12,8 @@ export const SECTORS = [
 
 export const SORTS = ["Default", "Score", "Change", "Risk", "Recently paid"] as const;
 export type SortKey = (typeof SORTS)[number];
+/** The dashboard opens on the composite ranking; "Default" is the ticker-file order. */
+export const DEFAULT_SORT: SortKey = "Score";
 
 /** The web shows these as hover titles; the phone shows them under the row. */
 export const SORT_EXPLANATIONS: Partial<Record<SortKey, string>> = {

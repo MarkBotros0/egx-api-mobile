@@ -22,6 +22,7 @@ import {
   sortTickers,
   splitByFeed,
   type CompositeInterval,
+  DEFAULT_SORT,
   type SortKey,
 } from "./logic/dashboardFilters";
 import { agoLabel, isEgxOpen, isTodaysSession, sessionLabel } from "./logic/marketClock";
@@ -47,7 +48,7 @@ export function DashboardScreen() {
   const [index, setIndex] = useState("EGX30");
   const [sector, setSector] = useState<string>(ALL_SECTORS);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortKey>("Default");
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
   const [dividendOnly, setDividendOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [showComposite, setShowComposite] = useState(true);
