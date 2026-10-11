@@ -2,7 +2,7 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-import { consumeColdStartTap, getPushToken, isExpoGo, parseTap, requestPermission } from "../push";
+import { consumeColdStartTap, getPushToken, isExpoGo, onAlertTap, parseTap, requestPermission } from "../push";
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -47,9 +47,50 @@ describe("push boundary", () => {
 
   it("returns the cold-start tap once and clears it", async () => {
     N.getLastNotificationResponseAsync.mockResolvedValueOnce({
-      notification: { request: { content: { data: { type: "score_alert", symbol: "FWRY" } } } },
+      notification: { request: { identifier: "cold-1", content: { data: { type: "score_alert", symbol: "FWRY" } } } },
     } as never);
     await expect(consumeColdStartTap()).resolves.toEqual({ symbol: "FWRY" });
     expect(N.clearLastNotificationResponseAsync).toHaveBeenCalled();
+  });
+
+  describe("tap replay", () => {
+    const response = (identifier: string, symbol = "COMI") =>
+      ({ notification: { request: { identifier, content: { data: { type: "score_alert", symbol } } } } }) as never;
+    const registerListener = () => {
+      const cb = jest.fn();
+      onAlertTap(cb);
+      const handler = N.addNotificationResponseReceivedListener.mock.calls.at(-1)![0] as unknown as (r: never) => void;
+      return { cb, handler };
+    };
+
+    it("a live tap is delivered once and clears the native last response", () => {
+      const { cb, handler } = registerListener();
+      handler(response("live-1"));
+      handler(response("live-1"));
+      expect(cb).toHaveBeenCalledTimes(1);
+      expect(cb).toHaveBeenCalledWith({ symbol: "COMI" });
+      expect(N.clearLastNotificationResponseAsync).toHaveBeenCalled();
+    });
+
+    it("a cold-start read skips a tap the listener already handled", async () => {
+      const { handler } = registerListener();
+      handler(response("same-2"));
+      N.getLastNotificationResponseAsync.mockResolvedValueOnce(response("same-2"));
+      await expect(consumeColdStartTap()).resolves.toBeNull();
+    });
+
+    it("a cold-start read does not replay the previous cold-start tap", async () => {
+      N.getLastNotificationResponseAsync.mockResolvedValue(response("cold-3", "ETEL"));
+      await expect(consumeColdStartTap()).resolves.toEqual({ symbol: "ETEL" });
+      await expect(consumeColdStartTap()).resolves.toBeNull();
+      N.getLastNotificationResponseAsync.mockResolvedValue(null);
+    });
+
+    it("a different notification is still delivered", async () => {
+      const { cb, handler } = registerListener();
+      handler(response("a-4"));
+      handler(response("b-4", "FWRY"));
+      expect(cb).toHaveBeenCalledTimes(2);
+    });
   });
 });

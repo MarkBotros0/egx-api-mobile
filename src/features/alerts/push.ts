@@ -73,8 +73,23 @@ export function parseTap(data: unknown): AlertTap | null {
   return { symbol: d.symbol };
 }
 
+/**
+ * The native "last response" survives sign-out and is set on every tap, so a
+ * remounted router (next login) would replay it. The identifier of the last
+ * notification we acted on lives here, outside React, and both paths skip it.
+ */
+let lastHandledId: string | null = null;
+function alreadyHandled(response: Notifications.NotificationResponse): boolean {
+  const id = response.notification.request.identifier;
+  if (id && id === lastHandledId) return true;
+  lastHandledId = id || null;
+  return false;
+}
+
 export function onAlertTap(cb: (tap: AlertTap) => void): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    if (alreadyHandled(response)) return;
+    Notifications.clearLastNotificationResponseAsync().catch(() => {});
     const tap = parseTap(response.notification.request.content.data);
     if (tap) cb(tap);
   });
@@ -85,5 +100,6 @@ export async function consumeColdStartTap(): Promise<AlertTap | null> {
   const response = await Notifications.getLastNotificationResponseAsync();
   if (!response) return null;
   await Notifications.clearLastNotificationResponseAsync();
+  if (alreadyHandled(response)) return null;
   return parseTap(response.notification.request.content.data);
 }
