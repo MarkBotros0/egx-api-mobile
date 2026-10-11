@@ -1219,7 +1219,7 @@ export const CURRICULUM: Module[] = [
         level: "core",
         definition: `This category compares a stock's annualized return to the Egyptian policy rate (~${T_BILL_RATE_PCT}%). A stock returning 12% annualized is losing you money vs holding risk-free cash. The category also penalises extreme volatility and wide ATR relative to price, both of which eat into real returns.`,
         whyItMatters:
-          "Egypt's T-bill rate is the HIGHEST risk-free rate of any major market. In the US, stocks returning 10% easily beat a 4% T-bill. In Egypt, a 20% stock return is actually a LOSS vs cash. Without this category, the composite would happily give 'Buy' signals to mediocre performers that aren't worth the risk.",
+          `Egypt's T-bill rate is the HIGHEST risk-free rate of any major market. In the US, stocks returning 10% easily beat a 4% T-bill. In Egypt, with cash paying about ${T_BILL_RATE_PCT}%, a stock returning ${T_BILL_RATE_PCT - 2}% a year has actually LOST ground to cash. Without this category, the composite would happily rate mediocre performers as strong when they aren't worth the risk.`,
         howToUse:
           "If Risk-Adjusted is red on a stock you own, seriously ask whether the thesis still justifies the risk over T-bills. If it's green, the stock is pulling its weight. Beginner tip: the 'Income / Defensive' preset weights this category heavily — great if your first priority is protecting capital.",
         visual: {
