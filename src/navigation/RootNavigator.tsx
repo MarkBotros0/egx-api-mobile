@@ -31,6 +31,7 @@ export function RootNavigator() {
         <Stack.Screen name="compare" options={{ ...header, title: "Compare" }} />
         <Stack.Screen name="dividends" options={{ ...header, title: "Dividends" }} />
         <Stack.Screen name="calibration" options={{ ...header, title: "Calibration" }} />
+        <Stack.Screen name="alerts" options={{ ...header, title: "Score alerts" }} />
         <Stack.Screen name="dev/charts" options={{ ...header, title: "Chart gallery" }} />
         <Stack.Protected guard={isAdmin}>
           <Stack.Screen name="admin" options={{ ...header, title: "Users" }} />

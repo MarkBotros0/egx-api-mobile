@@ -10,6 +10,7 @@ export const routes = {
   dividends: "/dividends",
   calibration: "/calibration",
   admin: "/admin",
+  alerts: "/alerts",
 } as const;
 
 export function stockHref(symbol: string): Href {

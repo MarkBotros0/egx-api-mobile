@@ -4,6 +4,7 @@ import { View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AdminHeaderButton } from "@/features/admin/AdminHeaderButton";
+import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
 import { COLORS } from "@/shared/theme";
 import { IconButton, type IoniconName } from "@/ui";
 
@@ -25,6 +26,7 @@ export default function TabsLayout() {
         headerShadowVisible: false,
         headerRight: () => (
           <View className="flex-row items-center gap-1 pr-2">
+            <AlertsHeaderButton />
             <AdminHeaderButton />
             <IconButton icon="log-out-outline" accessibilityLabel="Log out" onPress={() => void logout()} />
           </View>
