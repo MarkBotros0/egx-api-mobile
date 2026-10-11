@@ -1,8 +1,8 @@
 # Releasing EGX Analytics (mobile)
 
 Everything here is run by a person with the Expo / Apple / Google accounts. Nothing
-in this file has been executed by an agent beyond the preview build, if the user
-asked for it.
+in this file has been executed yet: the preview build and the device checklist are
+run by the user.
 
 ## 0. Once per machine / project
 
@@ -38,6 +38,10 @@ phone, download the APK, allow "install unknown apps" for the browser. Later run
 add `--non-interactive` (credentials then exist on EAS).
 
 ## 2. Development build (only if a native module outside Expo Go is ever added)
+
+The `development` EAS profile sets `developmentClient: true`, which requires
+`expo-dev-client`, and it is NOT installed yet (`npx expo install expo-dev-client`
+first).
 
 `npx expo install expo-dev-client`, commit, then
 `npx eas-cli@latest build --profile development --platform android`. Note that with

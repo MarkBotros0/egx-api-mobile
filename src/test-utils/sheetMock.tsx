@@ -4,10 +4,31 @@
  * dismiss). Use it with
  *   jest.mock("@/ui", () => ({ ...jest.requireActual("@/ui"), ...jest.requireActual("@/test-utils/sheetMock") }));
  */
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 
-export function Sheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: ReactNode }) {
+const dismissHandler: { current?: () => void } = {};
+/** Simulate the Modal finishing its dismiss animation (iOS onDismiss). */
+export function finishDismiss() {
+  dismissHandler.current?.();
+}
+
+export function Sheet({
+  visible,
+  onClose,
+  onDismiss,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onDismiss?: () => void;
+  children: ReactNode;
+}) {
+  // The real Modal fires onDismiss only after its dismiss animation, so
+  // tests drive it by hand: finishDismiss() calls the latest onDismiss prop.
+  useEffect(() => {
+    dismissHandler.current = onDismiss;
+  });
   return visible ? (
     <View>
       <Pressable accessibilityLabel="Dismiss sheet" onPress={onClose} />

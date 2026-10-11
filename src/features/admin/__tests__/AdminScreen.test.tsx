@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/auth/AuthProvider";
@@ -11,6 +12,7 @@ import {
   type ManagedUser,
 } from "@/shared/api";
 import { routes } from "@/lib/links";
+import { finishDismiss } from "@/test-utils/sheetMock";
 import { renderScreen } from "@/test-utils/renderScreen";
 import { AdminScreen } from "../AdminScreen";
 
@@ -84,7 +86,7 @@ describe("AdminScreen", () => {
     expect(screen.getByText("sara.b")).toBeTruthy();
   });
 
-  it("creates a user and reveals the generated password once", async () => {
+  const createOmar = async () => {
     (createUser as jest.Mock).mockResolvedValue({
       user: { ...SARA, id: "3", username: "omar" },
       generated_password: "Gen3rat3dPassw0rd",
@@ -94,12 +96,53 @@ describe("AdminScreen", () => {
     await fireEvent.press(screen.getByLabelText("Add user"));
     await fireEvent.changeText(screen.getByLabelText("Username"), "omar");
     await fireEvent.press(screen.getByText("Create user"));
-    await waitFor(() =>
-      expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy(),
-    );
-    expect(createUser).toHaveBeenCalledWith("omar", undefined);
-    expect(fetchUsers).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("https://egx.example")).toBeTruthy();
+  };
+
+  it("android: reveals the generated password immediately, once", async () => {
+    const os = Platform.OS;
+    Platform.OS = "android";
+    try {
+      await createOmar();
+      await waitFor(() => expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy());
+      expect(createUser).toHaveBeenCalledWith("omar", undefined);
+      expect(fetchUsers).toHaveBeenCalledTimes(2);
+      expect(screen.getByText("https://egx.example")).toBeTruthy();
+      expect(screen.queryByLabelText("Username")).toBeNull();
+      await fireEvent.press(screen.getByText("Done"));
+      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it("ios: holds the password until the create sheet has dismissed, then reveals it once", async () => {
+    const os = Platform.OS;
+    Platform.OS = "ios";
+    try {
+      await createOmar();
+      await waitFor(() => expect(fetchUsers).toHaveBeenCalledTimes(2));
+      // create sheet closed, but the second Modal must not open mid-dismiss
+      expect(screen.queryByLabelText("Username")).toBeNull();
+      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
+      await act(async () => finishDismiss());
+      expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy();
+      expect(screen.getByText("https://egx.example")).toBeTruthy();
+      // a second dismissal must not re-open it after it was closed
+      await fireEvent.press(screen.getByText("Done"));
+      await act(async () => finishDismiss());
+      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
+  it("ios: a dismiss with nothing pending reveals nothing", async () => {
+    await renderScreen(<AdminScreen />);
+    await waitFor(() => expect(screen.getByText("2 accounts.")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("Add user"));
+    await fireEvent.press(screen.getByLabelText("Dismiss sheet"));
+    await act(async () => finishDismiss());
+    expect(screen.queryByText("https://egx.example")).toBeNull();
   });
 
   it("ignores a dismiss while the create is in flight, so the one-time password is never dropped", async () => {
@@ -123,6 +166,7 @@ describe("AdminScreen", () => {
         generated_password: "Gen3rat3dPassw0rd",
       });
     });
+    await act(async () => finishDismiss());
     await waitFor(() =>
       expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy(),
     );

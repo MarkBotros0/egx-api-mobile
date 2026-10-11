@@ -52,7 +52,11 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
   const [showTop, setShowTop] = useState(false);
 
   const listRef = useRef<FlatList<LearnRow>>(null);
-  const controlsH = useRef(120);
+  // Measured height of the sticky controls, per mode: with the pills (no
+  // search) and without them (searching, ~54px shorter). Every jump clears the
+  // search, so it lands in the "pills" layout even if the last measure was
+  // taken while searching.
+  const controlsH = useRef({ pills: 120, search: 66 });
   const showTopRef = useRef(false);
 
   const results = useMemo(() => searchConcepts(ALL_CONCEPTS, query), [query]);
@@ -66,6 +70,18 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
   const [flashEnded, setFlashEnded] = useState(0);
   const scrolledN = useRef(0);
   const retries = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jumpRef = useRef(jump);
+  const rowsRef = useRef(rows);
+  useEffect(() => {
+    jumpRef.current = jump;
+    rowsRef.current = rows;
+  }, [jump, rows]);
+  const cancelRetry = useCallback(() => {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    retryTimer.current = null;
+  }, []);
+  useEffect(() => cancelRetry, [cancelRetry]);
 
   // Prop -> state, in render (React's documented pattern for "adjust state
   // when a prop changes"): no synchronous setState inside an effect.
@@ -97,10 +113,11 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
     if (index < 0) return;
     scrolledN.current = jump.n;
     retries.current = 0;
+    cancelRetry();
     requestAnimationFrame(() =>
-      listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewOffset: controlsH.current })
+      listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewOffset: controlsH.current.pills })
     );
-  }, [jump, rows, reduceMotion]);
+  }, [jump, rows, reduceMotion, cancelRetry]);
 
   // The flash ends after FLASH_MS (the ring also fades itself out).
   useEffect(() => {
@@ -124,21 +141,24 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
     (info: { index: number; averageItemLength: number }) => {
       if (retries.current >= 3) return;
       retries.current += 1;
+      cancelRetry();
       listRef.current?.scrollToOffset({
-        offset: Math.max(0, info.averageItemLength * info.index - controlsH.current),
+        offset: Math.max(0, info.averageItemLength * info.index - controlsH.current.pills),
         animated: false,
       });
-      setTimeout(
-        () =>
-          listRef.current?.scrollToIndex({
-            index: info.index,
-            animated: !reduceMotion,
-            viewOffset: controlsH.current,
-          }),
-        100
-      );
+      // Re-resolve the target when the timer fires: rows may have shrunk
+      // (search, collapse) or a newer jump started. scrollToIndex throws an
+      // invariant when the index is out of range.
+      retryTimer.current = setTimeout(() => {
+        retryTimer.current = null;
+        const target = jumpRef.current;
+        const current = rowsRef.current;
+        const index = target ? current.findIndex((r) => r.key === target.key) : -1;
+        if (index < 0 || index >= current.length) return;
+        listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewOffset: controlsH.current.pills });
+      }, 100);
     },
-    [reduceMotion]
+    [reduceMotion, cancelRetry]
   );
 
   const listExtra = useMemo(
@@ -183,7 +203,7 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
             onQuery={setQuery}
             count={results ? results.length : null}
             onHeight={(h) => {
-              controlsH.current = h;
+              controlsH.current[results ? "search" : "pills"] = h;
             }}
           />
         );

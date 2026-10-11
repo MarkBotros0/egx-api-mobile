@@ -117,7 +117,7 @@ describe("Learn deep links", () => {
     const index = indexOf(`m-${CURRICULUM[6].id}`);
     scrollSpy.mockClear();
     for (let i = 0; i < 5; i++) {
-      act(() => onFailed?.({ index, averageItemLength: 200, highestMeasuredFrameIndex: 3 }));
+      await act(async () => onFailed?.({ index, averageItemLength: 200, highestMeasuredFrameIndex: 3 }));
       await act(async () => {
         jest.advanceTimersByTime(150);
       });
@@ -125,5 +125,76 @@ describe("Learn deep links", () => {
     expect(offsetSpy).toHaveBeenCalledWith(expect.objectContaining({ animated: false }));
     expect(scrollSpy).toHaveBeenCalledTimes(3);
     expect(scrollSpy).toHaveBeenCalledWith(expect.objectContaining({ index }));
+  });
+
+  describe("onScrollToIndexFailed retry safety", () => {
+    async function mountAndGetFailed() {
+      let list: { props: { onScrollToIndexFailed?: (info: object) => void } } | undefined;
+      const render = FlatList.prototype.render;
+      const renderSpy = jest.spyOn(FlatList.prototype, "render").mockImplementation(function (this: typeof list) {
+        list = this;
+        return render.call(this as never);
+      });
+      const view = await renderScreen(<LearnScreen />);
+      const failed = () => list?.props.onScrollToIndexFailed;
+      return { view, failed, restore: () => renderSpy.mockRestore() };
+    }
+
+    it("drops a pending retry whose row vanished (rows shrank after a search)", async () => {
+      const { failed, restore } = await mountAndGetFailed();
+      await fireEvent.press(screen.getByLabelText(/^Module 7: /));
+      await flushFrames();
+      scrollSpy.mockClear();
+      await act(async () => failed()?.({ index: indexOf(`m-${CURRICULUM[6].id}`), averageItemLength: 200 }));
+      await fireEvent.changeText(screen.getByLabelText("Search all concepts"), "volume");
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      restore();
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
+
+    it("retries with the CURRENT index of the current jump, not the stale one", async () => {
+      const { failed, restore } = await mountAndGetFailed();
+      await fireEvent.press(screen.getByLabelText(/^Module 7: /));
+      await flushFrames();
+      await act(async () => failed()?.({ index: 9999, averageItemLength: 200 }));
+      scrollSpy.mockClear();
+      await act(async () => {
+        jest.advanceTimersByTime(150);
+      });
+      restore();
+      expect(scrollSpy).toHaveBeenCalledTimes(1);
+      expect(scrollSpy).toHaveBeenCalledWith(expect.objectContaining({ index: indexOf(`m-${CURRICULUM[6].id}`) }));
+    });
+
+    it("a newer jump cancels the older retry", async () => {
+      const { failed, restore } = await mountAndGetFailed();
+      await fireEvent.press(screen.getByLabelText(/^Module 7: /));
+      await flushFrames();
+      await act(async () => failed()?.({ index: indexOf(`m-${CURRICULUM[6].id}`), averageItemLength: 200 }));
+      scrollSpy.mockClear();
+      await fireEvent.press(screen.getByLabelText(/^Module 2: /));
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      restore();
+      const idx = scrollSpy.mock.calls.map((c) => c[0].index);
+      expect(idx).toEqual([indexOf(`m-${CURRICULUM[1].id}`)]);
+    });
+
+    it("does not retry after unmount", async () => {
+      const { view, failed, restore } = await mountAndGetFailed();
+      await fireEvent.press(screen.getByLabelText(/^Module 7: /));
+      await flushFrames();
+      await act(async () => failed()?.({ index: indexOf(`m-${CURRICULUM[6].id}`), averageItemLength: 200 }));
+      scrollSpy.mockClear();
+      await view.unmount();
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      restore();
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
   });
 });

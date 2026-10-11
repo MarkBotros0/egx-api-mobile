@@ -3,7 +3,7 @@
  * generates a strong one and returns it once. The switch exists for when the
  * admin has already agreed a password with the person.
  *
- * Mount it only while open (like the web modal), so a second "Add user"
+ * The parent remounts it (new `key`) on every open, so a second "Add user"
  * starts from an empty form rather than a stale "Creating…".
  */
 import { useState } from "react";
@@ -16,9 +16,14 @@ import { validateNewUser } from "./credentials";
 export function CreateUserSheet({
   onCreate,
   onClose,
+  visible = true,
+  onDismiss,
 }: {
   onCreate: (username: string, password?: string) => Promise<void>;
   onClose: () => void;
+  /** False while it animates out; the parent keeps it mounted until onDismiss. */
+  visible?: boolean;
+  onDismiss?: () => void;
 }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +48,7 @@ export function CreateUserSheet({
   };
 
   return (
-    <Sheet visible onClose={onClose} title="Add user">
+    <Sheet visible={visible} onClose={onClose} onDismiss={onDismiss} title="Add user">
       <View className="gap-4">
         <View>
           <TextField

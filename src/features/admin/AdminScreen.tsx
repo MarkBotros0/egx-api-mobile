@@ -5,7 +5,7 @@
  * AUTH_ADMINS on the server.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,7 +33,14 @@ export function AdminScreen() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  // Bumped on every open: a fresh form each time, while the sheet stays
+  // mounted (hidden) long enough to report its dismissal.
+  const [createKey, setCreateKey] = useState(0);
   const [revealed, setRevealed] = useState<Revealed | null>(null);
+  // A created user's password waiting for the create sheet to finish
+  // dismissing (iOS cannot present a second Modal mid-dismiss). Moved to
+  // `revealed` by onDismiss, so it is never dropped.
+  const [pending, setPending] = useState<Revealed | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   // True while createUser is in flight: closing the sheet then would drop the
   // generated password, which is shown exactly once.
@@ -64,12 +71,22 @@ export function AdminScreen() {
     creating.current = true;
     try {
       const res = await createUser(username, password);
+      const creds = res.generated_password
+        ? { username: res.user.username, password: res.generated_password }
+        : null;
+      if (creds && Platform.OS === "ios") setPending(creds);
+      else if (creds) setRevealed(creds);
       setShowCreate(false);
-      if (res.generated_password) setRevealed({ username: res.user.username, password: res.generated_password });
     } finally {
       creating.current = false;
     }
     await load();
+  };
+
+  const onCreateDismissed = () => {
+    if (!pending) return;
+    setRevealed(pending);
+    setPending(null);
   };
 
   const handleReset = async (u: ManagedUser) => {
@@ -185,7 +202,10 @@ export function AdminScreen() {
       {/* FAB, matching the portfolio screen. Offset by the bottom inset: this
           is a stack screen above the tabs, so there is no tab bar to clear. */}
       <Pressable
-        onPress={() => setShowCreate(true)}
+        onPress={() => {
+          setCreateKey((k) => k + 1);
+          setShowCreate(true);
+        }}
         accessibilityRole="button"
         accessibilityLabel="Add user"
         className="absolute right-4 h-14 w-14 items-center justify-center rounded-full bg-accent"
@@ -194,7 +214,15 @@ export function AdminScreen() {
         <Ionicons name="add" size={28} color={COLORS["charcoal-dark"]} />
       </Pressable>
 
-      {showCreate ? <CreateUserSheet onCreate={handleCreate} onClose={closeCreate} /> : null}
+      {createKey > 0 ? (
+        <CreateUserSheet
+          key={createKey}
+          visible={showCreate}
+          onCreate={handleCreate}
+          onClose={closeCreate}
+          onDismiss={onCreateDismissed}
+        />
+      ) : null}
       {revealed ? (
         <PasswordRevealSheet
           username={revealed.username}

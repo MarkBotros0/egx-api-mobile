@@ -8,15 +8,17 @@ import { IconButton } from "./IconButton";
 interface Props {
   visible: boolean;
   onClose: () => void;
+  /** Fires after the dismiss animation finishes (iOS only; RN Modal semantics). */
+  onDismiss?: () => void;
   title?: string;
   children: ReactNode;
 }
 
 /** Bottom sheet modal. Replaces the web's tooltips, popovers and mobile full-screen forms. */
-export function Sheet({ visible, onClose, title, children }: Props) {
+export function Sheet({ visible, onClose, onDismiss, title, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={onDismiss}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 justify-end">
         <Pressable accessibilityLabel="Dismiss" className="absolute inset-0 bg-black/60" onPress={onClose} />
         <View

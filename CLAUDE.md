@@ -69,7 +69,7 @@ Content is the SHARED `@/shared/curriculum` (web `lib/curriculum.ts`), diagrams 
 the web repo only.
 - Anchors are a public contract: 9 hyphenated module ids, underscore concept ids; never
   rename/drop (pinned by `sharedCurriculum.test.ts`). Deep link = `learnHref(id)` →
-  `/(tabs)/learn?concept=<id>`; module ids and title slugs work too; the param is cleared
+  `/learn?concept=<id>`; module ids and title slugs work too; the param is cleared
   after handling so the same link works twice.
 - Seeded `walk()`, never `Math.random()`; gradient ids from `useId()` (sanitised).
 - Cards rest VISIBLE; the only animation is the deep-link flash ring over an opaque card.

@@ -21,6 +21,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
+import { COLORS } from "@/shared/theme";
 import { pct } from "@/features/market/logic/format";
 import { AppText } from "@/ui";
 import {
@@ -287,7 +288,7 @@ export function MiniChart({
           return (
             <G key={`mk${i}`}>
               <Circle cx={px} cy={py} r={4.5} fill={m.color} opacity={0.25} />
-              <Circle cx={px} cy={py} r={2.5} fill={m.color} stroke="#0a0a0f" strokeWidth={1} />
+              <Circle cx={px} cy={py} r={2.5} fill={m.color} stroke={COLORS["charcoal-dark"]} strokeWidth={1} />
               {m.label ? (
                 <SvgText
                   x={Math.min(Math.max(px, 26), W - padR - 12)}
