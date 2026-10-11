@@ -8,6 +8,20 @@ import type { AuthUser } from "@/shared/auth";
 import { clearSession, currentToken, loadSession, saveSession } from "./tokenStore";
 
 /** A captive portal / half-open connection can leave /auth/me pending forever; stop waiting after this. */
+async function boundedUnregister(ms = 3000): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      unregisterOnLogout(),
+      new Promise<void>((r) => {
+        timer = setTimeout(r, ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const BOOT_AUTH_TIMEOUT_MS = 8000;
 
 // API setup happens at module load so the base URL and token getter are in
@@ -95,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     // Before clearSession: the DELETE needs the bearer token. Bounded, because
     // a dead network must not hold the user on a screen they asked to leave.
-    await Promise.race([unregisterOnLogout(), new Promise((r) => setTimeout(r, 3000))]);
+    await boundedUnregister();
     await clearSession();
     setUser(null);
     setError(null);

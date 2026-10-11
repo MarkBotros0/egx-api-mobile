@@ -41,6 +41,8 @@ async function storeSession(user = { id: "u1", username: "alice", role: "user" }
 }
 
 describe("AuthProvider", () => {
+  beforeEach(() => (unregisterOnLogout as jest.Mock).mockClear());
+
   it("is signed out with no stored token and makes no request", async () => {
     await renderAuth();
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("out"));
@@ -133,7 +135,6 @@ describe("AuthProvider", () => {
   });
 
   it("unregisters this device from push alerts on logout", async () => {
-    (unregisterOnLogout as jest.Mock).mockClear();
     await storeSession();
     mockFetch("GET", "/auth/me", { id: "u1", username: "alice", role: "user" });
     await renderAuth();
@@ -156,6 +157,24 @@ describe("AuthProvider", () => {
         await jest.advanceTimersByTimeAsync(BOOT_AUTH_TIMEOUT_MS);
       });
       expect(screen.getByTestId("state")).toHaveTextContent("in:alice:user");
+    });
+
+    it("signs out after 3s even if unregistering never settles", async () => {
+      (unregisterOnLogout as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
+      await storeSession();
+      mockFetch("GET", "/auth/me", { id: "u1", username: "alice", role: "user" });
+      await renderAuth();
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByTestId("state")).toHaveTextContent("in:alice:user");
+      await act(async () => {
+        const done = auth.logout();
+        await jest.advanceTimersByTimeAsync(3000);
+        await done;
+      });
+      expect(screen.getByTestId("state")).toHaveTextContent("out");
+      expect(await SecureStore.getItemAsync("egx.auth.token")).toBeNull();
     });
 
     it("ignores a late /auth/me reply after the user logged out", async () => {
