@@ -4,8 +4,13 @@ import { useEffect } from "react";
 import { Text } from "react-native";
 
 import { AuthProvider, BOOT_AUTH_TIMEOUT_MS, useAuth } from "@/auth/AuthProvider";
+import { unregisterOnLogout } from "@/features/alerts/registration";
 import { fetchTickers } from "@/shared/api";
 import { mockFetch, mockFetchHandler, mockFetchNetworkError } from "@/test-utils/fetch";
+
+jest.mock("@/features/alerts/registration", () => ({
+  unregisterOnLogout: jest.fn().mockResolvedValue(undefined),
+}));
 
 let auth: ReturnType<typeof useAuth>;
 
@@ -125,6 +130,17 @@ describe("AuthProvider", () => {
     await act(() => auth.logout());
     expect(screen.getByTestId("state")).toHaveTextContent("out");
     expect(await SecureStore.getItemAsync("egx.auth.user")).toBeNull();
+  });
+
+  it("unregisters this device from push alerts on logout", async () => {
+    (unregisterOnLogout as jest.Mock).mockClear();
+    await storeSession();
+    mockFetch("GET", "/auth/me", { id: "u1", username: "alice", role: "user" });
+    await renderAuth();
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("in:alice:user"));
+    await act(() => auth.logout());
+    expect(unregisterOnLogout).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("state")).toHaveTextContent("out");
   });
 
   describe("boot timeout", () => {

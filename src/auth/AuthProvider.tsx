@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
+import { unregisterOnLogout } from "@/features/alerts/registration";
 import { setupApi } from "@/lib/apiSetup";
 import { fetchMe, LoginError, loginRequest } from "@/shared/api";
 import type { AuthUser } from "@/shared/auth";
@@ -92,6 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Before clearSession: the DELETE needs the bearer token. Bounded, because
+    // a dead network must not hold the user on a screen they asked to leave.
+    await Promise.race([unregisterOnLogout(), new Promise((r) => setTimeout(r, 3000))]);
     await clearSession();
     setUser(null);
     setError(null);
