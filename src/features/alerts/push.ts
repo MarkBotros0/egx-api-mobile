@@ -1,0 +1,89 @@
+/**
+ * The ONLY file that touches expo-notifications / expo-device. Everything else
+ * in alerts imports from here, so tests mock one module and the rest of the
+ * feature stays plain TypeScript.
+ *
+ * Remote push needs an installed build: Expo Go cannot receive it (Android
+ * since SDK 53). isExpoGo() lets the screen say so instead of failing.
+ */
+import Constants, { ExecutionEnvironment } from "expo-constants";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+
+export const ALERT_CHANNEL_ID = "score-alerts";
+
+export type AlertTap = { symbol: string };
+
+export function isExpoGo(): boolean {
+  return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+}
+
+let configured = false;
+export function configureNotifications(): void {
+  if (configured) return;
+  configured = true;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
+export async function ensureChannel(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync(ALERT_CHANNEL_ID, {
+    name: "Score alerts",
+    importance: Notifications.AndroidImportance.DEFAULT,
+  });
+}
+
+export async function permissionStatus(): Promise<"granted" | "denied" | "undetermined"> {
+  const { status } = await Notifications.getPermissionsAsync();
+  return status === "granted" ? "granted" : status === "denied" ? "denied" : "undetermined";
+}
+
+/** Android 13+ shows no prompt until a channel exists, so the channel comes first. */
+export async function requestPermission(): Promise<"granted" | "denied"> {
+  await ensureChannel();
+  if ((await permissionStatus()) === "granted") return "granted";
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status === "granted" ? "granted" : "denied";
+}
+
+export async function getPushToken(): Promise<string | null> {
+  if (!Device.isDevice) return null;
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  if (!projectId) return null;
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+  return data;
+}
+
+export function devicePlatform(): "ios" | "android" {
+  return Platform.OS === "ios" ? "ios" : "android";
+}
+
+export function parseTap(data: unknown): AlertTap | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as { type?: unknown; symbol?: unknown };
+  if (d.type !== "score_alert" || typeof d.symbol !== "string" || !d.symbol) return null;
+  return { symbol: d.symbol };
+}
+
+export function onAlertTap(cb: (tap: AlertTap) => void): () => void {
+  const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const tap = parseTap(response.notification.request.content.data);
+    if (tap) cb(tap);
+  });
+  return () => sub.remove();
+}
+
+export async function consumeColdStartTap(): Promise<AlertTap | null> {
+  const response = await Notifications.getLastNotificationResponseAsync();
+  if (!response) return null;
+  await Notifications.clearLastNotificationResponseAsync();
+  return parseTap(response.notification.request.content.data);
+}

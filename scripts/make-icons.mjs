@@ -7,6 +7,7 @@
  *  icon.png                     1024, full-bleed on #0a0a0f (iOS masks corners; no alpha allowed)
  *  android-icon-foreground.png  1024, transparent, mark at 55% to sit in the adaptive safe circle
  *  android-icon-monochrome.png  1024, transparent, white silhouette for Android 13+ themed icons
+ *  notification-icon.png        96, transparent, white silhouette for the Android status bar
  *  splash-icon.png              1024, transparent mark (the splash plugin paints #0a0a0f behind it)
  *  favicon.png                  48, for completeness (web target unused)
  */
@@ -46,5 +47,7 @@ function render(name, source, size) {
 render("icon.png", wrap(body, { background: BG }), 1024);
 render("android-icon-foreground.png", wrap(body, { scale: 0.55 }), 1024);
 render("android-icon-monochrome.png", wrap(mono, { scale: 0.55 }), 1024);
+// Android status-bar notification icon: 96x96, all-white silhouette on transparent.
+render("notification-icon.png", wrap(mono, { scale: 0.8 }), 96);
 render("splash-icon.png", wrap(body), 1024);
 render("favicon.png", wrap(body, { background: BG }), 48);

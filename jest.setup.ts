@@ -6,6 +6,8 @@ import { __resetSecureStore } from "./src/test-utils/secureStoreMock";
 process.env.EXPO_PUBLIC_API_BASE_URL = "https://api.test/api";
 
 jest.mock("expo-secure-store", () => require("./src/test-utils/secureStoreMock"));
+jest.mock("expo-notifications", () => require("./src/test-utils/notificationsMock"));
+jest.mock("expo-device", () => ({ isDevice: true }));
 
 beforeEach(() => {
   installFetchMock();
