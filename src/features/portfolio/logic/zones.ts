@@ -3,6 +3,7 @@
  * nothing disqualified the zone and nothing confirmed it — so it must not
  * borrow gain-green or loss-red. Both entry AND exit go neutral at low.
  */
+import { isStrongZone } from "@/lib/zones";
 import type { EntryExit, ZoneConfidence } from "@/shared/types";
 
 export interface ZonePill {
@@ -22,12 +23,8 @@ export function zonePill(entryExit: EntryExit | null | undefined): ZonePill | nu
   return null;
 }
 
-export function isStrong(confidence: ZoneConfidence | null | undefined): boolean {
-  return confidence === "high" || confidence === "medium";
-}
-
 export function zoneTone(pill: ZonePill): "neutral" | "gain" | "loss" {
-  return isStrong(pill.confidence) ? pill.direction : "neutral";
+  return isStrongZone(pill.confidence) ? pill.direction : "neutral";
 }
 
 export function zoneLabel(pill: ZonePill): string {

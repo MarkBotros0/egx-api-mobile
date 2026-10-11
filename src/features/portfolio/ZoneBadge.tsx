@@ -3,7 +3,8 @@ import { Pressable, View } from "react-native";
 import { learnHref } from "@/lib/links";
 import type { EntryExit } from "@/shared/types";
 import { AppText, Pill } from "@/ui";
-import { isStrong, zoneLabel, zonePill, zoneTone } from "@/features/portfolio/logic/zones";
+import { isStrongZone } from "@/lib/zones";
+import { zoneLabel, zonePill, zoneTone } from "@/features/portfolio/logic/zones";
 
 export function ZoneBadge({ entryExit }: { entryExit: EntryExit | null | undefined }) {
   const pill = zonePill(entryExit);
@@ -17,8 +18,8 @@ export function ZoneDetail({ entryExit }: { entryExit: EntryExit | null | undefi
   if (!entryExit) return null;
   const { entry_zone: entry, exit_zone: exit } = entryExit;
   if (!entry.active && !exit.active) return null;
-  const entryStrong = isStrong(entry.confidence);
-  const exitStrong = isStrong(exit.confidence);
+  const entryStrong = isStrongZone(entry.confidence);
+  const exitStrong = isStrongZone(exit.confidence);
 
   return (
     <View className="mt-3 gap-2 border-t border-white/5 pt-3">

@@ -5,7 +5,8 @@ import { useTickers } from "@/providers/tickers";
 import { fetchComparison } from "@/shared/api";
 import { MAX_COMPARE_SYMBOLS } from "@/shared/constants";
 import type { CompareResponse } from "@/shared/types";
-import { AppText, Button, ChartSkeleton, EmptyState, IconButton, LearnTerm, Pill, PillRow, Screen, TextField } from "@/ui";
+import { todayIso } from "@/lib/dates";
+import { AppText, Button, ChartSkeleton, DateField, EmptyState, IconButton, LearnTerm, Pill, PillRow, Screen, TextField } from "@/ui";
 import {
   addCompareSymbol,
   buildCompareSeries,
@@ -100,30 +101,9 @@ export function CompareScreen() {
             </View>
           )}
 
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <TextField
-                label="From"
-                testID="compare-start"
-                placeholder="YYYY-MM-DD"
-                value={start}
-                onChangeText={setStart}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </View>
-            <View className="flex-1">
-              <TextField
-                label="To"
-                testID="compare-end"
-                placeholder="YYYY-MM-DD"
-                value={end}
-                onChangeText={setEnd}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
-            </View>
-          </View>
+          {/* Stacked, not side by side: the iOS calendar opens inline under its field. */}
+          <DateField label="From" value={start} onChange={setStart} maximumDate={end} />
+          <DateField label="To" value={end} onChange={setEnd} minimumDate={start} maximumDate={todayIso()} />
           {rangeError && <AppText className="text-xs text-loss">{rangeError}</AppText>}
           <PillRow>
             {RANGE_PRESETS.map((p) => (

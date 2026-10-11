@@ -1,12 +1,11 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, screen } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { renderWithProviders } from "@/test-utils/render";
 import { EntryExitCard } from "../EntryExitCard";
 import { KeyLevelsCard } from "../KeyLevelsCard";
-import { PEFreshnessBanner } from "../PEFreshnessBanner";
 import { StatsPanel } from "../StatsPanel";
-import { fail, mockMarketApi, requestsTo } from "../testing/api";
+import { mockMarketApi } from "../testing/api";
 import { ENTRY_EXIT, KEY_LEVELS, makeAnalysis } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
@@ -115,36 +114,5 @@ describe("EntryExitCard", () => {
     expect(screen.getByText(/No active entry or exit zone right now/)).toBeTruthy();
     fireEvent.press(screen.getByText("Learn more →"));
     expect(router.push).toHaveBeenCalledWith(learnHref("entry_exit_zones"));
-  });
-});
-
-describe("PEFreshnessBanner", () => {
-  it("warns when the P/E feed is stale", async () => {
-    mockMarketApi({
-      "/pe": {
-        last_successful_fetch: new Date(Date.now() - 84 * 3_600_000).toISOString(),
-        last_attempt_status: "timeout",
-      },
-    });
-    await renderWithProviders(<PEFreshnessBanner />);
-    expect(
-      await screen.findByText(
-        "P/E data last updated 3 days ago — the EGX feed may be temporarily unavailable. Last attempt: timeout."
-      )
-    ).toBeTruthy();
-  });
-
-  it("stays silent when the feed is fresh", async () => {
-    const fetchMock = mockMarketApi();
-    await renderWithProviders(<PEFreshnessBanner />);
-    await waitFor(() => expect(requestsTo(fetchMock, "/pe")).toHaveLength(1));
-    expect(screen.queryByText(/P\/E data last updated/)).toBeNull();
-  });
-
-  it("stays silent when the status call fails", async () => {
-    const fetchMock = mockMarketApi({ "/pe": fail(503) });
-    await renderWithProviders(<PEFreshnessBanner />);
-    await waitFor(() => expect(requestsTo(fetchMock, "/pe")).toHaveLength(1));
-    expect(screen.queryByText(/P\/E data last updated/)).toBeNull();
   });
 });

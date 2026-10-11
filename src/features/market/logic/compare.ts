@@ -5,7 +5,7 @@ import {
   MIN_COMPARE_SYMBOLS,
 } from "@/shared/constants";
 import type { CompareResponse, Ticker } from "@/shared/types";
-import { localDateKey } from "./marketClock";
+import { dateToIso } from "@/lib/dates";
 
 /** Strict YYYY-MM-DD that names a real calendar day (the web used <input type="date">). */
 export function isIsoDate(s: string): boolean {
@@ -25,7 +25,7 @@ export function rangeEndingAt(now: Date, months: number): { start: string; end: 
   d.setDate(1);
   d.setMonth(d.getMonth() - months);
   d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
-  return { start: localDateKey(d), end: localDateKey(now) };
+  return { start: dateToIso(d), end: dateToIso(now) };
 }
 
 export function defaultCompareRange(now: Date) {

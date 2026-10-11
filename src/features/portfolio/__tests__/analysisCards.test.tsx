@@ -1,29 +1,9 @@
-import { screen, waitFor } from "@testing-library/react-native";
+import { screen } from "@testing-library/react-native";
 import { renderWithProviders } from "@/test-utils/render";
-import { mockPortfolioApi, sent } from "@/features/portfolio/testing/api";
 import { macroData, metrics } from "@/features/portfolio/testing/fixtures";
 import { MacroCard } from "../MacroCard";
-import { PEFreshnessBanner } from "../PEFreshnessBanner";
 import { PortfolioSummary } from "../PortfolioSummary";
 import { RiskDashboard } from "../RiskDashboard";
-
-describe("PEFreshnessBanner", () => {
-  it("warns when the P/E feed is days old", async () => {
-    mockPortfolioApi({
-      pe: { last_successful_fetch: new Date(Date.now() - 3 * 24 * 36e5 - 60_000).toISOString(), last_attempt_status: "timeout" },
-    });
-    await renderWithProviders(<PEFreshnessBanner />);
-    expect(await screen.findByText(/P\/E data last updated 3 days ago/)).toBeTruthy();
-    expect(screen.getByText(/Last attempt: timeout\./)).toBeTruthy();
-  });
-
-  it("renders nothing for a fresh feed", async () => {
-    const fetchMock = mockPortfolioApi();
-    await renderWithProviders(<PEFreshnessBanner />);
-    await waitFor(() => expect(sent(fetchMock, "GET", "/pe")).toHaveLength(1));
-    expect(screen.queryByText(/P\/E data last updated/)).toBeNull();
-  });
-});
 
 describe("PortfolioSummary", () => {
   it("shows totals, signed P&L and the average score", async () => {

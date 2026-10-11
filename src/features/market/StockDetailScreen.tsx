@@ -23,7 +23,7 @@ import {
   type ChartInterval,
   type OverlayState,
 } from "./logic/stockDetail";
-import { PEFreshnessBanner } from "./PEFreshnessBanner";
+import { PEFreshnessBanner } from "@/features/common/PEFreshnessBanner";
 import { RefreshableScroll } from "./RefreshableScroll";
 import { RiskGradeCard } from "./RiskGradeCard";
 import { StatsPanel } from "./StatsPanel";

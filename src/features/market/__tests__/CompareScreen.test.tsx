@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { setPickedDate } from "@/test-utils/datePickerMock";
 import { renderWithProviders } from "@/test-utils/render";
 import { CompareScreen } from "../CompareScreen";
 import { defaultCompareRange, rangeEndingAt } from "../logic/compare";
@@ -8,6 +9,8 @@ import { COMPARE } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
+
+jest.mock("@react-native-community/datetimepicker", () => jest.requireActual("@/test-utils/datePickerMock"));
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -56,16 +59,28 @@ it("needs at least two stocks", async () => {
   expect(screen.getByText("Select at least 2 stocks and tap Compare to see results.")).toBeTruthy();
 });
 
-it("does not request with an invalid range", async () => {
+it("sends the picked start date", async () => {
   const fetchMock = await renderCompare();
   await addSymbol("comi", "COMI");
   await addSymbol("talaat", "TMGH");
-  await fireEvent.changeText(screen.getByTestId("compare-start"), "2026-1");
-  expect(screen.getByText("Start date must be YYYY-MM-DD")).toBeTruthy();
+  const range = defaultCompareRange(new Date());
+  await fireEvent.press(screen.getByLabelText(`From: ${range.start}`));
+  setPickedDate(new Date(2026, 0, 5, 23, 30));
+  await fireEvent.press(screen.getByText("set date"));
+  expect(screen.getByLabelText("From: 2026-01-05")).toBeTruthy();
   await fireEvent.press(screen.getByText("Compare"));
-  await fireEvent.changeText(screen.getByTestId("compare-start"), "2026-02-30");
-  await fireEvent.press(screen.getByText("Compare"));
-  await fireEvent.changeText(screen.getByTestId("compare-start"), "2099-01-01");
+  const [req] = requestsTo(fetchMock, "/compare");
+  expect(req.searchParams.get("start")).toBe("2026-01-05");
+  expect(req.searchParams.get("end")).toBe(range.end);
+});
+
+it("does not request when the start is after the end", async () => {
+  const fetchMock = await renderCompare();
+  await addSymbol("comi", "COMI");
+  await addSymbol("talaat", "TMGH");
+  await fireEvent.press(screen.getByLabelText(`From: ${defaultCompareRange(new Date()).start}`));
+  setPickedDate(new Date(2099, 0, 1));
+  await fireEvent.press(screen.getByText("set date"));
   expect(screen.getByText("Start date must be on or before the end date")).toBeTruthy();
   await fireEvent.press(screen.getByText("Compare"));
   expect(requestsTo(fetchMock, "/compare")).toHaveLength(0);
@@ -74,7 +89,9 @@ it("does not request with an invalid range", async () => {
 it("fills the range from a preset", async () => {
   await renderCompare();
   await fireEvent.press(screen.getByText("1Y"));
-  expect(screen.getByTestId("compare-start").props.value).toBe(rangeEndingAt(new Date(), 12).start);
+  const r = rangeEndingAt(new Date(), 12);
+  expect(screen.getByLabelText(`From: ${r.start}`)).toBeTruthy();
+  expect(screen.getByLabelText(`To: ${r.end}`)).toBeTruthy();
 });
 
 it("removes a chip and hides the input at five stocks", async () => {

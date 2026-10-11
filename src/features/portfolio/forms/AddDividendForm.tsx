@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { AppText, Button, Pill, PillRow, TextField } from "@/ui";
+import { AppText, Button, DateField, Pill, PillRow, TextField } from "@/ui";
 import {
   buildDividendPayload,
   perShareAmount,
@@ -8,8 +8,7 @@ import {
   type DividendPayload,
   type DividendSymbolOption,
 } from "@/features/portfolio/logic/dividend";
-import { todayIso } from "@/features/portfolio/logic/format";
-import { DateField } from "./DateField";
+import { todayIso } from "@/lib/dates";
 import { FormError } from "./FormError";
 import { FormScroll } from "./FormScroll";
 import { useSingleFlight } from "./useSingleFlight";
