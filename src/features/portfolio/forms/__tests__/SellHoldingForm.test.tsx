@@ -1,23 +1,11 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { setPickedDate } from "@/test-utils/datePickerMock";
 import { renderWithProviders } from "@/test-utils/render";
 import { TWO_LOT_ROWS } from "@/features/portfolio/testing/fixtures";
 import { sellPositionFor } from "@/features/portfolio/logic/sale";
 import { SellHoldingForm } from "../SellHoldingForm";
 
-let mockPickedDate = new Date(2026, 2, 1);
-jest.mock("@react-native-community/datetimepicker", () => {
-  const React = jest.requireActual<typeof import("react")>("react");
-  const { Pressable, Text } = jest.requireActual<typeof import("react-native")>("react-native");
-  return {
-    __esModule: true,
-    default: (props: { onChange: (e: { type: string }, d?: Date) => void }) =>
-      React.createElement(
-        Pressable,
-        { onPress: () => props.onChange({ type: "set" }, mockPickedDate) },
-        React.createElement(Text, null, "set date"),
-      ),
-  };
-});
+jest.mock("@react-native-community/datetimepicker", () => jest.requireActual("@/test-utils/datePickerMock"));
 
 const position = sellPositionFor(TWO_LOT_ROWS, "COMI")!;
 
@@ -67,7 +55,7 @@ describe("SellHoldingForm", () => {
     await fireEvent.changeText(screen.getByPlaceholderText("Shares to sell"), "150");
     await fireEvent.changeText(screen.getByPlaceholderText("95.00"), "52");
     await fireEvent.press(screen.getByLabelText("Sell Date: 2026-10-10"));
-    mockPickedDate = new Date(2026, 2, 1);
+    setPickedDate(new Date(2026, 2, 1));
     await fireEvent.press(screen.getByText("set date"));
     expect(screen.queryByText(/This sale reaches a purchase made on/)).toBeNull();
 
