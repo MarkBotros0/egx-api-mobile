@@ -7,25 +7,46 @@ import { useCallback, useEffect, useState } from "react";
 import { Switch, View } from "react-native";
 
 import { V } from "@/shared/learnVisuals";
-import { AppText, Card, CardSkeleton, ErrorState, Screen, SegmentedControl } from "@/ui";
+import {
+  AppText,
+  Card,
+  CardSkeleton,
+  ErrorState,
+  Screen,
+  SegmentedControl,
+} from "@/ui";
 
 import { fetchAlertPreferences, saveAlertPreferences } from "./api";
-import { type AlertPreferences, DEFAULT_PREFERENCES, SCOPE_OPTIONS, THRESHOLD_CHOICES, type Threshold, thresholdLabel } from "./options";
+import {
+  type AlertPreferences,
+  DEFAULT_PREFERENCES,
+  SCOPE_OPTIONS,
+  THRESHOLD_CHOICES,
+  type Threshold,
+  thresholdLabel,
+} from "./options";
 import { isExpoGo } from "./push";
 import { enableAlertsOnDevice, type EnableResult } from "./registration";
 
-const EXPO_GO = "Alerts need the installed app build. They can't be delivered in Expo Go.";
+const EXPO_GO =
+  "Alerts need the installed app build. They can't be delivered in Expo Go.";
 const REASONS: Record<Exclude<EnableResult, { ok: true }>["reason"], string> = {
-  denied: "Notifications are blocked for Borsa Compass. Allow them in your phone's Settings, then try again.",
+  denied:
+    "Notifications are blocked for Borsa Compass. Allow them in your phone's Settings, then try again.",
   unavailable: "This device can't receive push notifications.",
   network: "Couldn't reach the server. Try again.",
   "expo-go": EXPO_GO,
 };
 const SAVE_FAILED = "Couldn't save. Try again.";
 
-const thresholdOptions = THRESHOLD_CHOICES.map((t) => ({ value: t === null ? "off" : String(t), label: thresholdLabel(t) }));
-const toThreshold = (v: string): Threshold => (v === "off" ? null : (Number(v) as Threshold));
-const fromThreshold = (t: Threshold): string => (t === null ? "off" : String(t));
+const thresholdOptions = THRESHOLD_CHOICES.map((t) => ({
+  value: t === null ? "off" : String(t),
+  label: thresholdLabel(t),
+}));
+const toThreshold = (v: string): Threshold =>
+  v === "off" ? null : (Number(v) as Threshold);
+const fromThreshold = (t: Threshold): string =>
+  t === null ? "off" : String(t);
 
 export function AlertsScreen() {
   const expoGo = isExpoGo();
@@ -33,14 +54,13 @@ export function AlertsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let live = true;
     fetchAlertPreferences().then(
       (p) => live && setPrefs(p),
-      () => live && setLoadError("Couldn't load your alert settings.")
+      () => live && setLoadError("Couldn't load your alert settings."),
     );
     return () => {
       live = false;
@@ -59,7 +79,7 @@ export function AlertsScreen() {
         setNotice(SAVE_FAILED);
       }
     },
-    [prefs]
+    [prefs],
   );
 
   const toggle = useCallback(
@@ -79,17 +99,20 @@ export function AlertsScreen() {
         setBusy(false);
       }
     },
-    [prefs, busy, save]
+    [prefs, busy, save],
   );
 
   if (loadError) {
     return (
       <Screen edges={[]}>
         <View className="pt-4">
-          <ErrorState message={loadError} onRetry={() => {
+          <ErrorState
+            message={loadError}
+            onRetry={() => {
               setLoadError(null);
               setAttempt((n) => n + 1);
-            }} />
+            }}
+          />
         </View>
       </Screen>
     );
@@ -117,8 +140,12 @@ export function AlertsScreen() {
         <Card>
           <View className="min-h-[44px] flex-row items-center justify-between gap-3">
             <View className="flex-1">
-              <AppText className="font-sans-semibold text-white">Score alerts</AppText>
-              <AppText className="text-xs text-white/50">A push when a score moves a lot in one session.</AppText>
+              <AppText className="font-sans-semibold text-white">
+                Score alerts
+              </AppText>
+              <AppText className="text-xs text-white/50">
+                A push when a score moves a lot in one session.
+              </AppText>
             </View>
             <Switch
               accessibilityLabel="Score alerts"
@@ -128,38 +155,62 @@ export function AlertsScreen() {
               trackColor={{ true: V.accent, false: "rgba(255,255,255,0.15)" }}
             />
           </View>
-          {notice ? <AppText className="mt-2 text-xs text-loss">{notice}</AppText> : null}
+          {notice ? (
+            <AppText className="mt-2 text-xs text-loss">{notice}</AppText>
+          ) : null}
         </Card>
 
-        <View className={`gap-4 ${controlsOff ? "opacity-50" : ""}`} style={{ pointerEvents: controlsOff ? "none" : "auto" }}>
+        <View
+          className={`gap-4 ${controlsOff ? "opacity-50" : ""}`}
+          style={{ pointerEvents: controlsOff ? "none" : "auto" }}
+        >
           <View className="gap-2">
             <AppText className="text-sm text-white/70">Which stocks</AppText>
-            <SegmentedControl options={SCOPE_OPTIONS} value={prefs.scope} onChange={(scope) => void save({ ...prefs, scope })} />
-          </View>
-          <View className="gap-2">
-            <AppText className="text-sm text-white/70">Notify when a score rises by (points)</AppText>
             <SegmentedControl
-              accessibilityLabelPrefix="Rises by"
-              options={thresholdOptions}
-              value={fromThreshold(prefs.rise_threshold)}
-              onChange={(v) => void save({ ...prefs, rise_threshold: toThreshold(v) })}
+              disabled={controlsOff}
+              options={SCOPE_OPTIONS}
+              value={prefs.scope}
+              onChange={(scope) => void save({ ...prefs, scope })}
             />
           </View>
           <View className="gap-2">
-            <AppText className="text-sm text-white/70">Notify when a score falls by (points)</AppText>
+            <AppText className="text-sm text-white/70">
+              Notify when a score rises by (points)
+            </AppText>
             <SegmentedControl
+              disabled={controlsOff}
+              accessibilityLabelPrefix="Rises by"
+              options={thresholdOptions}
+              value={fromThreshold(prefs.rise_threshold)}
+              onChange={(v) =>
+                void save({ ...prefs, rise_threshold: toThreshold(v) })
+              }
+            />
+          </View>
+          <View className="gap-2">
+            <AppText className="text-sm text-white/70">
+              Notify when a score falls by (points)
+            </AppText>
+            <SegmentedControl
+              disabled={controlsOff}
               accessibilityLabelPrefix="Falls by"
               options={thresholdOptions}
               value={fromThreshold(prefs.fall_threshold)}
-              onChange={(v) => void save({ ...prefs, fall_threshold: toThreshold(v) })}
+              onChange={(v) =>
+                void save({ ...prefs, fall_threshold: toThreshold(v) })
+              }
             />
           </View>
         </View>
 
         <View className="gap-2">
-          <AppText className="text-xs text-white/50">Scores move with price and volume. A change in score is information, not advice.</AppText>
+          <AppText className="text-xs text-white/50">
+            Scores move with price and volume. A change in score is information,
+            not advice.
+          </AppText>
           <AppText className="text-xs text-white/40">
-            Points are on the 0–100 score. Alerts arrive while the market is open, at most once per stock and direction per day, and never
+            Points are on the 0–100 score. Alerts arrive while the market is
+            open, at most once per stock and direction per day, and never
             between 22:00 and 08:00.
           </AppText>
         </View>

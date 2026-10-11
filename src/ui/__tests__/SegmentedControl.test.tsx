@@ -19,3 +19,11 @@ it("uses the bare label without a prefix", async () => {
   await render(<SegmentedControl options={OPTIONS} value="a" onChange={() => {}} />);
   expect(screen.getByLabelText("5")).toBeTruthy();
 });
+
+it("announces disabled segments and ignores presses", async () => {
+  const onChange = jest.fn();
+  await render(<SegmentedControl options={OPTIONS} value="a" onChange={onChange} disabled />);
+  expect(screen.getByLabelText("5").props.accessibilityState.disabled).toBe(true);
+  await fireEvent.press(screen.getByLabelText("5"));
+  expect(onChange).not.toHaveBeenCalled();
+});

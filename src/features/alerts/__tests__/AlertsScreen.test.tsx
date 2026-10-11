@@ -31,7 +31,7 @@ it("turning alerts on asks the device, then saves enabled", async () => {
   mockFetch("PUT", "/alerts/preferences", ON);
   R.enableAlertsOnDevice.mockResolvedValue({ ok: true });
   await renderScreen(<AlertsScreen />);
-  fireEvent(await screen.findByLabelText("Score alerts"), "valueChange", true);
+  await fireEvent(await screen.findByLabelText("Score alerts"), "valueChange", true);
   await waitFor(() => expect(puts()).toHaveLength(1));
   expect(puts()[0].body).toEqual(ON);
 });
@@ -40,7 +40,7 @@ it("a denied permission leaves alerts off, saves nothing, and says how to fix it
   mockFetch("GET", "/alerts/preferences", OFF);
   R.enableAlertsOnDevice.mockResolvedValue({ ok: false, reason: "denied" });
   await renderScreen(<AlertsScreen />);
-  fireEvent(await screen.findByLabelText("Score alerts"), "valueChange", true);
+  await fireEvent(await screen.findByLabelText("Score alerts"), "valueChange", true);
   expect(await screen.findByText(/blocked for Borsa Compass/)).toBeTruthy();
   expect(screen.getByLabelText("Score alerts").props.value).toBe(false);
   expect(puts()).toHaveLength(0);
@@ -50,7 +50,7 @@ it("changing the rise threshold saves it", async () => {
   mockFetch("GET", "/alerts/preferences", ON);
   mockFetch("PUT", "/alerts/preferences", { ...ON, rise_threshold: 5 });
   await renderScreen(<AlertsScreen />);
-  fireEvent.press(await screen.findByLabelText("Rises by 5"));
+  await fireEvent.press(await screen.findByLabelText("Rises by 5"));
   await waitFor(() => expect(puts()[0]?.body).toEqual({ ...ON, rise_threshold: 5 }));
 });
 
@@ -58,7 +58,7 @@ it("turning a direction off sends null", async () => {
   mockFetch("GET", "/alerts/preferences", ON);
   mockFetch("PUT", "/alerts/preferences", { ...ON, fall_threshold: null });
   await renderScreen(<AlertsScreen />);
-  fireEvent.press(await screen.findByLabelText("Falls by Off"));
+  await fireEvent.press(await screen.findByLabelText("Falls by Off"));
   await waitFor(() => expect(puts()[0]?.body).toEqual({ ...ON, fall_threshold: null }));
 });
 
@@ -66,7 +66,7 @@ it("a failed save reverts the control", async () => {
   mockFetch("GET", "/alerts/preferences", ON);
   mockFetch("PUT", "/alerts/preferences", { detail: "boom" }, 500);
   await renderScreen(<AlertsScreen />);
-  fireEvent.press(await screen.findByLabelText("All stocks"));
+  await fireEvent.press(await screen.findByLabelText("All stocks"));
   expect(await screen.findByText("Couldn't save. Try again.")).toBeTruthy();
   expect(screen.getByLabelText("Watchlist & holdings").props.accessibilityState.selected).toBe(true);
 });

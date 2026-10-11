@@ -8,9 +8,11 @@ interface Props<T extends string> {
   onChange: (value: T) => void;
   /** Makes labels distinct when several controls share option names ("Rises by 5"). */
   accessibilityLabelPrefix?: string;
+  /** Announced as disabled and ignores presses. */
+  disabled?: boolean;
 }
 
-export function SegmentedControl<T extends string>({ options, value, onChange, accessibilityLabelPrefix }: Props<T>) {
+export function SegmentedControl<T extends string>({ options, value, onChange, accessibilityLabelPrefix, disabled }: Props<T>) {
   return (
     <View className="flex-row rounded-lg border border-white/10 bg-white/5 p-0.5">
       {options.map((o) => {
@@ -20,7 +22,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
             key={o.value}
             accessibilityRole="button"
             accessibilityLabel={accessibilityLabelPrefix ? `${accessibilityLabelPrefix} ${o.label}` : o.label}
-            accessibilityState={{ selected: active }}
+            accessibilityState={{ selected: active, disabled }}
+            disabled={disabled}
             // Visual height mirrors the web; hitSlop makes the touch target 44pt (40 + 2 + 2).
             hitSlop={{ top: 2, bottom: 2 }}
             onPress={() => onChange(o.value)}
