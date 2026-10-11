@@ -20,6 +20,11 @@ const SHARED_FILES = [
   "riskBands.ts",
   "theme.ts",
   "types.ts",
+  "learn.ts",
+  "learnVisuals.ts",
+  "learnWidgets.ts",
+  "learnLive.ts",
+  "curriculum.ts",
 ];
 
 const header = (file) =>
