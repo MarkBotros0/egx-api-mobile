@@ -5,9 +5,9 @@
  *
  * - LiveCharts are armed by viewability (a row is "seen" once on screen).
  * - The active pill follows the first visible module-bearing row.
- * - Deep links (`concept` prop) are handled in Task 9.
+ * - Deep links (`concept` prop) clear search, reopen the module, scroll and flash.
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -22,12 +22,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppText, Screen } from "@/ui";
 import { ALL_CONCEPTS, CURRICULUM, TOTAL_CONCEPTS } from "@/shared/curriculum";
 import { conceptKey, searchConcepts, type Module } from "@/shared/learn";
-import { ConceptCard } from "./ConceptCard";
+import { ConceptCard, FLASH_MS } from "./ConceptCard";
 import { LearnControls, LearnHero } from "./LearnHeader";
 import { LearnVisual } from "./LearnVisual";
 import { ModuleHeader } from "./ModuleHeader";
 import { useLearnProgress } from "./progress";
-import { CONTROLS_INDEX, buildRows, toggledSet, type LearnRow } from "./rows";
+import { CONTROLS_INDEX, buildRows, resolveTarget, toggledSet, withOpen, type LearnRow } from "./rows";
 import { useReduceMotion } from "./useReduceMotion";
 
 const STICKY = [CONTROLS_INDEX];
@@ -59,20 +59,92 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
   const rows = useMemo(() => buildRows({ modules: CURRICULUM, collapsed, results }), [collapsed, results]);
   const doneCount = hydrated ? read.size : 0;
 
-  // ---- deep links + pill jumps: filled in by Task 9
-  const flashFor = (rowKey: string): number => {
-    void rowKey;
-    return 0;
-  };
+  // ---- deep links + pill jumps
+  // `jump` is the one source of scroll intent. `n` increases on every jump,
+  // so jumping to the same row twice is still a new jump.
+  const [jump, setJump] = useState<{ key: string; n: number; flash: boolean } | null>(null);
+  const [flashEnded, setFlashEnded] = useState(0);
+  const scrolledN = useRef(0);
+  const retries = useRef(0);
+
+  // Prop -> state, in render (React's documented pattern for "adjust state
+  // when a prop changes"): no synchronous setState inside an effect.
+  const [lastConcept, setLastConcept] = useState<string | undefined>(undefined);
+  if (concept !== lastConcept) {
+    setLastConcept(concept);
+    const target = concept ? resolveTarget(CURRICULUM, concept) : null;
+    if (target) {
+      setQuery("");
+      setCollapsed((prev) => withOpen(prev, target.moduleId));
+      setJump((prev) => ({ key: target.rowKey, n: (prev?.n ?? 0) + 1, flash: true }));
+    }
+  }
+
+  // Tell the route the param is consumed, so it can clear it and the same
+  // link works again. A ref keeps an inline callback from re-firing this.
+  const handledRef = useRef(onConceptHandled);
+  useEffect(() => {
+    handledRef.current = onConceptHandled;
+  }, [onConceptHandled]);
+  useEffect(() => {
+    if (concept) handledRef.current?.();
+  }, [concept]);
+
+  // Scroll once per jump, after the rows that contain the target exist.
+  useEffect(() => {
+    if (!jump || jump.n === scrolledN.current) return;
+    const index = rows.findIndex((r) => r.key === jump.key);
+    if (index < 0) return;
+    scrolledN.current = jump.n;
+    retries.current = 0;
+    requestAnimationFrame(() =>
+      listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewOffset: controlsH.current })
+    );
+  }, [jump, rows, reduceMotion]);
+
+  // The flash ends after FLASH_MS (the ring also fades itself out).
+  useEffect(() => {
+    if (!jump?.flash) return;
+    const t = setTimeout(() => setFlashEnded(jump.n), FLASH_MS);
+    return () => clearTimeout(t);
+  }, [jump]);
+
+  const flashFor = (rowKey: string) =>
+    jump && jump.flash && jump.key === rowKey && jump.n !== flashEnded ? jump.n : 0;
+
   const jumpToModule = useCallback((moduleId: string) => {
     setQuery("");
-    const index = buildRows({ modules: CURRICULUM, collapsed, results: null }).findIndex(
-      (r) => r.key === `m-${moduleId}`
-    );
-    if (index >= 0) listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewOffset: controlsH.current });
-  }, [collapsed, reduceMotion]);
-  void concept;
-  void onConceptHandled;
+    setJump((prev) => ({ key: `m-${moduleId}`, n: (prev?.n ?? 0) + 1, flash: false }));
+  }, []);
+
+  // Rows far below the rendered window have no measured offset yet: jump
+  // near it by the average row height, then retry (bounded). Wired on the
+  // FlatList, so it covers pill jumps and concept deep links alike.
+  const onScrollToIndexFailed = useCallback(
+    (info: { index: number; averageItemLength: number }) => {
+      if (retries.current >= 3) return;
+      retries.current += 1;
+      listRef.current?.scrollToOffset({
+        offset: Math.max(0, info.averageItemLength * info.index - controlsH.current),
+        animated: false,
+      });
+      setTimeout(
+        () =>
+          listRef.current?.scrollToIndex({
+            index: info.index,
+            animated: !reduceMotion,
+            viewOffset: controlsH.current,
+          }),
+        100
+      );
+    },
+    [reduceMotion]
+  );
+
+  const listExtra = useMemo(
+    () => ({ read, seen, activeModule, query, doneCount, reduceMotion, jump, flashEnded }),
+    [read, seen, activeModule, query, doneCount, reduceMotion, jump, flashEnded]
+  );
 
   const toggleModule = useCallback((id: string) => setCollapsed((prev) => toggledSet(prev, id)), []);
 
@@ -181,7 +253,8 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
           data={rows}
           keyExtractor={(r) => r.key}
           renderItem={renderItem}
-          extraData={{ read, seen, activeModule, query, doneCount, reduceMotion }}
+          extraData={listExtra}
+          onScrollToIndexFailed={onScrollToIndexFailed}
           stickyHeaderIndices={STICKY}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={VIEWABILITY}
