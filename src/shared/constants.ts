@@ -231,4 +231,4 @@ export const DEFAULT_WEIGHTS: ScoreWeights = FALLBACK_WEIGHT_PRESETS.beginner_sa
 /** Bump this version string to invalidate the cached app shell on next load.
  *  IMPORTANT: keep in sync with `CACHE_NAME` literal in public/sw.js
  *  (sw.js is served raw and cannot import this module). */
-export const SW_CACHE_NAME = "egx-v5";
+export const SW_CACHE_NAME = "egx-v6";
