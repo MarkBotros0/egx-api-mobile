@@ -20,8 +20,11 @@ const SRC = resolve(root, "../egx-api-fe/public/icons/egx-logo-512.svg");
 const BG = "#0a0a0f";
 
 const svg = readFileSync(SRC, "utf8");
-const body = svg.match(/<g clip-path="url\(#lc\)">([\s\S]*)<\/g>/)?.[1];
-if (!body) throw new Error(`No logo body found in ${SRC} — has the SVG changed shape?`);
+const logo = svg.match(/<g clip-path="url\(#lc\)">([\s\S]*)<\/g>/)?.[1];
+if (!logo) throw new Error(`No logo body found in ${SRC} — has the SVG changed shape?`);
+// The "by Mark Botros" byline is unreadable at icon size, so the app icons drop it.
+const body = logo.replace(/<text[^>]*>by Mark Botros<\/text>/, "");
+if (body === logo) throw new Error(`No byline found in ${SRC} — has the SVG changed shape?`);
 
 const wrap = (inner, { background = null, scale = 1 } = {}) => `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 ${background ? `<rect width="512" height="512" fill="${background}"/>` : ""}
