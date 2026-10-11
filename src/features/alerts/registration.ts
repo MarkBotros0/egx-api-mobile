@@ -46,12 +46,24 @@ export async function syncRegistration(): Promise<void> {
   try {
     if (isExpoGo()) return;
     configureNotifications();
-    const prefs = await fetchAlertPreferences();
-    if (!prefs.enabled) return;
     if ((await permissionStatus()) !== "granted") return;
+    // A token left on this phone by a previous user (failed logout DELETE)
+    // must follow the current user, whatever their preference says.
+    const stored = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+    if (!stored && !(await fetchAlertPreferences()).enabled) return;
     await registerToken();
   } catch {
     // Quiet by design.
+  }
+}
+
+/** True when this phone holds a token and may show notifications. */
+export async function deviceRegistered(): Promise<boolean> {
+  try {
+    const token = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+    return !!token && (await permissionStatus()) === "granted";
+  } catch {
+    return false;
   }
 }
 
@@ -60,8 +72,10 @@ export async function unregisterOnLogout(): Promise<void> {
   try {
     const token = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
     if (!token) return;
-    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
     await unregisterDevice(token);
+    // Only after the server confirmed: a failed DELETE leaves the token so the
+    // next sign-in on this phone re-binds or retries it.
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
   } catch {
     // Quiet by design: logout must never fail because of push.
   }

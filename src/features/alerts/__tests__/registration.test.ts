@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { fetchCalls, mockFetch, mockFetchNetworkError } from "@/test-utils/fetch";
 import { configureApi } from "@/shared/apiConfig";
 import * as push from "../push";
-import { enableAlertsOnDevice, PUSH_TOKEN_KEY, syncRegistration, unregisterOnLogout } from "../registration";
+import { deviceRegistered, enableAlertsOnDevice, PUSH_TOKEN_KEY, syncRegistration, unregisterOnLogout } from "../registration";
 
 jest.mock("../push", () => ({
   isExpoGo: jest.fn(() => false),
@@ -67,10 +67,23 @@ describe("syncRegistration", () => {
     expect(fetchCalls().some((c) => c.method === "POST" && c.url.endsWith("/push/devices"))).toBe(true);
   });
 
-  it("does nothing when alerts are off", async () => {
+  it("does nothing when alerts are off and this phone has no stored token", async () => {
     mockFetch("GET", "/alerts/preferences", { enabled: false, scope: "watchlist", rise_threshold: 10, fall_threshold: 10 });
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
     await syncRegistration();
     expect(P.getPushToken).not.toHaveBeenCalled();
+    expect(fetchCalls().some((c) => c.method === "POST")).toBe(false);
+  });
+
+  it("re-binds a stored token to the current user even when their alerts are off", async () => {
+    await SecureStore.setItemAsync(PUSH_TOKEN_KEY, "ExponentPushToken[abc]");
+    mockFetch("GET", "/alerts/preferences", { enabled: false, scope: "watchlist", rise_threshold: 10, fall_threshold: 10 });
+    mockFetch("POST", "/push/devices", {}, 201);
+    P.permissionStatus.mockResolvedValue("granted");
+    P.getPushToken.mockResolvedValue("ExponentPushToken[abc]");
+    await syncRegistration();
+    const [call] = fetchCalls().filter((c) => c.method === "POST" && c.url.endsWith("/push/devices"));
+    expect(call.body).toEqual({ token: "ExponentPushToken[abc]", platform: "android" });
   });
 
   it("swallows every failure", async () => {
@@ -89,10 +102,33 @@ describe("unregisterOnLogout", () => {
     await expect(SecureStore.getItemAsync(PUSH_TOKEN_KEY)).resolves.toBeNull();
   });
 
-  it("is silent when nothing was registered or the call fails", async () => {
+  it("is silent when nothing was registered", async () => {
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
     await expect(unregisterOnLogout()).resolves.toBeUndefined();
+  });
+
+  it("keeps the stored token when the DELETE fails, so it can be retried", async () => {
     await SecureStore.setItemAsync(PUSH_TOKEN_KEY, "ExponentPushToken[abc]");
     mockFetchNetworkError("DELETE", "/push/devices");
     await expect(unregisterOnLogout()).resolves.toBeUndefined();
+    await expect(SecureStore.getItemAsync(PUSH_TOKEN_KEY)).resolves.toBe("ExponentPushToken[abc]");
+  });
+});
+
+describe("deviceRegistered", () => {
+  it("is true only with a stored token and granted permission", async () => {
+    await SecureStore.setItemAsync(PUSH_TOKEN_KEY, "ExponentPushToken[abc]");
+    P.permissionStatus.mockResolvedValue("granted");
+    await expect(deviceRegistered()).resolves.toBe(true);
+    P.permissionStatus.mockResolvedValue("denied");
+    await expect(deviceRegistered()).resolves.toBe(false);
+    P.permissionStatus.mockResolvedValue("granted");
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_KEY);
+    await expect(deviceRegistered()).resolves.toBe(false);
+  });
+
+  it("is false (not thrown) when the check itself fails", async () => {
+    P.permissionStatus.mockRejectedValue(new Error("boom"));
+    await expect(deviceRegistered()).resolves.toBe(false);
   });
 });
