@@ -1,5 +1,11 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { Stack } from "expo-router";
+import { DividendCalendarScreen } from "@/features/market/DividendCalendarScreen";
 
 export default function DividendsRoute() {
-  return <ComingSoon title="Dividends" plan={3} />;
+  return (
+    <>
+      <Stack.Screen options={{ title: "Dividend calendar" }} />
+      <DividendCalendarScreen />
+    </>
+  );
 }

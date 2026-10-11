@@ -1,5 +1,5 @@
-import { ComingSoon } from "@/features/shell/ComingSoon";
+import { NewsScreen } from "@/features/market/NewsScreen";
 
 export default function NewsRoute() {
-  return <ComingSoon title="News" plan={3} />;
+  return <NewsScreen />;
 }
