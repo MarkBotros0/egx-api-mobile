@@ -8,7 +8,7 @@ import * as registration from "../registration";
 import { AlertsScreen } from "../AlertsScreen";
 
 jest.mock("../push", () => ({ isExpoGo: jest.fn(() => false) }));
-jest.mock("../registration", () => ({ enableAlertsOnDevice: jest.fn() }));
+jest.mock("../registration", () => ({ enableAlertsOnDevice: jest.fn(), deviceRegistered: jest.fn() }));
 const P = push as jest.Mocked<typeof push>;
 const R = registration as jest.Mocked<typeof registration>;
 
@@ -22,6 +22,7 @@ function puts() {
 beforeEach(() => {
   jest.clearAllMocks();
   P.isExpoGo.mockReturnValue(false);
+  R.deviceRegistered.mockResolvedValue(true);
   // AuthProvider (which normally configures the client) is not mounted here.
   configureApi({ baseUrl: "https://api.test/api", getToken: () => "jwt", onUnauthorized: () => {} });
 });
@@ -83,4 +84,50 @@ it("states that a score change is not advice", async () => {
   mockFetch("GET", "/alerts/preferences", OFF);
   await renderScreen(<AlertsScreen />);
   expect(await screen.findByText(/information, not advice/)).toBeTruthy();
+});
+
+describe("this phone is not registered (alerts on from another phone)", () => {
+  beforeEach(() => R.deviceRegistered.mockResolvedValue(false));
+
+  it("offers to turn alerts on for this phone, and registers without saving prefs", async () => {
+    mockFetch("GET", "/alerts/preferences", ON);
+    R.enableAlertsOnDevice.mockResolvedValue({ ok: true });
+    await renderScreen(<AlertsScreen />);
+    await fireEvent.press(await screen.findByLabelText("Turn on for this phone"));
+    await waitFor(() => expect(R.enableAlertsOnDevice).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByLabelText("Turn on for this phone")).toBeNull());
+    expect(puts()).toHaveLength(0);
+  });
+
+  it("shows the failure reason and keeps the button", async () => {
+    mockFetch("GET", "/alerts/preferences", ON);
+    R.enableAlertsOnDevice.mockResolvedValue({ ok: false, reason: "denied" });
+    await renderScreen(<AlertsScreen />);
+    await fireEvent.press(await screen.findByLabelText("Turn on for this phone"));
+    expect(await screen.findByText(/blocked for Borsa Compass/)).toBeTruthy();
+    expect(screen.getByLabelText("Turn on for this phone")).toBeTruthy();
+  });
+
+  it("is hidden when the account has alerts off", async () => {
+    mockFetch("GET", "/alerts/preferences", OFF);
+    await renderScreen(<AlertsScreen />);
+    await screen.findByLabelText("Score alerts");
+    expect(screen.queryByLabelText("Turn on for this phone")).toBeNull();
+  });
+
+  it("is hidden in Expo Go", async () => {
+    P.isExpoGo.mockReturnValue(true);
+    mockFetch("GET", "/alerts/preferences", ON);
+    await renderScreen(<AlertsScreen />);
+    await screen.findByLabelText("Score alerts");
+    expect(screen.queryByLabelText("Turn on for this phone")).toBeNull();
+  });
+});
+
+it("hides the button when this phone is already registered", async () => {
+  mockFetch("GET", "/alerts/preferences", ON);
+  await renderScreen(<AlertsScreen />);
+  await screen.findByLabelText("Score alerts");
+  await waitFor(() => expect(R.deviceRegistered).toHaveBeenCalled());
+  expect(screen.queryByLabelText("Turn on for this phone")).toBeNull();
 });

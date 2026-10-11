@@ -11,6 +11,7 @@ import {
   AppText,
   Card,
   CardSkeleton,
+  Button,
   ErrorState,
   Screen,
   SegmentedControl,
@@ -26,7 +27,7 @@ import {
   thresholdLabel,
 } from "./options";
 import { isExpoGo } from "./push";
-import { enableAlertsOnDevice, type EnableResult } from "./registration";
+import { deviceRegistered, enableAlertsOnDevice, type EnableResult } from "./registration";
 
 const EXPO_GO =
   "Alerts need the installed app build. They can't be delivered in Expo Go.";
@@ -55,6 +56,9 @@ export function AlertsScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // null = not checked yet. The switch shows the ACCOUNT's flag; this says
+  // whether THIS phone holds a token (a second phone may not).
+  const [registered, setRegistered] = useState<boolean | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -66,6 +70,29 @@ export function AlertsScreen() {
       live = false;
     };
   }, [attempt]);
+
+  const accountOn = prefs?.enabled === true;
+  useEffect(() => {
+    if (!accountOn || expoGo) return;
+    let live = true;
+    void deviceRegistered().then((r) => live && setRegistered(r));
+    return () => {
+      live = false;
+    };
+  }, [accountOn, expoGo]);
+
+  const enableHere = useCallback(async () => {
+    if (busy) return;
+    setNotice(null);
+    setBusy(true);
+    try {
+      const result = await enableAlertsOnDevice();
+      if (result.ok) setRegistered(true);
+      else setNotice(REASONS[result.reason]);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy]);
 
   const save = useCallback(
     async (next: AlertPreferences) => {
@@ -94,6 +121,7 @@ export function AlertsScreen() {
           setNotice(REASONS[result.reason]);
           return;
         }
+        setRegistered(true);
         await save({ ...prefs, enabled: true });
       } finally {
         setBusy(false);
@@ -155,6 +183,20 @@ export function AlertsScreen() {
               trackColor={{ true: V.accent, false: "rgba(255,255,255,0.15)" }}
             />
           </View>
+          {prefs.enabled && !expoGo && registered === false ? (
+            <View className="mt-3 gap-2">
+              <AppText className="text-xs text-white/50">
+                Alerts are on for your account, but this phone isn't set up to
+                receive them yet.
+              </AppText>
+              <Button
+                label="Turn on for this phone"
+                variant="secondary"
+                loading={busy}
+                onPress={() => void enableHere()}
+              />
+            </View>
+          ) : null}
           {notice ? (
             <AppText className="mt-2 text-xs text-loss">{notice}</AppText>
           ) : null}
