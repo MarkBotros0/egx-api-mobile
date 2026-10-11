@@ -18,7 +18,7 @@ Expo SDK 57 · RN 0.86 · React 19.2 · TS 6 · Expo Router (`src/app`) · Nativ
 | `npx expo install <pkg>` | ONLY way to add deps (`-- --dev` for dev deps). Exception: `tailwindcss@^3.4.17` |
 | `npm run verify` | `check:shared` + `typecheck` + `lint` (`expo lint`) + `jest --ci` — green before every commit |
 | `npm run sync:shared` / `check:shared` | copy / diff `../egx-api-fe/src/app/lib/*` → `src/shared/` |
-| `npm run icons` | regenerate `assets/*.png` from the web logo SVG |
+| `npm run icons` | regenerate `assets/*.png` (incl. `notification-icon.png`, 96×96) from the web logo SVG |
 | `npm run gen:chart-fixtures` | regenerate `src/charts/__fixtures__` |
 | `npx expo start` | dev server — **always in tmux**: `tmux new -d -s egx-mobile-metro "npx expo start 2>&1 \| tee ~/logs/egx-mobile-metro.log"` |
 
@@ -58,7 +58,7 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - Touch targets ≥ 44pt. Safe areas via `Screen` only, which already applies `px-4`
   (screens must not add their own outer `px-4`); screens under a stack header pass
   `edges={[]}`. Widths come from layout, never `Dimensions` at module scope.
-- Everything must run in **Expo Go** (no custom native modules).
+- Everything must RUN in **Expo Go**. The one exception is remote push (score alerts): Expo Go cannot receive it, so `src/features/alerts` checks `isExpoGo()` and renders disabled there. No other custom native modules.
 - Money inputs accept 3 decimals; share counts are integers.
 
 ## Learn
@@ -93,6 +93,19 @@ disable/delete yourself. Generated passwords are shown once; copy block
 `EXPO_PUBLIC_FE_BASE_URL` (via `feBaseUrl()`). EAS builds read them from EAS environments,
 not `.env`. App name "Borsa Compass", bundle id / package `com.markbotros.borsacompass`, scheme
 `borsacompass` — chosen 2026-10-11; the id is permanent after the first store upload. Build/submit steps: `docs/release.md`.
+
+## Score alerts
+
+Push alerts when a stock's composite score moves by the user's threshold. Files in `src/features/alerts/`:
+- `push.ts` — the **only** file importing `expo-notifications` / `expo-device`. `isExpoGo()` guards it.
+- `api.ts` — mobile-only API calls; uses `getApiConfig` (not `src/shared/api.ts`, which is generated from the web).
+- `registration.ts` — token registration. The Expo push token is kept in SecureStore under key `egx.push.token`.
+- `AlertsScreen` (route `src/app/alerts.tsx` → `/alerts`), opened from the bell header button (`AlertsHeaderButton`).
+- `NotificationRouter` — mounted in `RootNavigator` while signed in; handles taps and foreground banners.
+
+Copy rule: never use buy/sell/opportunity/risk/recommend. Alerts say what changed, and the screen states "A change in score is information, not advice."
+
+Testing: push only works in a **dev build** (`npx eas-cli@latest build --profile development`). Expo Go renders the screen disabled. Jest mocks live in `src/test-utils/notificationsMock.ts`, loaded from `jest.setup.ts`.
 
 ## Git
 

@@ -25,6 +25,19 @@ run by the user.
    ```
    These are public values (inlined into the bundle), not secrets.
 
+## 0b. Push notifications setup (score alerts, user steps in order)
+
+Remote push needs a Firebase project (Android), an Apple push key (iOS) and an EAS
+project id. Expo Go cannot receive push, so test on a development build.
+
+1. `npx eas-cli@latest init` → commits `extra.eas.projectId` into `app.json` (required by `getExpoPushTokenAsync`).
+2. Android: create a free Firebase project → add an Android app with package `com.markbotros.borsacompass` → download `google-services.json` to the repo root → add `"googleServicesFile": "./google-services.json"` under `expo.android` in `app.json` → in Firebase project settings → Service accounts → generate a private key → `npx eas-cli@latest credentials` → Android → production → Google Service Account → "Push Notifications (FCM V1)" → upload the key.
+3. iOS: Apple Developer Program membership → `npx eas-cli@latest credentials` → iOS → Push Notifications key (let EAS generate it).
+4. `npx eas-cli@latest build --profile development --platform android` (and/or ios), install, sign in, open the bell → turn alerts on.
+5. Send yourself a test push: `curl -H "Content-Type: application/json" -X POST https://exp.host/--/api/v2/push/send -d '{"to":"<token from the push_devices table>","title":"Test","body":"Hello","data":{"type":"score_alert","symbol":"COMI"}}'` — tapping it must open COMI.
+6. cron-job.org: add a job `POST <API>/api/cron/risk_snapshot` with header `X-Cron-Secret`, every minute, Sun–Thu, 10:00–15:30, timezone Africa/Cairo.
+   Alerts run inside this same cron call; its response includes `alerts: {queued, sent, skipped, error}`. The backend reads the macro regime from cache only during alerts.
+
 ## 1. Internal Android preview (APK)
 
 ```bash
@@ -38,14 +51,11 @@ When it finishes the log ends with a build URL and an install QR code; open it o
 phone, download the APK, allow "install unknown apps" for the browser. Later runs can
 add `--non-interactive` (credentials then exist on EAS).
 
-## 2. Development build (only if a native module outside Expo Go is ever added)
+## 2. Development build (required for push notifications)
 
 The `development` EAS profile sets `developmentClient: true`, which requires
-`expo-dev-client`, and it is NOT installed yet (`npx expo install expo-dev-client`
-first).
-
-`npx expo install expo-dev-client`, commit, then
-`npx eas-cli@latest build --profile development --platform android`. Note that with
+`expo-dev-client` (installed). Push alerts need this build: Expo Go cannot receive them.
+Build with `npx eas-cli@latest build --profile development --platform android`. With
 `expo-dev-client` installed `npx expo start` opens dev-client mode by default (press `s`
 to switch to Expo Go).
 
