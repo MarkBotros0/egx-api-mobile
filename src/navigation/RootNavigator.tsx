@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { NotificationRouter } from "@/features/alerts/NotificationRouter";
 import { COLORS } from "@/shared/theme";
 
 /**
@@ -24,22 +25,25 @@ export function RootNavigator() {
   if (isLoading) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS["charcoal-dark"] } }}>
-      <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="stock/[symbol]" options={{ ...header, title: "" }} />
-        <Stack.Screen name="compare" options={{ ...header, title: "Compare" }} />
-        <Stack.Screen name="dividends" options={{ ...header, title: "Dividends" }} />
-        <Stack.Screen name="calibration" options={{ ...header, title: "Calibration" }} />
-        <Stack.Screen name="alerts" options={{ ...header, title: "Score alerts" }} />
-        <Stack.Screen name="dev/charts" options={{ ...header, title: "Chart gallery" }} />
-        <Stack.Protected guard={isAdmin}>
-          <Stack.Screen name="admin" options={{ ...header, title: "Users" }} />
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS["charcoal-dark"] } }}>
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="stock/[symbol]" options={{ ...header, title: "" }} />
+          <Stack.Screen name="compare" options={{ ...header, title: "Compare" }} />
+          <Stack.Screen name="dividends" options={{ ...header, title: "Dividends" }} />
+          <Stack.Screen name="calibration" options={{ ...header, title: "Calibration" }} />
+          <Stack.Screen name="alerts" options={{ ...header, title: "Score alerts" }} />
+          <Stack.Screen name="dev/charts" options={{ ...header, title: "Chart gallery" }} />
+          <Stack.Protected guard={isAdmin}>
+            <Stack.Screen name="admin" options={{ ...header, title: "Users" }} />
+          </Stack.Protected>
         </Stack.Protected>
-      </Stack.Protected>
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="login" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!isAuthenticated}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+      </Stack>
+      {isAuthenticated ? <NotificationRouter /> : null}
+    </>
   );
 }
