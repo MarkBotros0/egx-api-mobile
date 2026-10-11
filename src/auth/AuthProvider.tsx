@@ -7,7 +7,7 @@ import type { AuthUser } from "@/shared/auth";
 
 import { clearSession, currentToken, loadSession, saveSession } from "./tokenStore";
 
-/** A captive portal / half-open connection can leave /auth/me pending forever; stop waiting after this. */
+/** Logout must not hang on a dead network: the push-token DELETE is bounded at 3 s. */
 async function boundedUnregister(ms = 3000): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -22,6 +22,7 @@ async function boundedUnregister(ms = 3000): Promise<void> {
   }
 }
 
+/** A captive portal / half-open connection can leave /auth/me pending forever; stop waiting after this. */
 export const BOOT_AUTH_TIMEOUT_MS = 8000;
 
 // API setup happens at module load so the base URL and token getter are in

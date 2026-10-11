@@ -32,8 +32,9 @@ threshold are per-user preferences. Delivery must be free; FCM is acceptable.
 - "Same day" means the **trading session**, identified by the bar date, so
   weekends and holidays need no calendar.
 
-**Success:** a user with alerts on gets one push within ~20–30 minutes of a
-qualifying move, at most once per stock per direction per session; tapping it
+**Success:** a user with alerts on gets one push within one stalest-first rescoring pass of a
+qualifying move (measured ~40+ min for the full universe; faster when the dashboard
+refreshes the stock), at most once per stock per direction per session; tapping it
 opens that stock showing the same score the push named.
 
 ## 2. Delivery platform
@@ -272,7 +273,7 @@ updated to say so.
   token (`getExpoPushTokenAsync({projectId})`), `POST /api/push/devices`.
 - On every app start while signed in and permitted: re-register the token
   (tokens can rotate; refreshes `last_seen`).
-- Logout: `DELETE /api/push/devices?token=…` before clearing auth (best effort).
+- Logout: `DELETE /api/push/devices?token=…` before clearing auth (best effort, bounded at 3 s). The stored token is deleted only after the DELETE succeeds; otherwise the next sign-in re-binds it.
 - Token fetch can reject on network failure: wrapped, retried on the next app
   start, never surfaced as an error toast.
 - Tap handling (listener + cold-start last response, then

@@ -34,7 +34,7 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
   there, `npm run sync:shared` here, commit here. Must stay platform-neutral.
 - `src/ui/` UI kit (`Screen`, `Card`, `Sheet`, `Button`, `TextField`, …) · `src/charts/` chart kit ·
   `src/auth/`, `src/providers/` (app-wide state).
-- `src/features/<name>/` — one folder per area: `admin`, `auth`, `calibration`, `common`
+- `src/features/<name>/` — one folder per area: `admin`, `alerts`, `auth`, `calibration`, `common`
   (shared widgets), `learn`, `market` (dashboard, stock, compare, news, dividends),
   `portfolio`, `shell`.
 - `src/lib/` — small helpers: `env` (`apiBaseUrl`, `feBaseUrl`), `links` (`learnHref`,
@@ -99,9 +99,9 @@ not `.env`. App name "Borsa Compass", bundle id / package `com.markbotros.borsac
 Push alerts when a stock's composite score moves by the user's threshold. Files in `src/features/alerts/`:
 - `push.ts` — the **only** file importing `expo-notifications` / `expo-device`. `isExpoGo()` guards it.
 - `api.ts` — mobile-only API calls; uses `getApiConfig` (not `src/shared/api.ts`, which is generated from the web).
-- `registration.ts` — token registration. The Expo push token is kept in SecureStore under key `egx.push.token`.
+- `registration.ts` — token registration. The Expo push token is kept in SecureStore under key `egx.push.token`, and is removed only after the server DELETE succeeds (a failed one is re-bound by the next `syncRegistration`). Logout waits at most 3 s for that DELETE (`boundedUnregister` in `AuthProvider`).
 - `AlertsScreen` (route `src/app/alerts.tsx` → `/alerts`), opened from the bell header button (`AlertsHeaderButton`).
-- `NotificationRouter` — mounted in `RootNavigator` while signed in; handles taps and foreground banners.
+- `NotificationRouter` — mounted in `RootNavigator` while signed in; handles taps and foreground banners. `push.ts` remembers the last handled notification identifier so a remount (next login) never replays an old tap. `AlertsScreen` shows "Turn on for this phone" when the account has alerts on but this phone has no token (`deviceRegistered()`).
 
 Copy rule: never use buy/sell/opportunity/risk/recommend. Alerts say what changed, and the screen states "A change in score is information, not advice."
 

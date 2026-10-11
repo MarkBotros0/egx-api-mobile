@@ -186,7 +186,7 @@ export function AlertsScreen() {
           {prefs.enabled && !expoGo && registered === false ? (
             <View className="mt-3 gap-2">
               <AppText className="text-xs text-white/50">
-                Alerts are on for your account, but this phone isn't set up to
+                Alerts are on for your account, but this phone isn&apos;t set up to
                 receive them yet.
               </AppText>
               <Button
