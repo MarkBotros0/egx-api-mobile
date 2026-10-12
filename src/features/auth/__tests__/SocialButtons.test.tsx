@@ -29,10 +29,13 @@ const setPlatform = (os: "ios" | "android") => {
 
 const originalOS = Platform.OS;
 let originalWebId: string | undefined;
+let originalIosId: string | undefined;
 
 beforeEach(() => {
   originalWebId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  originalIosId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "web-client-id";
+  delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   (isExpoGo as jest.Mock).mockReturnValue(false);
   setPlatform("android");
   googleMock.GoogleSignin.signIn.mockClear();
@@ -42,6 +45,8 @@ beforeEach(() => {
 afterEach(() => {
   if (originalWebId === undefined) delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   else process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebId;
+  if (originalIosId === undefined) delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  else process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = originalIosId;
   setPlatform(originalOS as "ios" | "android");
 });
 
@@ -50,6 +55,24 @@ describe("SocialButtons", () => {
     (isExpoGo as jest.Mock).mockReturnValue(true);
     await renderButtons();
     expect(screen.queryByLabelText("Continue with Google")).toBeNull();
+  });
+
+  it("does not render Google on iOS without the iOS client id (the native SDK would crash on tap)", async () => {
+    setPlatform("ios");
+    await renderButtons();
+    expect(screen.queryByLabelText("Continue with Google")).toBeNull();
+  });
+
+  it("renders Google on iOS when the iOS client id is set", async () => {
+    setPlatform("ios");
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = "ios-client-id";
+    await renderButtons();
+    expect(screen.getByLabelText("Continue with Google")).toBeTruthy();
+  });
+
+  it("does not need the iOS client id on Android", async () => {
+    await renderButtons();
+    expect(screen.getByLabelText("Continue with Google")).toBeTruthy();
   });
 
   it("signs in with Google: POSTs the id token and name", async () => {

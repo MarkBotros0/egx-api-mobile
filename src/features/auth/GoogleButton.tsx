@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Platform } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { errorMessage } from "@/lib/errors";
@@ -10,8 +11,15 @@ import { Button } from "@/ui";
 const webClientId = () => process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
 const iosClientId = () => process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
 
+/**
+ * On iOS the native SDK also needs the iOS client id AND its reversed-id URL
+ * scheme in the build (app.config.ts adds it from GOOGLE_IOS_URL_SCHEME);
+ * without the scheme GoogleSignIn raises a native exception on tap that no JS
+ * catch can stop. So no iOS client id, no button.
+ */
 export function googleAvailable(): boolean {
-  return !!webClientId() && !isExpoGo();
+  if (!webClientId() || isExpoGo()) return false;
+  return Platform.OS !== "ios" || !!iosClientId();
 }
 
 type GoogleModule = typeof import("@react-native-google-signin/google-signin");
