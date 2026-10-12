@@ -37,12 +37,12 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - `src/features/<name>/` — one folder per area: `admin`, `alerts`, `auth`, `calibration`, `common`
   (shared widgets), `learn`, `market` (dashboard, stock, compare, news, dividends),
   `portfolio`, `shell`.
-- `src/lib/` — small helpers: `env` (`apiBaseUrl`, `feBaseUrl`), `links` (`learnHref`,
+- `src/lib/` — small helpers: `env` (`apiBaseUrl`, `normalizeBaseUrl`), `runtime` (`isExpoGo`), `links` (`learnHref`,
   `stockHref`, `routes`), `errors` (`errorMessage`), `dates`, `zones`, `apiSetup`.
   `pct` lives in `@/features/market/logic/format`.
 - `src/test-utils/` — `render.tsx` (`renderWithProviders`), `renderScreen.tsx`
   (`renderScreen`), `safeArea.tsx` (`TestSafeArea`), `fetch.ts`, and the shared jest
-  mocks `datePickerMock`, `sliderMock`, `asyncStorageMock`, `sheetMock`, `secureStoreMock`
+  mocks `datePickerMock`, `sliderMock`, `asyncStorageMock`, `sheetMock`, `secureStoreMock`, `socialAuthMock`
   (load with `jest.requireActual` inside `jest.mock` factories). Reuse, don't retype.
 - Tests in `__tests__/` beside the code (`*.test.ts(x)`); route tests in `src/__tests__/routes/`.
 - Import across folders with `@/…`; relative only within a folder.
@@ -58,7 +58,7 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - Touch targets ≥ 44pt. Safe areas via `Screen` only, which already applies `px-4`
   (screens must not add their own outer `px-4`); screens under a stack header pass
   `edges={[]}`. Widths come from layout, never `Dimensions` at module scope.
-- Everything must RUN in **Expo Go**. The one exception is remote push (score alerts): Expo Go cannot receive it, so `src/features/alerts` checks `isExpoGo()` and renders disabled there. No other custom native modules.
+- Everything must RUN in **Expo Go**. Two exceptions: (1) remote push (score alerts) — Expo Go cannot receive it, so `src/features/alerts` checks `isExpoGo()` and renders disabled there; (2) Google sign-in — `isExpoGo()` (in `src/lib/runtime.ts`) hides the button, and `@react-native-google-signin/google-signin` is `require`d lazily inside `GoogleButton.tsx` and must NEVER be imported at top level (it throws at import time in Expo Go). Apple sign-in does work in Expo Go on iOS: the backend accepts the `host.exp.Exponent` audience. No other custom native modules.
 - Money inputs accept 3 decimals; share counts are integers.
 
 ## Learn
@@ -80,17 +80,32 @@ the web repo only.
   are swallowed; taps before hydration are replayed.
 - LiveChart: ONE shared COMI fetch, armed by FlatList viewability, silent fallback to the diagram.
 
+## Accounts
+
+Sign-in is by **email + password**. Signed-out screens (login, signup, forgot-password, under a signed-out
+route guard) live in `src/features/auth/`; signed-in users get `/account` (`src/features/account/`), opened
+from the header person-circle button (`AccountHeaderButton`). **Log out lives on the Account screen**, next
+to "Delete account" (typed confirmation; Apple requires in-app deletion). Emailed verify/reset links open the
+**web app**, after which the user signs in here. `AuthProvider` (`src/auth/AuthProvider.tsx`) exposes `login`,
+`completeSignIn(session)` (used by the Google/Apple buttons), `deleteAccount` and `logout`. `SocialButtons`
+decides what renders: Apple only on iOS when `AppleAuthentication.isAvailableAsync()`; Google only outside
+Expo Go and when `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` is set (both client ids are read lazily, at call time).
+Jest mocks for both providers: `src/test-utils/socialAuthMock.ts`.
+
 ## Admin
 
-Header button beside Log out (admins only) → `/admin`, guarded by `Stack.Protected guard={isAdmin}`
-plus an in-screen "Admins only". No role picker (admin = server `AUTH_ADMINS`). You cannot
-disable/delete yourself. Generated passwords are shown once; copy block
-`Link/Username/Password`, link from `EXPO_PUBLIC_FE_BASE_URL`.
+Header Users button (admins only) → `/admin`, guarded by `Stack.Protected guard={isAdmin}` plus an in-screen
+"Admins only". Admin **invites a user by email** (`InviteUserSheet`) and can **send a reset email** (or
+re-send the invitation); no passwords are generated or shown. No role picker (admin = server `AUTH_ADMINS`).
+You cannot disable/delete yourself.
 
 ## Environment and release
 
 `.env` (gitignored; see `.env.example`): `EXPO_PUBLIC_API_BASE_URL` (via `apiBaseUrl()`),
-`EXPO_PUBLIC_FE_BASE_URL` (via `feBaseUrl()`). EAS builds read them from EAS environments,
+`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (Google sign-in), and build-time
+`GOOGLE_IOS_URL_SCHEME` (reversed iOS client id), read by `app.config.ts`, which adds the
+`@react-native-google-signin/google-signin` plugin only when it is set (the plugin is deliberately NOT in
+`app.json`). EAS builds read them from EAS environments,
 not `.env`. App name "Borsa Compass", bundle id / package `com.markbotros.borsacompass`, scheme
 `borsacompass` — chosen 2026-10-11; the id is permanent after the first store upload. Build/submit steps: `docs/release.md`.
 
