@@ -11,6 +11,7 @@ export const routes = {
   calibration: "/calibration",
   admin: "/admin",
   alerts: "/alerts",
+  account: "/account",
 } as const;
 
 export function stockHref(symbol: string): Href {

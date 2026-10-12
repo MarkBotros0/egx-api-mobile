@@ -1,4 +1,4 @@
-import { apiBaseUrl } from "@/lib/env";
+import { apiBaseUrl, normalizeBaseUrl } from "@/lib/env";
 
 describe("apiBaseUrl", () => {
   const original = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -19,4 +19,12 @@ describe("apiBaseUrl", () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
     expect(() => apiBaseUrl()).toThrow(/EXPO_PUBLIC_API_BASE_URL/);
   });
+});
+
+describe("normalizeBaseUrl", () => {
+  it.each([
+    [undefined, ""],
+    ["", ""],
+    ["  https://egx.example/// ", "https://egx.example"],
+  ])("%p → %p", (raw, expected) => expect(normalizeBaseUrl(raw)).toBe(expected));
 });

@@ -9,15 +9,30 @@ import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppText, Button } from "@/ui";
 import type { ManagedUser } from "@/shared/api";
-import { formatAdded } from "./credentials";
 
 interface Actions {
-  onResetPassword: (u: ManagedUser) => void;
+  onSendReset: (u: ManagedUser) => void;
   onToggleActive: (u: ManagedUser) => void;
   onDelete: (u: ManagedUser) => void;
   busyId: string | null;
   currentUserId: string | undefined;
 }
+
+function formatAdded(raw: string): string {
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function MethodBadge({ label }: { label: string }) {
+  return (
+    <View className="rounded-md border border-white/10 px-1.5 py-0.5">
+      <AppText className="text-[10px] text-white/60">{label}</AppText>
+    </View>
+  );
+}
+
+const METHOD_LABEL = { password: "Password", google: "Google", apple: "Apple" } as const;
 
 function RoleBadge({ role }: { role: ManagedUser["role"] }) {
   if (role !== "admin") return <AppText className="text-xs text-white/40">User</AppText>;
@@ -37,12 +52,12 @@ function StatusDot({ active }: { active: boolean }) {
   );
 }
 
-function UserActions({ u, onResetPassword, onToggleActive, onDelete, busyId, currentUserId }: Actions & { u: ManagedUser }) {
+function UserActions({ u, onSendReset, onToggleActive, onDelete, busyId, currentUserId }: Actions & { u: ManagedUser }) {
   const busy = busyId === u.id;
   const isSelf = u.id === currentUserId;
   return (
     <View className="flex-row flex-wrap items-center gap-2">
-      <Button variant="secondary" label="Reset password" onPress={() => onResetPassword(u)} disabled={busy} />
+      <Button variant="secondary" label="Send reset email" onPress={() => onSendReset(u)} disabled={busy} />
       {isSelf ? (
         <AppText className="text-[11px] text-white/30">This is you</AppText>
       ) : (
@@ -76,13 +91,20 @@ export function UsersList({ users, ...actions }: Actions & { users: ManagedUser[
               onPress={() => setExpanded(open ? null : u.id)}
               accessibilityRole="button"
               accessibilityState={{ expanded: open }}
-              accessibilityLabel={`${u.username}, ${open ? "hide" : "show"} actions`}
+              accessibilityLabel={`${u.email}, ${open ? "hide" : "show"} actions`}
               className="min-h-[44px] flex-row items-center justify-between gap-3"
             >
               <View className="min-w-0 flex-1">
                 <View className="flex-row items-center gap-2">
-                  <AppText numberOfLines={1} className="shrink font-mono text-sm text-white">{u.username}</AppText>
+                  <AppText numberOfLines={1} className="shrink font-mono text-sm text-white">{u.name || u.email}</AppText>
                   <RoleBadge role={u.role} />
+                </View>
+                {u.name ? (
+                  <AppText numberOfLines={1} className="mt-0.5 text-xs text-white/50">{u.email}</AppText>
+                ) : null}
+                <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
+                  {u.methods.map((m) => <MethodBadge key={m} label={METHOD_LABEL[m]} />)}
+                  {u.email_verified ? null : <MethodBadge label={u.methods.length ? "Unverified" : "Pending"} />}
                 </View>
                 <View className="mt-1 flex-row items-center gap-3">
                   <StatusDot active={u.is_active} />

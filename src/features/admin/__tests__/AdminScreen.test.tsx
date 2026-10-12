@@ -1,18 +1,9 @@
-import { Platform } from "react-native";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/auth/AuthProvider";
 import { confirm } from "@/ui";
-import {
-  createUser,
-  deleteUser,
-  fetchUsers,
-  resetUserPassword,
-  setUserActive,
-  type ManagedUser,
-} from "@/shared/api";
+import { deleteUser, fetchUsers, inviteUser, sendUserReset, setUserActive, type ManagedUser } from "@/shared/api";
 import { routes } from "@/lib/links";
-import { finishDismiss } from "@/test-utils/sheetMock";
 import { renderScreen } from "@/test-utils/renderScreen";
 import { AdminScreen } from "../AdminScreen";
 
@@ -20,14 +11,10 @@ jest.mock("@/auth/AuthProvider", () => ({ useAuth: jest.fn() }));
 jest.mock("expo-router", () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }));
-jest.mock("expo-clipboard", () => ({
-  setStringAsync: jest.fn(() => Promise.resolve(true)),
-}));
-jest.mock("@/lib/env", () => ({ feBaseUrl: () => "https://egx.example" }));
 jest.mock("@/shared/api", () => ({
   fetchUsers: jest.fn(),
-  createUser: jest.fn(),
-  resetUserPassword: jest.fn(),
+  inviteUser: jest.fn(),
+  sendUserReset: jest.fn(),
   setUserActive: jest.fn(),
   deleteUser: jest.fn(),
 }));
@@ -41,17 +28,23 @@ const authMock = useAuth as jest.Mock;
 const confirmMock = confirm as jest.MockedFunction<typeof confirm>;
 const ME: ManagedUser = {
   id: "1",
-  username: "mark",
+  email: "mark@example.com",
+  name: "Mark",
   role: "admin",
   is_active: true,
+  email_verified: true,
+  methods: ["password"],
   created_at: "2026-01-02T00:00:00Z",
   holdings_count: 3,
 };
 const SARA: ManagedUser = {
   id: "2",
-  username: "sara.b",
+  email: "sara@example.com",
+  name: "",
   role: "user",
   is_active: true,
+  email_verified: true,
+  methods: ["password"],
   created_at: "2026-02-03T00:00:00Z",
   holdings_count: 1,
 };
@@ -59,7 +52,7 @@ const SARA: ManagedUser = {
 beforeEach(() => {
   jest.clearAllMocks();
   authMock.mockReturnValue({
-    user: { id: "1", username: "mark", role: "admin" },
+    user: { id: "1", email: "mark@example.com", name: "Mark", role: "admin" },
     isAdmin: true,
     isLoading: false,
   });
@@ -69,7 +62,7 @@ beforeEach(() => {
 describe("AdminScreen", () => {
   it("refuses non-admins without calling the users API", async () => {
     authMock.mockReturnValue({
-      user: { id: "9", username: "bob", role: "user" },
+      user: { id: "9", email: "bob@example.com", name: "Bob", role: "user" },
       isAdmin: false,
       isLoading: false,
     });
@@ -83,144 +76,98 @@ describe("AdminScreen", () => {
   it("lists accounts with a count", async () => {
     await renderScreen(<AdminScreen />);
     await waitFor(() => expect(screen.getByText("2 accounts.")).toBeTruthy());
-    expect(screen.getByText("sara.b")).toBeTruthy();
+    expect(screen.getByText("sara@example.com")).toBeTruthy();
   });
 
-  const createOmar = async () => {
-    (createUser as jest.Mock).mockResolvedValue({
-      user: { ...SARA, id: "3", username: "omar" },
-      generated_password: "Gen3rat3dPassw0rd",
-    });
+  const openInvite = async () => {
     await renderScreen(<AdminScreen />);
     await waitFor(() => expect(screen.getByText("2 accounts.")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("Add user"));
-    await fireEvent.changeText(screen.getByLabelText("Username"), "omar");
-    await fireEvent.press(screen.getByText("Create user"));
+    await fireEvent.press(screen.getByLabelText("Invite user"));
+    await fireEvent.changeText(screen.getByLabelText("Email"), "omar@example.com");
   };
 
-  it("android: reveals the generated password immediately, once", async () => {
-    const os = Platform.OS;
-    Platform.OS = "android";
-    try {
-      await createOmar();
-      await waitFor(() => expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy());
-      expect(createUser).toHaveBeenCalledWith("omar", undefined);
-      expect(fetchUsers).toHaveBeenCalledTimes(2);
-      expect(screen.getByText("https://egx.example")).toBeTruthy();
-      expect(screen.queryByLabelText("Username")).toBeNull();
-      await fireEvent.press(screen.getByText("Done"));
-      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
-    } finally {
-      Platform.OS = os;
-    }
+  it("invites by email, closes the sheet, shows a notice and reloads the list", async () => {
+    (inviteUser as jest.Mock).mockResolvedValue({ user: { ...SARA, id: "3", email: "omar@example.com" } });
+    await openInvite();
+    await fireEvent.press(screen.getByText("Send invitation"));
+    await waitFor(() => expect(screen.getByText("Invitation sent to omar@example.com.")).toBeTruthy());
+    expect(inviteUser).toHaveBeenCalledWith("omar@example.com", "");
+    expect(fetchUsers).toHaveBeenCalledTimes(2);
+    expect(screen.queryByLabelText("Email")).toBeNull();
   });
 
-  it("ios: holds the password until the create sheet has dismissed, then reveals it once", async () => {
-    const os = Platform.OS;
-    Platform.OS = "ios";
-    try {
-      await createOmar();
-      await waitFor(() => expect(fetchUsers).toHaveBeenCalledTimes(2));
-      // create sheet closed, but the second Modal must not open mid-dismiss
-      expect(screen.queryByLabelText("Username")).toBeNull();
-      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
-      await act(async () => finishDismiss());
-      expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy();
-      expect(screen.getByText("https://egx.example")).toBeTruthy();
-      // a second dismissal must not re-open it after it was closed
-      await fireEvent.press(screen.getByText("Done"));
-      await act(async () => finishDismiss());
-      expect(screen.queryByText("Gen3rat3dPassw0rd")).toBeNull();
-    } finally {
-      Platform.OS = os;
-    }
+  it("shows the server's message in the sheet when the email is already taken (409)", async () => {
+    (inviteUser as jest.Mock).mockRejectedValue(new Error("An account with that email already exists"));
+    await openInvite();
+    await fireEvent.press(screen.getByText("Send invitation"));
+    await waitFor(() => expect(screen.getByText("An account with that email already exists")).toBeTruthy());
+    expect(screen.getByLabelText("Email")).toBeTruthy();
+    expect(screen.queryByText(/^Invitation sent/)).toBeNull();
   });
 
-  it("ios: a dismiss with nothing pending reveals nothing", async () => {
-    await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("2 accounts.")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("Add user"));
-    await fireEvent.press(screen.getByLabelText("Dismiss sheet"));
-    await act(async () => finishDismiss());
-    expect(screen.queryByText("https://egx.example")).toBeNull();
-  });
-
-  it("ignores a dismiss while the create is in flight, so the one-time password is never dropped", async () => {
-    let resolve!: (v: unknown) => void;
-    (createUser as jest.Mock).mockReturnValue(
-      new Promise((r) => (resolve = r)),
-    );
-    await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("2 accounts.")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("Add user"));
-    await fireEvent.changeText(screen.getByLabelText("Username"), "omar");
-    // Not awaited: the press handler returns the pending create, and RNTL would wait on it.
-    void fireEvent.press(screen.getByText("Create user"));
-    await waitFor(() => expect(createUser).toHaveBeenCalledWith("omar", undefined));
-    await fireEvent.press(screen.getByLabelText("Dismiss sheet"));
-    await fireEvent.press(screen.getByText("Cancel"));
-    expect(screen.getByLabelText("Username")).toBeTruthy();
-    await act(async () => {
-      resolve({
-        user: { ...SARA, id: "3", username: "omar" },
-        generated_password: "Gen3rat3dPassw0rd",
-      });
-    });
-    await act(async () => finishDismiss());
-    await waitFor(() =>
-      expect(screen.getByText("Gen3rat3dPassw0rd")).toBeTruthy(),
-    );
-  });
-
-  it("asks before resetting a password, with the web's wording", async () => {
+  it("asks before emailing a reset link", async () => {
     confirmMock.mockResolvedValueOnce(false);
     await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("sara.b")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("sara.b, show actions"));
-    await fireEvent.press(screen.getByText("Reset password"));
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
+    await fireEvent.press(screen.getByText("Send reset email"));
     await waitFor(() =>
       expect(confirmMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          message:
-            "Generate a new password for sara.b? Their current password will stop working immediately.",
+          message: "Email sara@example.com a link to choose a new password?",
+          confirmLabel: "Send",
         }),
       ),
     );
-    expect(resetUserPassword).not.toHaveBeenCalled();
+    expect(sendUserReset).not.toHaveBeenCalled();
   });
 
-  it("resets after confirmation and reveals the new password", async () => {
+  it("sends the reset after confirmation and says a reset link went out", async () => {
     confirmMock.mockResolvedValueOnce(true);
-    (resetUserPassword as jest.Mock).mockResolvedValue({
-      id: "2",
-      username: "sara.b",
-      generated_password: "N3wPassw0rdHere",
-    });
+    (sendUserReset as jest.Mock).mockResolvedValue({ id: "2", sent: "reset" });
     await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("sara.b")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("sara.b, show actions"));
-    await fireEvent.press(screen.getByText("Reset password"));
-    await waitFor(() =>
-      expect(screen.getByText("N3wPassw0rdHere")).toBeTruthy(),
-    );
-    expect(resetUserPassword).toHaveBeenCalledWith("2");
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
+    await fireEvent.press(screen.getByText("Send reset email"));
+    await waitFor(() => expect(screen.getByText("Reset link sent to sara@example.com.")).toBeTruthy());
+    expect(sendUserReset).toHaveBeenCalledWith("2");
+  });
+
+  it("says the invitation was re-sent when they never set up", async () => {
+    confirmMock.mockResolvedValueOnce(true);
+    (sendUserReset as jest.Mock).mockResolvedValue({ id: "2", sent: "invite" });
+    await renderScreen(<AdminScreen />);
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
+    await fireEvent.press(screen.getByText("Send reset email"));
+    await waitFor(() => expect(screen.getByText("Invitation re-sent to sara@example.com.")).toBeTruthy());
+  });
+
+  it("surfaces a cooldown refusal from the reset", async () => {
+    confirmMock.mockResolvedValueOnce(true);
+    (sendUserReset as jest.Mock).mockRejectedValue(new Error("Wait a minute before sending again"));
+    await renderScreen(<AdminScreen />);
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
+    await fireEvent.press(screen.getByText("Send reset email"));
+    await waitFor(() => expect(screen.getByText("Wait a minute before sending again")).toBeTruthy());
   });
 
   it("deletes only after the irreversible-delete confirmation", async () => {
     confirmMock.mockResolvedValueOnce(true);
     (deleteUser as jest.Mock).mockResolvedValue({
       deleted: "2",
-      username: "sara.b",
+      email: "sara@example.com",
     });
     await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("sara.b")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("sara.b, show actions"));
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
     await fireEvent.press(screen.getByText("Delete"));
     await waitFor(() => expect(deleteUser).toHaveBeenCalledWith("2"));
     expect(confirmMock).toHaveBeenCalledWith(
       expect.objectContaining({
         message:
-          "Delete sara.b? This permanently removes their portfolio, sale history and watchlist. This cannot be undone.",
+          "Delete sara@example.com? This permanently removes their portfolio, sale history and watchlist. This cannot be undone.",
         destructive: true,
       }),
     );
@@ -231,8 +178,8 @@ describe("AdminScreen", () => {
       new Error("Cannot disable the last active admin"),
     );
     await renderScreen(<AdminScreen />);
-    await waitFor(() => expect(screen.getByText("sara.b")).toBeTruthy());
-    await fireEvent.press(screen.getByLabelText("sara.b, show actions"));
+    await waitFor(() => expect(screen.getByText("sara@example.com")).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
     await fireEvent.press(screen.getByText("Disable"));
     expect(setUserActive).toHaveBeenCalledWith("2", false);
     await waitFor(() =>

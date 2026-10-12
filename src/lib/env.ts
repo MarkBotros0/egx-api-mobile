@@ -18,14 +18,3 @@ export function apiBaseUrl(): string {
 export function normalizeBaseUrl(raw: string | undefined): string {
   return (raw ?? "").trim().replace(/\/+$/, "");
 }
-
-/**
- * The web app's address (its login page), put in front of every credential
- * block an admin copies — credentials with no address are a login the
- * recipient cannot use. Same value as the web's FE_BASE_URL. Optional: when
- * unset the admin is told to send the address separately.
- */
-export function feBaseUrl(): string {
-  // Static dot access: Expo inlines EXPO_PUBLIC_* only when spelled like this.
-  return normalizeBaseUrl(process.env.EXPO_PUBLIC_FE_BASE_URL);
-}

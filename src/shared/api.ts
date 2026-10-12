@@ -6,7 +6,7 @@ import {
   COMPOSITE_REQUEST_TIMEOUT_MS,
 } from "./constants";
 import { getApiConfig } from "./apiConfig";
-import { asRole, type AuthUser } from "./auth";
+import { parseAuthUser, type AuthUser } from "./auth";
 import type {
   Ticker,
   OHLCVResponse,
@@ -481,53 +481,39 @@ export async function fetchPEFeedStatus(): Promise<PEFeedStatus> {
 
 // ---- User administration (admin only) ----
 
+export type SignInMethod = "password" | "google" | "apple";
+
 export interface ManagedUser {
   id: string;
-  username: string;
+  email: string;
+  name: string;
   role: "user" | "admin";
   is_active: boolean;
+  email_verified: boolean;
+  methods: SignInMethod[];
   created_at: string;
   holdings_count: number;
-}
-
-/**
- * `generated_password` is populated ONLY when the backend generated one, and
- * only on the response to the call that created it. It is never readable again.
- */
-export interface PasswordResult {
-  generated_password: string | null;
 }
 
 export async function fetchUsers(): Promise<{ users: ManagedUser[] }> {
   return fetchJSON<{ users: ManagedUser[] }>(`${base()}/users`);
 }
 
-export async function createUser(
-  username: string,
-  password?: string
-): Promise<{ user: ManagedUser } & PasswordResult> {
+/** Creates the account and emails them a set-password link. 409 if the email exists. */
+export async function inviteUser(email: string, name: string): Promise<{ user: ManagedUser }> {
   return fetchJSON(`${base()}/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password: password || null }),
+    body: JSON.stringify({ email, name }),
   });
 }
 
-export async function resetUserPassword(
-  id: string,
-  password?: string
-): Promise<{ id: string; username: string } & PasswordResult> {
-  return fetchJSON(`${base()}/users/${encodeURIComponent(id)}/password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: password || null }),
-  });
+/** Emails a reset link — or a fresh invite if they never set up. 429 inside the 60 s cooldown. */
+export async function sendUserReset(id: string): Promise<{ id: string; sent: "invite" | "reset" }> {
+  return fetchJSON(`${base()}/users/${encodeURIComponent(id)}/send-reset`, { method: "POST" });
 }
 
-export async function setUserActive(
-  id: string,
-  isActive: boolean
-): Promise<ManagedUser> {
+export async function setUserActive(id: string, isActive: boolean): Promise<ManagedUser> {
   return fetchJSON<ManagedUser>(`${base()}/users/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -535,12 +521,8 @@ export async function setUserActive(
   });
 }
 
-export async function deleteUser(
-  id: string
-): Promise<{ deleted: string; username: string }> {
-  return fetchJSON(`${base()}/users/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+export async function deleteUser(id: string): Promise<{ deleted: string; email: string }> {
+  return fetchJSON(`${base()}/users/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 // ---- Market condition reading ----
@@ -746,48 +728,109 @@ export async function fetchNews(): Promise<NewsResponse> {
 
 // ---- Auth ----
 
-/** A rejected sign-in, carrying the message to show on the form. */
-export class LoginError extends Error {}
+/** A rejected auth call: the message to show, and the backend's code when it sent one. */
+export class LoginError extends Error {
+  constructor(message: string, public readonly code?: string) {
+    super(message);
+  }
+}
+
+export interface Session {
+  token: string;
+  user: AuthUser;
+}
+
+const AUTH_CODE_MESSAGES: Record<string, string> = {
+  email_not_verified: "Confirm your email first — check your inbox for the link.",
+  invalid_or_expired_link: "This link has expired or was already used. Request a new one.",
+};
 
 /**
- * POST /auth/login. Deliberately NOT routed through fetchJSON: a wrong
- * password is a 401, and that must surface as a message on the form, not
- * trigger the "your session expired" sign-out path.
+ * The public auth routes. Deliberately NOT routed through fetchJSON: a 401
+ * here is a wrong password and must surface on the form, not trigger the
+ * "your session expired" sign-out path.
  */
-export async function loginRequest(
-  username: string,
-  password: string
-): Promise<{ token: string; user: AuthUser }> {
-  const res = await fetch(`${base()}/auth/login`, {
+async function authPost(path: string, body: unknown): Promise<unknown> {
+  const res = await fetch(`${base()}/auth/${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg =
+    const detail =
       (typeof data?.detail === "string" && data.detail) ||
       (typeof data?.error === "string" && data.error) ||
-      "Invalid username or password";
-    throw new LoginError(msg);
+      "";
+    const code = Object.prototype.hasOwnProperty.call(AUTH_CODE_MESSAGES, detail) ? detail : undefined;
+    throw new LoginError(
+      code ? AUTH_CODE_MESSAGES[code] : detail || "Something went wrong. Try again.",
+      code
+    );
   }
-  return {
-    token: data.access_token,
-    user: {
-      id: data.user?.id,
-      username: data.user?.username,
-      role: asRole(data.user?.role),
-    },
-  };
+  return data;
+}
+
+function toSession(data: unknown): Session {
+  const d = data as { access_token?: unknown; user?: unknown } | null;
+  const user = parseAuthUser(d?.user);
+  if (typeof d?.access_token !== "string" || !user) {
+    throw new LoginError("Unexpected response from the server.");
+  }
+  return { token: d.access_token, user };
+}
+
+export async function loginRequest(email: string, password: string): Promise<Session> {
+  return toSession(await authPost("login", { email, password }));
+}
+
+/** Always resolves the same way whether or not the email exists (the backend says "check_email"). */
+export async function signupRequest(name: string, email: string, password: string): Promise<void> {
+  await authPost("signup", { name, email, password });
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  await authPost("resend-verification", { email });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await authPost("forgot-password", { email });
+}
+
+export async function verifyEmailRequest(token: string): Promise<Session> {
+  return toSession(await authPost("verify-email", { token }));
+}
+
+export async function setPasswordRequest(token: string, password: string): Promise<Session> {
+  return toSession(await authPost("set-password", { token, password }));
+}
+
+export async function googleSignInRequest(idToken: string, name?: string): Promise<Session> {
+  return toSession(await authPost("google", { idToken, name: name ?? "" }));
+}
+
+export async function appleSignInRequest(input: {
+  identityToken: string;
+  authorizationCode?: string | null;
+  name?: string;
+}): Promise<Session> {
+  return toSession(
+    await authPost("apple", {
+      identityToken: input.identityToken,
+      authorizationCode: input.authorizationCode ?? null,
+      name: input.name ?? "",
+    })
+  );
 }
 
 /** GET /auth/me — re-reads the role from the DB. A 401 signs out like any call. */
 export async function fetchMe(): Promise<AuthUser> {
-  const data = await fetchJSON<{ id?: unknown; username?: unknown; role?: unknown }>(
-    `${base()}/auth/me`
-  );
-  if (typeof data.id !== "string" || typeof data.username !== "string") {
-    throw new Error("Malformed /auth/me response");
-  }
-  return { id: data.id, username: data.username, role: asRole(data.role) };
+  const user = parseAuthUser(await fetchJSON<unknown>(`${base()}/auth/me`));
+  if (!user) throw new Error("Malformed /auth/me response");
+  return user;
+}
+
+/** DELETE /auth/me — deletes the account and everything in it. */
+export async function deleteMyAccount(): Promise<void> {
+  await fetchJSON<unknown>(`${base()}/auth/me`, { method: "DELETE" });
 }

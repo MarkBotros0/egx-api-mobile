@@ -10,7 +10,7 @@ import type { AuthUser } from "@/shared/auth";
 import { prependMockFetch } from "./fetch";
 import { TestSafeArea } from "./safeArea";
 
-const DEFAULT_USER: AuthUser = { id: "u1", username: "tester", role: "user" };
+const DEFAULT_USER: AuthUser = { id: "u1", email: "mark@example.com", name: "Mark", role: "user" };
 const DEFAULT_WEIGHTS = { trend: 18, momentum: 15, volume: 12, volatility: 10, divergence: 8, quality: 12, risk_adjusted: 13, relative_strength: 12 };
 
 // Mirrors the app's BootGate: nothing mounts until the session restore settles.

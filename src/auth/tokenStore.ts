@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-import { asRole, type AuthUser } from "@/shared/auth";
+import { parseAuthUser, type AuthUser } from "@/shared/auth";
 
 // Same key names as the web's localStorage keys, for recognisability.
 const TOKEN_KEY = "egx.auth.token";
@@ -26,16 +26,13 @@ export interface StoredSession {
 }
 
 function parseUser(raw: string | null): AuthUser | null {
-  if (!raw) return null;
+  // Optimistic only — /auth/me re-reads the role on every boot and the
+  // backend enforces it regardless.
   try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.id === "string" && typeof parsed.username === "string") {
-      // Optimistic only — /auth/me re-reads the role on every boot and the
-      // backend enforces it regardless.
-      return { id: parsed.id, username: parsed.username, role: asRole(parsed.role) };
-    }
-  } catch {}
-  return null;
+    return raw ? parseAuthUser(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function loadSession(): Promise<StoredSession> {

@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { unregisterOnLogout } from "@/features/alerts/registration";
 import { setupApi } from "@/lib/apiSetup";
-import { fetchMe, LoginError, loginRequest } from "@/shared/api";
+import { deleteMyAccount, fetchMe, LoginError, loginRequest, type Session } from "@/shared/api";
 import type { AuthUser } from "@/shared/auth";
 
 import { clearSession, currentToken, loadSession, saveSession } from "./tokenStore";
@@ -37,7 +37,9 @@ interface AuthCtx {
   isAdmin: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  completeSignIn: (session: Session) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -95,16 +97,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [signOutLocally]);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const completeSignIn = useCallback(async (session: Session) => {
+    await saveSession(session.token, session.user);
+    setUser(session.user);
     setError(null);
-    try {
-      const session = await loginRequest(username, password);
-      await saveSession(session.token, session.user);
-      setUser(session.user);
-    } catch (e) {
-      setError(e instanceof LoginError ? e.message : UNREACHABLE);
-      throw e;
-    }
+  }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setError(null);
+      try {
+        await completeSignIn(await loginRequest(email, password));
+      } catch (e) {
+        setError(e instanceof LoginError ? e.message : UNREACHABLE);
+        throw e;
+      }
+    },
+    [completeSignIn]
+  );
+
+  const deleteAccount = useCallback(async () => {
+    // The server deletes this phone's push registration with the account,
+    // so there is no unregister call here — only local cleanup.
+    await deleteMyAccount();
+    await clearSession();
+    setUser(null);
+    setError(null);
   }, []);
 
   const logout = useCallback(async () => {
@@ -124,9 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       error,
       login,
+      completeSignIn,
+      deleteAccount,
       logout,
     }),
-    [user, isLoading, error, login, logout]
+    [user, isLoading, error, login, completeSignIn, deleteAccount, logout]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

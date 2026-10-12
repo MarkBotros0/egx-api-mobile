@@ -1,7 +1,7 @@
 import { clearSession, currentToken, loadSession, saveSession } from "@/auth/tokenStore";
 import * as SecureStore from "expo-secure-store";
 
-const alice = { id: "u1", username: "alice", role: "user" as const };
+const alice = { id: "u1", email: "alice@example.com", name: "Alice", role: "user" as const };
 
 describe("tokenStore", () => {
   it("round-trips a session and exposes the token synchronously", async () => {
@@ -23,9 +23,15 @@ describe("tokenStore", () => {
     await expect(loadSession()).resolves.toEqual({ token: "tok-2", user: null });
   });
 
+  it("treats a pre-email cached user (username only) as absent", async () => {
+    await SecureStore.setItemAsync("egx.auth.token", "tok-4");
+    await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "u3", username: "old", role: "user" }));
+    await expect(loadSession()).resolves.toEqual({ token: "tok-4", user: null });
+  });
+
   it("normalises an unknown role to user", async () => {
     await SecureStore.setItemAsync("egx.auth.token", "tok-3");
-    await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "u2", username: "bob", role: "root" }));
+    await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "u2", email: "bob@example.com", name: "Bob", role: "root" }));
     const { user } = await loadSession();
     expect(user?.role).toBe("user");
   });

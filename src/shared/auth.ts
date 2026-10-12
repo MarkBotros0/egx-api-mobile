@@ -6,11 +6,42 @@ export type UserRole = "user" | "admin";
 
 export interface AuthUser {
   id: string;
-  username: string;
+  email: string;
+  /** May be empty — show displayName(), never `name` alone. */
+  name: string;
   role: UserRole;
 }
+
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+
+/** Backend error codes the forms branch on (detail strings, not messages). */
+export const EMAIL_NOT_VERIFIED = "email_not_verified";
+export const INVALID_LINK = "invalid_or_expired_link";
 
 /** Anything that isn't literally "admin" is a plain user. */
 export function asRole(value: unknown): UserRole {
   return value === "admin" ? "admin" : "user";
+}
+
+export function displayName(u: Pick<AuthUser, "name" | "email">): string {
+  return u.name.trim() || u.email;
+}
+
+/** A user object from the API or storage, or null if it isn't one (e.g. a pre-email cached user). */
+export function parseAuthUser(raw: unknown): AuthUser | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== "string" || typeof r.email !== "string") return null;
+  return {
+    id: r.id,
+    email: r.email,
+    name: typeof r.name === "string" ? r.name : "",
+    role: asRole(r.role),
+  };
+}
+
+/** Client-side hint only — the backend is the judge. Same shape it checks. */
+export function looksLikeEmail(s: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 }

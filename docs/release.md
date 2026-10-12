@@ -19,11 +19,60 @@ run by the user.
    for ENV in development preview production; do
      npx eas-cli@latest env:create --environment $ENV --name EXPO_PUBLIC_API_BASE_URL \
        --value https://<backend-host>/api --visibility plaintext
-     npx eas-cli@latest env:create --environment $ENV --name EXPO_PUBLIC_FE_BASE_URL \
-       --value https://<web-app-host> --visibility plaintext
    done
    ```
    These are public values (inlined into the bundle), not secrets.
+
+## 0a. Sign-in providers (Google and Apple)
+
+Accounts are email + password; Google and Apple are optional extras and hide themselves
+when not configured. Neither Google sign-in nor push works in Expo Go: use a development
+or store build. Apple sign-in in Expo Go works only against a DEVELOPMENT backend (see
+**Apple** below).
+
+**Backend env vars these steps feed** (Vercel, backend project):
+- `GOOGLE_CLIENT_IDS` — comma-separated: the web, Android AND iOS client ids from steps 2–4
+  below. Each is a token audience the backend accepts; a missing one makes that platform's
+  Google sign-in fail with 401.
+- `APPLE_CLIENT_IDS` — in production the bundle id `com.markbotros.borsacompass` ONLY. Expo
+  Go signs Apple tokens with the shared audience `host.exp.Exponent`, which every Expo Go
+  app on iOS receives; the backend refuses it (401) unless `APPLE_ALLOW_EXPO_GO=1` is set,
+  and that flag belongs on a dev backend only, never production — there it would let a
+  stranger's Expo Go app take over an account by email.
+- `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` (a Sign in with Apple key, `.p8`
+  contents) — effectively REQUIRED before App Store review: when an account that used
+  Sign in with Apple is deleted, Apple expects the app's grant to be revoked, and the
+  backend can only do that (exchange the code at sign-in, revoke on deletion) with these.
+
+**Google**
+1. Google Cloud console → APIs & Services → OAuth consent screen: configure it (app name, support email, publish).
+2. Credentials → Create OAuth client ID → **Web application**. Its id is the token audience; the backend must
+   accept it too, and it is the `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` below.
+3. Credentials → OAuth client ID → **Android**, package `com.markbotros.borsacompass`, SHA-1 of the EAS keystore:
+   `npx eas-cli@latest credentials` → Android → the build profile's keystore → copy the SHA-1. (Add the Play
+   App Signing SHA-1 as well once the app is on Play.)
+4. Credentials → OAuth client ID → **iOS**, bundle id `com.markbotros.borsacompass`. Its id is
+   `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`; its reversed form (`com.googleusercontent.apps.<id>`) is `GOOGLE_IOS_URL_SCHEME`.
+5. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` and `GOOGLE_IOS_URL_SCHEME` in each EAS
+   environment (same `env:create` loop as in section 0; all three are plaintext/public, `GOOGLE_IOS_URL_SCHEME`
+   is read at build time by `app.config.ts`, which only then adds the Google Sign-In plugin), then rebuild.
+   Without the web id the button is hidden. On iOS it also stays hidden without
+   `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`; set `GOOGLE_IOS_URL_SCHEME` wherever that id is set,
+   because an iOS build with the id but without the scheme (no plugin) crashes natively
+   when the button is tapped.
+
+**Apple**
+1. Apple Developer → Certificates, Identifiers & Profiles → Identifiers → the App ID
+   `com.markbotros.borsacompass` → enable **Sign in with Apple**, then rebuild (`usesAppleSignIn` is already
+   set in app.json). The button shows on iOS only.
+2. Apple requires in-app account deletion: done (Account screen, "Delete my account").
+3. Certificates, Identifiers & Profiles → Keys → create a key with **Sign in with Apple**
+   for that App ID; set its key id, your team id and the `.p8` contents as the backend's
+   `APPLE_KEY_ID`, `APPLE_TEAM_ID`, `APPLE_PRIVATE_KEY` (needed for revocation on deletion,
+   which App Store review checks).
+4. Testing Apple in Expo Go: point the app at a development backend whose
+   `APPLE_CLIENT_IDS` also lists `host.exp.Exponent` and which sets
+   `APPLE_ALLOW_EXPO_GO=1`. Never set either on the production backend.
 
 ## 0b. Push notifications setup (score alerts, user steps in order)
 
@@ -94,7 +143,7 @@ Build numbers are remote and auto-incremented (`appVersionSource: remote`); bump
 2. `npx eas-cli@latest submit -p ios --latest` (EAS asks for the Apple ID / creates an
    App Store Connect API key) → build appears in TestFlight.
 3. App Privacy answers (same data as above, linked to the user, not used for tracking),
-   screenshots for 6.9" and 6.5" iPhones, review notes with a demo account (accounts
-   are admin-created; there is no sign-up), export compliance already declared via
+   screenshots for 6.9" and 6.5" iPhones, review notes with a demo account (sign-up is
+   open with email verification; or invite one from the admin screen), export compliance already declared via
    `usesNonExemptEncryption: false`.
 4. Submit for review.
