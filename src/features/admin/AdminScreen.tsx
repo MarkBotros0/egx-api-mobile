@@ -4,26 +4,19 @@
  * admin-shaped page full of errors. No role picker: admin comes only from
  * AUTH_ADMINS on the server.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, Button, CardSkeleton, Screen, confirm } from "@/ui";
 import { useAuth } from "@/auth/AuthProvider";
 import { errorMessage } from "@/lib/errors";
-import { feBaseUrl } from "@/lib/env";
 import { routes } from "@/lib/links";
 import { COLORS } from "@/shared/theme";
-import { createUser, deleteUser, fetchUsers, resetUserPassword, setUserActive, type ManagedUser } from "@/shared/api";
-import { CreateUserSheet } from "./CreateUserSheet";
-import { PasswordRevealSheet } from "./PasswordRevealSheet";
+import { deleteUser, fetchUsers, inviteUser, sendUserReset, setUserActive, type ManagedUser } from "@/shared/api";
+import { InviteUserSheet } from "./InviteUserSheet";
 import { UsersList } from "./UsersList";
-
-interface Revealed {
-  username: string;
-  password: string;
-}
 
 export function AdminScreen() {
   const { isAdmin, isLoading: authLoading, user } = useAuth();
@@ -32,19 +25,12 @@ export function AdminScreen() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   // Bumped on every open: a fresh form each time, while the sheet stays
-  // mounted (hidden) long enough to report its dismissal.
-  const [createKey, setCreateKey] = useState(0);
-  const [revealed, setRevealed] = useState<Revealed | null>(null);
-  // A created user's password waiting for the create sheet to finish
-  // dismissing (iOS cannot present a second Modal mid-dismiss). Moved to
-  // `revealed` by onDismiss, so it is never dropped.
-  const [pending, setPending] = useState<Revealed | null>(null);
+  // mounted (hidden) long enough to animate out.
+  const [inviteKey, setInviteKey] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  // True while createUser is in flight: closing the sheet then would drop the
-  // generated password, which is shown exactly once.
-  const creating = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -63,45 +49,29 @@ export function AdminScreen() {
     if (!authLoading && isAdmin) void load();
   }, [authLoading, isAdmin, load]);
 
-  const closeCreate = () => {
-    if (!creating.current) setShowCreate(false);
-  };
-
-  const handleCreate = async (username: string, password?: string) => {
-    creating.current = true;
-    try {
-      const res = await createUser(username, password);
-      const creds = res.generated_password
-        ? { username: res.user.username, password: res.generated_password }
-        : null;
-      if (creds && Platform.OS === "ios") setPending(creds);
-      else if (creds) setRevealed(creds);
-      setShowCreate(false);
-    } finally {
-      creating.current = false;
-    }
+  const handleInvite = async (email: string, name: string) => {
+    const res = await inviteUser(email, name);
+    setShowInvite(false);
+    setError(null);
+    setNotice(`Invitation sent to ${res.user.email}.`);
     await load();
   };
 
-  const onCreateDismissed = () => {
-    if (!pending) return;
-    setRevealed(pending);
-    setPending(null);
-  };
-
-  const handleReset = async (u: ManagedUser) => {
+  const handleSendReset = async (u: ManagedUser) => {
     const ok = await confirm({
-      title: "Reset password",
-      message: `Generate a new password for ${u.username}? Their current password will stop working immediately.`,
-      confirmLabel: "Generate",
+      title: "Send reset email",
+      message: `Email ${u.email} a link to choose a new password?`,
+      confirmLabel: "Send",
     });
     if (!ok) return;
     setBusyId(u.id);
+    setError(null);
     try {
-      const res = await resetUserPassword(u.id);
-      if (res.generated_password) setRevealed({ username: u.username, password: res.generated_password });
+      const res = await sendUserReset(u.id);
+      setNotice(res.sent === "invite" ? `Invitation re-sent to ${u.email}.` : `Reset link sent to ${u.email}.`);
     } catch (e: unknown) {
-      setError(errorMessage(e, "Could not reset the password"));
+      setNotice(null);
+      setError(errorMessage(e, "Could not send the email"));
     } finally {
       setBusyId(null);
     }
@@ -124,7 +94,7 @@ export function AdminScreen() {
     // Spelled out because it is irreversible and takes their data with it.
     const ok = await confirm({
       title: "Delete user",
-      message: `Delete ${u.username}? This permanently removes their portfolio, sale history and watchlist. This cannot be undone.`,
+      message: `Delete ${u.email}? This permanently removes their portfolio, sale history and watchlist. This cannot be undone.`,
       confirmLabel: "Delete",
       destructive: true,
     });
@@ -178,6 +148,12 @@ export function AdminScreen() {
             </AppText>
           </View>
 
+          {notice ? (
+            <View className="mb-4 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2.5">
+              <AppText className="text-sm text-white/80">{notice}</AppText>
+            </View>
+          ) : null}
+
           {error ? (
             <View className="mb-4 rounded-lg border border-loss/30 bg-loss/10 px-3 py-2.5">
               <AppText className="text-sm text-loss">{error}</AppText>
@@ -189,7 +165,7 @@ export function AdminScreen() {
               users={users}
               busyId={busyId}
               currentUserId={user?.id}
-              onResetPassword={handleReset}
+              onSendReset={handleSendReset}
               onToggleActive={handleToggle}
               onDelete={handleDelete}
             />
@@ -203,32 +179,23 @@ export function AdminScreen() {
           is a stack screen above the tabs, so there is no tab bar to clear. */}
       <Pressable
         onPress={() => {
-          setCreateKey((k) => k + 1);
-          setShowCreate(true);
+          setInviteKey((k) => k + 1);
+          setShowInvite(true);
         }}
         accessibilityRole="button"
-        accessibilityLabel="Add user"
+        accessibilityLabel="Invite user"
         className="absolute right-4 h-14 w-14 items-center justify-center rounded-full bg-accent"
         style={{ bottom: insets.bottom + 16 }}
       >
         <Ionicons name="add" size={28} color={COLORS["charcoal-dark"]} />
       </Pressable>
 
-      {createKey > 0 ? (
-        <CreateUserSheet
-          key={createKey}
-          visible={showCreate}
-          onCreate={handleCreate}
-          onClose={closeCreate}
-          onDismiss={onCreateDismissed}
-        />
-      ) : null}
-      {revealed ? (
-        <PasswordRevealSheet
-          username={revealed.username}
-          password={revealed.password}
-          appUrl={feBaseUrl()}
-          onClose={() => setRevealed(null)}
+      {inviteKey > 0 ? (
+        <InviteUserSheet
+          key={inviteKey}
+          visible={showInvite}
+          onInvite={handleInvite}
+          onClose={() => setShowInvite(false)}
         />
       ) : null}
     </View>

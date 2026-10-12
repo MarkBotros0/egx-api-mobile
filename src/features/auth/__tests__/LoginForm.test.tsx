@@ -11,23 +11,48 @@ const renderForm = () =>
     </AuthProvider>
   );
 
+const USER = { id: "1", email: "mark@gmail.com", name: "Mark", role: "user" };
+
 describe("LoginForm", () => {
-  it("sends a trimmed, lower-cased username like the web form", async () => {
-    mockFetch("POST", "/auth/login", { access_token: "t", user: { id: "1", username: "alice", role: "user" } });
+  it("sends a trimmed email, not lower-cased (the backend normalises)", async () => {
+    mockFetch("POST", "/auth/login", { access_token: "t", user: USER });
     await renderForm();
-    await fireEvent.changeText(await screen.findByLabelText("Username"), "  Alice ");
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "  mark@gmail.com ");
     await fireEvent.changeText(screen.getByLabelText("Password"), "pw");
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(fetchCalls()[0]?.body).toEqual({ username: "alice", password: "pw" }));
+    await waitFor(() => expect(fetchCalls()[0]?.body).toEqual({ email: "mark@gmail.com", password: "pw" }));
+  });
+
+  it("keeps the email's case as typed", async () => {
+    mockFetch("POST", "/auth/login", { access_token: "t", user: USER });
+    await renderForm();
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "Mark@Gmail.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "pw");
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(fetchCalls()[0]?.body).toEqual({ email: "Mark@Gmail.com", password: "pw" }));
   });
 
   it("shows the backend's error", async () => {
-    mockFetch("POST", "/auth/login", { detail: "Invalid username or password" }, 401);
+    mockFetch("POST", "/auth/login", { detail: "Invalid email or password" }, 401);
     await renderForm();
-    await fireEvent.changeText(await screen.findByLabelText("Username"), "alice");
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "mark@gmail.com");
     await fireEvent.changeText(screen.getByLabelText("Password"), "bad");
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByText("Invalid username or password")).toBeTruthy();
+    expect(await screen.findByText("Invalid email or password")).toBeTruthy();
+  });
+
+  it("offers to resend the link when the email is not confirmed yet", async () => {
+    mockFetch("POST", "/auth/login", { detail: "email_not_verified" }, 403);
+    mockFetch("POST", "/auth/resend-verification", { ok: true });
+    await renderForm();
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "mark@gmail.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "pw");
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText(/Confirm your email first/)).toBeTruthy();
+    await fireEvent.press(screen.getByText("Resend the link"));
+    expect(await screen.findByText("Sent again.")).toBeTruthy();
+    const resend = fetchCalls().find((c) => c.url.endsWith("/auth/resend-verification"));
+    expect(resend?.body).toEqual({ email: "mark@gmail.com" });
   });
 
   it("does not submit with an empty field", async () => {

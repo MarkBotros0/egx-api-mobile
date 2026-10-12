@@ -33,8 +33,8 @@ const app = {
 
 async function signedInAs(role: "user" | "admin") {
   await SecureStore.setItemAsync("egx.auth.token", "tok");
-  await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "1", username: "a", role }));
-  mockFetch("GET", "/auth/me", { id: "1", username: "a", role });
+  await SecureStore.setItemAsync("egx.auth.user", JSON.stringify({ id: "1", email: "mark@example.com", name: "Mark", role }));
+  mockFetch("GET", "/auth/me", { id: "1", email: "mark@example.com", name: "Mark", role });
 }
 
 describe("route guard", () => {

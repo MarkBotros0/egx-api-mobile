@@ -3,12 +3,32 @@ import { renderScreen } from "@/test-utils/renderScreen";
 import type { ManagedUser } from "@/shared/api";
 import { UsersList } from "../UsersList";
 
-const ME: ManagedUser = { id: "1", username: "mark", role: "admin", is_active: true, created_at: "2026-01-02T00:00:00Z", holdings_count: 3 };
-const SARA: ManagedUser = { id: "2", username: "sara.b", role: "user", is_active: false, created_at: "2026-02-03T00:00:00Z", holdings_count: 1 };
+const ME: ManagedUser = {
+  id: "1",
+  email: "mark@example.com",
+  name: "Mark",
+  role: "admin",
+  is_active: true,
+  email_verified: true,
+  methods: ["password", "google"],
+  created_at: "2026-01-02T00:00:00Z",
+  holdings_count: 3,
+};
+const SARA: ManagedUser = {
+  id: "2",
+  email: "sara@example.com",
+  name: "",
+  role: "user",
+  is_active: false,
+  email_verified: false,
+  methods: [],
+  created_at: "2026-02-03T00:00:00Z",
+  holdings_count: 1,
+};
 
-function setup(busyId: string | null = null) {
-  const handlers = { onResetPassword: jest.fn(), onToggleActive: jest.fn(), onDelete: jest.fn() };
-  return { handlers, view: renderScreen(<UsersList users={[ME, SARA]} busyId={busyId} currentUserId="1" {...handlers} />) };
+function setup(users: ManagedUser[] = [ME, SARA], busyId: string | null = null) {
+  const handlers = { onSendReset: jest.fn(), onToggleActive: jest.fn(), onDelete: jest.fn() };
+  return { handlers, view: renderScreen(<UsersList users={users} busyId={busyId} currentUserId="1" {...handlers} />) };
 }
 
 describe("UsersList", () => {
@@ -20,11 +40,29 @@ describe("UsersList", () => {
     expect(screen.getByText("3 holdings")).toBeTruthy();
   });
 
+  it("titles a user by name with the email beneath, or by email alone without a name", async () => {
+    await setup().view;
+    expect(screen.getByText("Mark")).toBeTruthy();
+    expect(screen.getByText("mark@example.com")).toBeTruthy();
+    // SARA has no name: her email is the title, shown once.
+    expect(screen.getAllByText("sara@example.com")).toHaveLength(1);
+  });
+
+  it("badges sign-in methods, Invited when none, and Unverified", async () => {
+    await setup().view;
+    expect(screen.getByText("Password")).toBeTruthy();
+    expect(screen.getByText("Google")).toBeTruthy();
+    expect(screen.getByText("Invited")).toBeTruthy();
+    expect(screen.getAllByText("Unverified")).toHaveLength(1);
+  });
+
   it("expands a card to its actions", async () => {
     const { handlers, view } = setup();
     await view;
-    await fireEvent.press(screen.getByLabelText("sara.b, show actions"));
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
     expect(screen.getByText(/^Added /)).toBeTruthy();
+    await fireEvent.press(screen.getByText("Send reset email"));
+    expect(handlers.onSendReset).toHaveBeenCalledWith(SARA);
     await fireEvent.press(screen.getByText("Enable"));
     expect(handlers.onToggleActive).toHaveBeenCalledWith(SARA);
     await fireEvent.press(screen.getByText("Delete"));
@@ -33,15 +71,21 @@ describe("UsersList", () => {
 
   it("explains why you cannot disable or delete yourself", async () => {
     await setup().view;
-    await fireEvent.press(screen.getByLabelText("mark, show actions"));
+    await fireEvent.press(screen.getByLabelText("mark@example.com, show actions"));
     expect(screen.getByText("This is you")).toBeTruthy();
     expect(screen.queryByText("Disable")).toBeNull();
     expect(screen.queryByText("Delete")).toBeNull();
-    expect(screen.getByText("Reset password")).toBeTruthy();
+    expect(screen.getByText("Send reset email")).toBeTruthy();
+  });
+
+  it("falls back to a dash when the created date cannot be read", async () => {
+    await setup([{ ...SARA, created_at: "nope" }]).view;
+    await fireEvent.press(screen.getByLabelText("sara@example.com, show actions"));
+    expect(screen.getByText("Added —")).toBeTruthy();
   });
 
   it("says so when there are no users", async () => {
-    await renderScreen(<UsersList users={[]} busyId={null} currentUserId="1" onResetPassword={jest.fn()} onToggleActive={jest.fn()} onDelete={jest.fn()} />);
+    await setup([]).view;
     expect(screen.getByText("No users yet.")).toBeTruthy();
   });
 });
