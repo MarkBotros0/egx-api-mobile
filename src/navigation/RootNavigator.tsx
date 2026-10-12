@@ -5,7 +5,7 @@ import { NotificationRouter } from "@/features/alerts/NotificationRouter";
 import { COLORS } from "@/shared/theme";
 
 /**
- * The app is CLOSED, like the web: nothing but /login exists signed out.
+ * The app is CLOSED, like the web: nothing but /login, /signup and /forgot-password exist signed out.
  * Every route must be declared inside a guard here — a route file with no
  * matching Stack.Screen is reachable by anyone. (SDK 57 has no `redirectTo`;
  * a denied route falls back to the first screen the guards allow.)
@@ -41,6 +41,8 @@ export function RootNavigator() {
         </Stack.Protected>
         <Stack.Protected guard={!isAuthenticated}>
           <Stack.Screen name="login" />
+          <Stack.Screen name="signup" />
+          <Stack.Screen name="forgot-password" />
         </Stack.Protected>
       </Stack>
       {isAuthenticated ? <NotificationRouter /> : null}

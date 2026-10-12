@@ -55,6 +55,31 @@ describe("LoginForm", () => {
     expect(resend?.body).toEqual({ email: "mark@gmail.com" });
   });
 
+  it("shows the error and keeps Resend available when resending fails", async () => {
+    mockFetch("POST", "/auth/login", { detail: "email_not_verified" }, 403);
+    mockFetch("POST", "/auth/resend-verification", { detail: "Email is not configured" }, 503);
+    await renderForm();
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "mark@gmail.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "pw");
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    await fireEvent.press(await screen.findByText("Resend the link"));
+    expect(await screen.findByText("Email is not configured")).toBeTruthy();
+    expect(screen.queryByText("Sent again.")).toBeNull();
+    expect(screen.getByText("Resend the link")).toBeTruthy();
+  });
+
+  it("clears the unverified panel when the email is edited", async () => {
+    mockFetch("POST", "/auth/login", { detail: "email_not_verified" }, 403);
+    await renderForm();
+    await fireEvent.changeText(await screen.findByLabelText("Email"), "mark@gmail.com");
+    await fireEvent.changeText(screen.getByLabelText("Password"), "pw");
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByText(/Confirm your email first/)).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText("Email"), "other@gmail.com");
+    expect(screen.queryByText(/we sent a link to/)).toBeNull();
+    expect(screen.queryByText("Resend the link")).toBeNull();
+  });
+
   it("does not submit with an empty field", async () => {
     await renderForm();
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));

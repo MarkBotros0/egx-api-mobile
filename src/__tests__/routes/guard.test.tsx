@@ -20,6 +20,8 @@ function Layout() {
 const app = {
   _layout: Layout,
   login: () => <Text>LOGIN</Text>,
+  signup: () => <Text>SIGNUP</Text>,
+  "forgot-password": () => <Text>FORGOT</Text>,
   "(tabs)/_layout": Slot,
   "(tabs)/index": () => <Text>DASHBOARD</Text>,
   "stock/[symbol]": () => <Text>STOCK</Text>,
@@ -64,6 +66,21 @@ describe("route guard", () => {
     await signedInAs("user");
     await renderRouter(app, { initialUrl: "/alerts" });
     expect(await screen.findByText("ALERTS")).toBeTruthy();
+  });
+
+  it("shows sign-up and forgot-password to a signed-out visitor", async () => {
+    await renderRouter(app, { initialUrl: "/signup" });
+    expect(await screen.findByText("SIGNUP")).toBeTruthy();
+    await renderRouter(app, { initialUrl: "/forgot-password" });
+    expect(await screen.findByText("FORGOT")).toBeTruthy();
+  });
+
+  it("keeps a signed-in user off sign-up and forgot-password", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/signup" });
+    expect(await screen.findByText("DASHBOARD")).toBeTruthy();
+    await renderRouter(app, { initialUrl: "/forgot-password" });
+    expect(await screen.findByText("DASHBOARD")).toBeTruthy();
   });
 
   it("drops to login when the session dies mid-use", async () => {
