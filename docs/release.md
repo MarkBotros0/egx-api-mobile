@@ -27,7 +27,22 @@ run by the user.
 
 Accounts are email + password; Google and Apple are optional extras and hide themselves
 when not configured. Neither Google sign-in nor push works in Expo Go: use a development
-or store build.
+or store build. Apple sign-in in Expo Go works only against a DEVELOPMENT backend (see
+**Apple** below).
+
+**Backend env vars these steps feed** (Vercel, backend project):
+- `GOOGLE_CLIENT_IDS` — comma-separated: the web, Android AND iOS client ids from steps 2–4
+  below. Each is a token audience the backend accepts; a missing one makes that platform's
+  Google sign-in fail with 401.
+- `APPLE_CLIENT_IDS` — in production the bundle id `com.markbotros.borsacompass` ONLY. Expo
+  Go signs Apple tokens with the shared audience `host.exp.Exponent`, which every Expo Go
+  app on iOS receives; the backend refuses it (401) unless `APPLE_ALLOW_EXPO_GO=1` is set,
+  and that flag belongs on a dev backend only, never production — there it would let a
+  stranger's Expo Go app take over an account by email.
+- `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` (a Sign in with Apple key, `.p8`
+  contents) — effectively REQUIRED before App Store review: when an account that used
+  Sign in with Apple is deleted, Apple expects the app's grant to be revoked, and the
+  backend can only do that (exchange the code at sign-in, revoke on deletion) with these.
 
 **Google**
 1. Google Cloud console → APIs & Services → OAuth consent screen: configure it (app name, support email, publish).
@@ -41,13 +56,23 @@ or store build.
 5. Set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` and `GOOGLE_IOS_URL_SCHEME` in each EAS
    environment (same `env:create` loop as in section 0; all three are plaintext/public, `GOOGLE_IOS_URL_SCHEME`
    is read at build time by `app.config.ts`, which only then adds the Google Sign-In plugin), then rebuild.
-   Without the web id the button is hidden; without the URL scheme the iOS build has no Google plugin.
+   Without the web id the button is hidden. On iOS it also stays hidden without
+   `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`; set `GOOGLE_IOS_URL_SCHEME` wherever that id is set,
+   because an iOS build with the id but without the scheme (no plugin) crashes natively
+   when the button is tapped.
 
 **Apple**
 1. Apple Developer → Certificates, Identifiers & Profiles → Identifiers → the App ID
    `com.markbotros.borsacompass` → enable **Sign in with Apple**, then rebuild (`usesAppleSignIn` is already
    set in app.json). The button shows on iOS only.
 2. Apple requires in-app account deletion: done (Account screen, "Delete my account").
+3. Certificates, Identifiers & Profiles → Keys → create a key with **Sign in with Apple**
+   for that App ID; set its key id, your team id and the `.p8` contents as the backend's
+   `APPLE_KEY_ID`, `APPLE_TEAM_ID`, `APPLE_PRIVATE_KEY` (needed for revocation on deletion,
+   which App Store review checks).
+4. Testing Apple in Expo Go: point the app at a development backend whose
+   `APPLE_CLIENT_IDS` also lists `host.exp.Exponent` and which sets
+   `APPLE_ALLOW_EXPO_GO=1`. Never set either on the production backend.
 
 ## 0b. Push notifications setup (score alerts, user steps in order)
 
