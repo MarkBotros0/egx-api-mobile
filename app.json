@@ -22,7 +22,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.markbotros.borsacompass"
+      "package": "com.markbotros.borsacompass",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -51,6 +52,13 @@
           "defaultChannel": "score-alerts"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6a7a983d-9175-44b2-a213-a23daa02c1ff"
+      }
+    },
+    "owner": "markbotros0"
   }
 }

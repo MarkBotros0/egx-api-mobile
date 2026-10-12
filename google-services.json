@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "909700174339",
+    "project_id": "borsa-compass",
+    "storage_bucket": "borsa-compass.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909700174339:android:c2050888a55eaef6123436",
+        "android_client_info": {
+          "package_name": "com.markbotros.borsacompass"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6wrt5VUHaam3m2n3rpPrhz37lE4BUeFI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
