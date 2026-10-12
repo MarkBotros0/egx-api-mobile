@@ -83,7 +83,7 @@ export function LoginForm() {
           <AppText className="text-xs text-white/80">{`Confirm your email first — we sent a link to ${email.trim()}.`}</AppText>
           {resendErr ? <AppText className="text-xs text-loss">{resendErr}</AppText> : null}
           {resent ? (
-            <AppText className="font-sans-semibold text-xs text-white/80">Sent again.</AppText>
+            <AppText className="font-sans-semibold text-xs text-white/80">If it doesn&apos;t arrive in a minute, check spam or try again.</AppText>
           ) : (
             <Button variant="secondary" label="Resend the link" onPress={() => void onResend()} />
           )}

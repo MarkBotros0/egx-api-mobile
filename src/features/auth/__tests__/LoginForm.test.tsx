@@ -50,7 +50,8 @@ describe("LoginForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByText(/Confirm your email first/)).toBeTruthy();
     await fireEvent.press(screen.getByText("Resend the link"));
-    expect(await screen.findByText("Sent again.")).toBeTruthy();
+    expect(await screen.findByText("If it doesn't arrive in a minute, check spam or try again.")).toBeTruthy();
+    expect(screen.queryByText("Sent again.")).toBeNull();
     const resend = fetchCalls().find((c) => c.url.endsWith("/auth/resend-verification"));
     expect(resend?.body).toEqual({ email: "mark@gmail.com" });
   });
@@ -64,7 +65,7 @@ describe("LoginForm", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
     await fireEvent.press(await screen.findByText("Resend the link"));
     expect(await screen.findByText("Email is not configured")).toBeTruthy();
-    expect(screen.queryByText("Sent again.")).toBeNull();
+    expect(screen.queryByText(/check spam/)).toBeNull();
     expect(screen.getByText("Resend the link")).toBeTruthy();
   });
 
