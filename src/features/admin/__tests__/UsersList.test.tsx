@@ -48,12 +48,29 @@ describe("UsersList", () => {
     expect(screen.getAllByText("sara@example.com")).toHaveLength(1);
   });
 
-  it("badges sign-in methods, Invited when none, and Unverified", async () => {
+  it("badges sign-in methods, and Pending for an unverified account with no method", async () => {
     await setup().view;
     expect(screen.getByText("Password")).toBeTruthy();
     expect(screen.getByText("Google")).toBeTruthy();
-    expect(screen.getByText("Invited")).toBeTruthy();
+    expect(screen.getAllByText("Pending")).toHaveLength(1);
+    expect(screen.queryByText("Invited")).toBeNull();
+    expect(screen.queryByText("Unverified")).toBeNull();
+  });
+
+  it("badges Unverified only when an unverified account has a method", async () => {
+    const LINKED: ManagedUser = { ...SARA, id: "3", email: "lin@example.com", methods: ["apple"] };
+    await setup([ME, LINKED]).view;
+    expect(screen.getByText("Apple")).toBeTruthy();
     expect(screen.getAllByText("Unverified")).toHaveLength(1);
+    expect(screen.queryByText("Pending")).toBeNull();
+  });
+
+  it("adds no status badge to a verified account with no method yet", async () => {
+    const SEEDED: ManagedUser = { ...ME, id: "4", email: "seed@example.com", name: "", methods: [] };
+    await setup([SEEDED]).view;
+    expect(screen.queryByText("Pending")).toBeNull();
+    expect(screen.queryByText("Unverified")).toBeNull();
+    expect(screen.queryByText("Invited")).toBeNull();
   });
 
   it("expands a card to its actions", async () => {

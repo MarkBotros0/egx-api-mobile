@@ -103,12 +103,8 @@ export function UsersList({ users, ...actions }: Actions & { users: ManagedUser[
                   <AppText numberOfLines={1} className="mt-0.5 text-xs text-white/50">{u.email}</AppText>
                 ) : null}
                 <View className="mt-1.5 flex-row flex-wrap items-center gap-1.5">
-                  {u.methods.length ? (
-                    u.methods.map((m) => <MethodBadge key={m} label={METHOD_LABEL[m]} />)
-                  ) : (
-                    <MethodBadge label="Invited" />
-                  )}
-                  {!u.email_verified ? <MethodBadge label="Unverified" /> : null}
+                  {u.methods.map((m) => <MethodBadge key={m} label={METHOD_LABEL[m]} />)}
+                  {u.email_verified ? null : <MethodBadge label={u.methods.length ? "Unverified" : "Pending"} />}
                 </View>
                 <View className="mt-1 flex-row items-center gap-3">
                   <StatusDot active={u.is_active} />
