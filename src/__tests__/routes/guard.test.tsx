@@ -30,6 +30,7 @@ const app = {
   dividends: () => <Text>DIVIDENDS</Text>,
   calibration: () => <Text>CALIBRATION</Text>,
   alerts: () => <Text>ALERTS</Text>,
+  account: () => <Text>ACCOUNT</Text>,
   "dev/charts": () => null,
 };
 
@@ -66,6 +67,17 @@ describe("route guard", () => {
     await signedInAs("user");
     await renderRouter(app, { initialUrl: "/alerts" });
     expect(await screen.findByText("ALERTS")).toBeTruthy();
+  });
+
+  it("keeps a signed-out visitor out of /account", async () => {
+    await renderRouter(app, { initialUrl: "/account" });
+    expect(await screen.findByText("LOGIN")).toBeTruthy();
+  });
+
+  it("lets a signed-in user open /account", async () => {
+    await signedInAs("user");
+    await renderRouter(app, { initialUrl: "/account" });
+    expect(await screen.findByText("ACCOUNT")).toBeTruthy();
   });
 
   it("shows sign-up and forgot-password to a signed-out visitor", async () => {

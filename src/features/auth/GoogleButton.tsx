@@ -37,8 +37,10 @@ export function GoogleButton({ onError }: { onError: (msg: string | null) => voi
   const onPress = async () => {
     onError(null);
     setBusy(true);
+    // Assigned inside the try: require/configure may be what throws, and the catch must not call google() again.
+    let mod: GoogleModule | null = null;
     try {
-      const mod = google();
+      mod = google();
       await mod.GoogleSignin.hasPlayServices();
       const res = await mod.GoogleSignin.signIn();
       if (!mod.isSuccessResponse(res)) return; // cancelled
@@ -46,8 +48,7 @@ export function GoogleButton({ onError }: { onError: (msg: string | null) => voi
       if (!idToken) throw new Error("Google did not return an ID token.");
       await completeSignIn(await googleSignInRequest(idToken, res.data.user.name ?? ""));
     } catch (e) {
-      const mod = google();
-      if (mod.isErrorWithCode(e) && e.code === mod.statusCodes.SIGN_IN_CANCELLED) return;
+      if (mod?.isErrorWithCode(e) && e.code === mod.statusCodes.SIGN_IN_CANCELLED) return;
       onError(errorMessage(e, "Google sign-in failed"));
     } finally {
       setBusy(false);

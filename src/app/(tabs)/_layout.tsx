@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 
-import { useAuth } from "@/auth/AuthProvider";
+import { AccountHeaderButton } from "@/features/account/AccountHeaderButton";
 import { AdminHeaderButton } from "@/features/admin/AdminHeaderButton";
 import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
 import { COLORS } from "@/shared/theme";
-import { IconButton, type IoniconName } from "@/ui";
+import type { IoniconName } from "@/ui";
 
 const TABS: { name: string; title: string; icon: IoniconName }[] = [
   { name: "index", title: "Dashboard", icon: "grid-outline" },
@@ -16,7 +16,6 @@ const TABS: { name: string; title: string; icon: IoniconName }[] = [
 ];
 
 export default function TabsLayout() {
-  const { logout } = useAuth();
   return (
     <Tabs
       screenOptions={{
@@ -28,7 +27,7 @@ export default function TabsLayout() {
           <View className="flex-row items-center gap-1 pr-2">
             <AlertsHeaderButton />
             <AdminHeaderButton />
-            <IconButton icon="log-out-outline" accessibilityLabel="Log out" onPress={() => void logout()} />
+            <AccountHeaderButton />
           </View>
         ),
         tabBarStyle: { backgroundColor: COLORS.charcoal, borderTopColor: "rgba(255,255,255,0.1)" },
