@@ -8,6 +8,8 @@ process.env.EXPO_PUBLIC_API_BASE_URL = "https://api.test/api";
 jest.mock("expo-secure-store", () => require("./src/test-utils/secureStoreMock"));
 jest.mock("expo-notifications", () => require("./src/test-utils/notificationsMock"));
 jest.mock("expo-device", () => ({ isDevice: true }));
+jest.mock("@react-native-google-signin/google-signin", () => jest.requireActual("./src/test-utils/socialAuthMock").googleMock);
+jest.mock("expo-apple-authentication", () => jest.requireActual("./src/test-utils/socialAuthMock").appleMock);
 
 beforeEach(() => {
   installFetchMock();

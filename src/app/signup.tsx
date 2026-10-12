@@ -3,6 +3,7 @@ import { Pressable } from "react-native";
 
 import { AuthShell } from "@/features/auth/AuthShell";
 import { SignupForm } from "@/features/auth/SignupForm";
+import { SocialButtons } from "@/features/auth/SocialButtons";
 import { AppText } from "@/ui";
 
 export default function SignupScreen() {
@@ -18,7 +19,7 @@ export default function SignupScreen() {
         </Link>
       }
     >
-      {/* Social buttons are added in Task 14 */}
+      <SocialButtons />
       <SignupForm />
     </AuthShell>
   );

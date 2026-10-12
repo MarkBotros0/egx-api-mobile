@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.markbotros.borsacompass",
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -50,7 +51,8 @@
           "color": "#4488ff",
           "defaultChannel": "score-alerts"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ]
   }
 }

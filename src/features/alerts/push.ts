@@ -6,7 +6,7 @@
  * Remote push needs an installed build: Expo Go cannot receive it (Android
  * since SDK 53). isExpoGo() lets the screen say so instead of failing.
  */
-import Constants, { ExecutionEnvironment } from "expo-constants";
+import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
@@ -15,9 +15,7 @@ export const ALERT_CHANNEL_ID = "score-alerts";
 
 export type AlertTap = { symbol: string };
 
-export function isExpoGo(): boolean {
-  return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-}
+export { isExpoGo } from "@/lib/runtime";
 
 let configured = false;
 export function configureNotifications(): void {
