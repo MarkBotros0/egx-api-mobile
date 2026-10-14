@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { AccountHeaderButton } from "@/features/account/AccountHeaderButton";
 import { AdminHeaderButton } from "@/features/admin/AdminHeaderButton";
 import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
+import { BrandTitle } from "@/features/shell/BrandTitle";
 import { PillTabBar } from "@/features/shell/PillTabBar";
 import { COLORS } from "@/shared/theme";
 import type { IoniconName } from "@/ui";
@@ -25,6 +26,10 @@ export default function TabsLayout() {
         headerTintColor: "#ffffff",
         headerTitleStyle: { fontFamily: "Outfit_600SemiBold" },
         headerShadowVisible: false,
+        // Every tab carries the brand, as the web navbar does; each screen
+        // titles itself below it.
+        headerTitle: () => <BrandTitle />,
+        headerTitleAlign: "left",
         headerRight: () => (
           <View className="flex-row items-center gap-1 pr-2">
             <AlertsHeaderButton />

@@ -217,7 +217,14 @@ export function PortfolioScreen() {
             ) : (
               !data.error && <TableSkeleton rows={Math.min(holdingCount, 6)} />
             )}
-            {data.sales && (data.sales.sales.length > 0 || (data.sales.dividends ?? []).length > 0) && realized}
+            {/* Held back until the analysis lands, so the page appears in one
+                piece instead of realized winnings popping in above skeletons.
+                If the analysis FAILED it shows anyway: banked money must never
+                hide behind a broken price feed. */}
+            {(a || data.error) &&
+              data.sales &&
+              (data.sales.sales.length > 0 || (data.sales.dividends ?? []).length > 0) &&
+              realized}
             {a && a.signals.length > 0 && <AdvicePanel signals={a.signals} />}
             {a?.portfolio_metrics.sharpe_ratio != null && <RiskDashboard metrics={a.portfolio_metrics} />}
             {a?.correlation_matrix && a.correlation_matrix.symbols.length >= 2 && (

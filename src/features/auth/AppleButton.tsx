@@ -1,10 +1,12 @@
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { errorMessage } from "@/lib/errors";
 import { appleSignInRequest } from "@/shared/api";
+
+import { ProviderIconButton } from "./ProviderIconButton";
 
 export function useAppleAvailable(): boolean {
   const [available, setAvailable] = useState(false);
@@ -21,9 +23,11 @@ export function useAppleAvailable(): boolean {
 
 export function AppleButton({ onError }: { onError: (msg: string | null) => void }) {
   const { completeSignIn } = useAuth();
+  const [busy, setBusy] = useState(false);
 
   const onPress = async () => {
     onError(null);
+    setBusy(true);
     try {
       const cred = await AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
@@ -37,18 +41,12 @@ export function AppleButton({ onError }: { onError: (msg: string | null) => void
     } catch (e) {
       if ((e as { code?: string })?.code === "ERR_REQUEST_CANCELED") return;
       onError(errorMessage(e, "Apple sign-in failed"));
+    } finally {
+      setBusy(false);
     }
   };
 
-  return (
-    <View accessibilityRole="button" accessibilityLabel="Continue with Apple" className="h-11 w-full">
-      <AppleAuthentication.AppleAuthenticationButton
-        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-        cornerRadius={8}
-        style={{ width: "100%", height: 44 }}
-        onPress={() => void onPress()}
-      />
-    </View>
-  );
+  // Our own button rather than AppleAuthenticationButton, whose label follows
+  // the phone's language; signInAsync works the same from any button.
+  return <ProviderIconButton provider="apple" label="Continue with Apple" busy={busy} onPress={() => void onPress()} />;
 }

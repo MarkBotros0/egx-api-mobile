@@ -64,6 +64,20 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
   pads the bottom inset itself. Widths come from layout, never `Dimensions` at module scope.
 - Everything must RUN in **Expo Go**. Two exceptions: (1) remote push (score alerts) — Expo Go cannot receive it, so `src/features/alerts` checks `isExpoGo()` and renders disabled there; (2) Google sign-in — `isExpoGo()` (in `src/lib/runtime.ts`) hides the button, and `@react-native-google-signin/google-signin` is `require`d lazily inside `GoogleButton.tsx` and must NEVER be imported at top level (it throws at import time in Expo Go). Apple sign-in in Expo Go on iOS works ONLY against a development backend that lists `host.exp.Exponent` in `APPLE_CLIENT_IDS` AND sets `APPLE_ALLOW_EXPO_GO=1`; the production backend refuses that audience (every Expo Go app receives it, so accepting it would allow account takeover by email), so in Expo Go against production Apple sign-in fails with 401 — use a development or store build. No other custom native modules.
 - Money inputs accept 3 decimals; share counts are integers.
+- UI sweep rules (2026-10-14, from emulator screenshots against the web):
+  - The phone layout follows the web AT PHONE WIDTH: dashboard = controls then
+    stocks, market condition + watchlist after the list; one card column below 600pt.
+  - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its
+    title (and actions, e.g. the stock page's watch star) — never repeat it in the body.
+  - Chip rows: `PillRow label=…` with a `RowLabel` ("SORT", "FILTER"); selectable
+    `Pill`s are borderless until chosen, on/off toggles pass `outlined`. Explanations
+    hang off the dotted row label (`LearnTerm`), not paragraphs between rows.
+  - `LearnTerm` draws its own dashed underline (Android renders a one-side dashed
+    border solid); pass `className` so the term matches the labels around it.
+  - Sign-in providers are round icon buttons (`ProviderIconButton`), never the
+    providers' native buttons, which follow the phone's language.
+  - The portfolio appears in one piece: realized winnings wait for the analysis
+    (or its failure) instead of popping in above skeletons.
 
 ## Learn
 

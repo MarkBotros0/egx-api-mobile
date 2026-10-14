@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
-import { mockFetch } from "@/test-utils/fetch";
+import { mockFetch, mockFetchHandler } from "@/test-utils/fetch";
 import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi, sent } from "@/features/portfolio/testing/api";
 import { LOT_A, NO_SALES, analysisResponse, holdingFromRow, portfolio } from "@/features/portfolio/testing/fixtures";
@@ -42,6 +42,26 @@ describe("PortfolioScreen", () => {
     for (const { t, at } of order) expect({ t, found: at >= 0 }).toEqual({ t, found: true });
     const positions = order.map((o) => o.at);
     expect(positions).toEqual([...positions].sort((x, y) => x - y));
+  });
+
+  it("does not show realized winnings above skeletons: the page appears in one piece", async () => {
+    mockPortfolioApi();
+    let release: (r: { status: number; body: unknown }) => void = () => {};
+    mockFetchHandler("GET", "/portfolio_analysis", () => new Promise((res) => (release = res)));
+    await renderWithProviders(<PortfolioScreen />);
+    // Sales have loaded, the analysis has not: nothing but the skeleton yet.
+    await waitFor(() => expect(screen.queryByText("Portfolio Summary")).toBeNull());
+    expect(screen.queryByText("Realized Winnings")).toBeNull();
+    release({ status: 200, body: analysisResponse() });
+    expect(await screen.findByText("Portfolio Summary")).toBeTruthy();
+    expect(screen.getByText("Realized Winnings")).toBeTruthy();
+  });
+
+  it("still shows realized winnings when the analysis fails", async () => {
+    mockPortfolioApi({ analysisStatus: 500 });
+    await renderWithProviders(<PortfolioScreen />);
+    expect(await screen.findByText("Analysis timed out")).toBeTruthy();
+    expect(screen.getByText("Realized Winnings")).toBeTruthy();
   });
 
   it("opens the add sheet from the FAB", async () => {

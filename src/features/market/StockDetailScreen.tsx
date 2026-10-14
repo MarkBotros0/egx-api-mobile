@@ -5,7 +5,9 @@ import { useScoreWeights } from "@/providers/scoreWeights";
 import { useWatchlist } from "@/providers/watchlist";
 import { fetchAnalysis } from "@/shared/api";
 import { SR_LEVELS_DISPLAYED } from "@/shared/constants";
-import { AppText, Button, ChartSkeleton, Screen } from "@/ui";
+import { Stack } from "expo-router";
+
+import { AppText, Button, ChartSkeleton, IconButton, Screen } from "@/ui";
 import { IntervalBarsControls, OverlayToggles } from "./ChartControls";
 import { CompositeCard } from "./CompositeCard";
 import { DividendHistoryCard } from "./DividendHistoryCard";
@@ -40,7 +42,6 @@ export interface StockDetailScreenProps {
  * cards. Re-fetches when interval, history or score weights change.
  */
 export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreenProps) {
-  const { add, remove, has } = useWatchlist();
   const { version: weightsVersion } = useScoreWeights();
   const [interval, setChartInterval] = useState<ChartInterval>(initialInterval);
   const [bars, setBars] = useState<BarCount>(DEFAULT_BARS);
@@ -56,7 +57,6 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
   const indicatorData = useMemo(() => (data ? indicatorRows(data) : []), [data]);
 
   const latestAtr = latestNonNull(data?.indicators.atr);
-  const isWatched = has(symbol);
   // Four opaque letters are not what a reader recognises; drop the name when it just echoes the symbol.
   const companyName =
     data?.pe?.company_name && data.pe.company_name.toUpperCase() !== symbol.toUpperCase()
@@ -65,33 +65,30 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
 
   return (
     <Screen scroll={false}>
-      {/* The web's sticky header: a fixed bar above the scroll view. */}
-      <View className="flex-row items-center justify-between gap-3 border-b border-white/5 bg-charcoal-dark px-4 py-3">
-        <View className="min-w-0 flex-1">
-          <View className="flex-row items-baseline gap-2">
-            <AppText className="font-mono-semibold text-xl text-white">{symbol}</AppText>
-            {companyName && (
-              <AppText numberOfLines={1} className="flex-1 font-sans-medium text-sm text-white/70">
-                {companyName}
-              </AppText>
-            )}
-          </View>
-          {data && <AppText className="mt-0.5 text-xs text-white/40">{`${data.interval} · ${data.bars} bars`}</AppText>}
-        </View>
-        <Button
-          label={isWatched ? "Watching" : "Watch"}
-          variant={isWatched ? "primary" : "secondary"}
-          icon={isWatched ? "star" : "star-outline"}
-          onPress={() => (isWatched ? remove(symbol) : add(symbol))}
-        />
-      </View>
-
+      {/* Watch lives in the top bar as a star, beside the symbol the bar
+          already shows — not as a second header repeating the symbol. */}
+      <Stack.Screen
+        options={{
+          headerRight: () => <WatchStarButton symbol={symbol} />,
+        }}
+      />
       <RefreshableScroll
         testID="stock-scroll"
         refreshing={analysis.refreshing}
         onRefresh={analysis.refresh}
-        contentClassName="gap-4 px-4 py-4 pb-10"
+        contentClassName="gap-4 px-4 pb-10 pt-1"
       >
+        {/* Scrolls with the page: pinned, it took a strip off every screen. */}
+        {companyName || data ? (
+          <View>
+            {companyName ? (
+              <AppText numberOfLines={1} className="font-sans-medium text-base text-white/80">
+                {companyName}
+              </AppText>
+            ) : null}
+            {data ? <AppText className="mt-0.5 text-xs text-white/40">{`${data.interval} · ${data.bars} bars`}</AppText> : null}
+          </View>
+        ) : null}
         <IntervalBarsControls interval={interval} bars={bars} onInterval={setChartInterval} onBars={setBars} />
         {analysis.refreshError && (
           <AppText className="text-xs text-white/50" testID="refresh-error">
@@ -161,5 +158,20 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
         ) : null}
       </RefreshableScroll>
     </Screen>
+  );
+}
+
+/** The top bar's watch toggle: a star, filled and accent while watched. */
+export function WatchStarButton({ symbol }: { symbol: string }) {
+  const { add, remove, has } = useWatchlist();
+  const watched = has(symbol);
+  return (
+    <IconButton
+      icon={watched ? "star" : "star-outline"}
+      tone={watched ? "accent" : "default"}
+      selected={watched}
+      accessibilityLabel={watched ? "Watching — remove from watchlist" : "Add to watchlist"}
+      onPress={() => (watched ? remove(symbol) : add(symbol))}
+    />
   );
 }

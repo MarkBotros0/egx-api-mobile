@@ -48,7 +48,9 @@ it("opens sorted by score and explains what the score is", async () => {
   await waitFor(() =>
     expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-ETEL", "stockcard-TMGH", "stockcard-ABUK"])
   );
-  expect(screen.getByText(/does not predict price/)).toBeTruthy();
+  // The explanation sits behind the dotted "Sort" label.
+  await fireEvent.press(screen.getByText("Sort"));
+  expect(await screen.findByText(/does not predict price/)).toBeTruthy();
 });
 
 it("Default restores the ticker-file order", async () => {
@@ -67,7 +69,7 @@ it("filters to dividend payers", async () => {
 
 it("turns scores off and shows the sector instead", async () => {
   await renderDashboard();
-  await fireEvent.press(screen.getByText("Score: On"));
+  await fireEvent.press(screen.getByLabelText("Score: On"));
   const card = screen.getByTestId("stockcard-COMI");
   expect(await within(card).findByText("Banking")).toBeTruthy();
   expect(within(card).queryByText("72")).toBeNull();

@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { AppText, LearnTerm, Pill, PillRow } from "@/ui";
+import { AppText, LearnTerm, Pill, PillRow, RowLabel } from "@/ui";
 import { IndexFilter } from "./IndexFilter";
 import {
   COMPOSITE_INTERVALS,
@@ -47,33 +47,49 @@ export function DashboardControls(p: DashboardControlsProps) {
         ) : null}
       </AppText>
 
-      <View className="gap-1">
-        <PillRow>
-          {SORTS.map((s) => (
-            <Pill key={s} label={s} active={p.sort === s} onPress={() => p.onSort(s)} />
-          ))}
-        </PillRow>
-        {sortNote && <AppText className="text-[11px] leading-relaxed text-white/40">{sortNote}</AppText>}
-      </View>
+      {/* One compact row per control, each led by a small label as on the
+          web. The labels are dotted: tapping one explains that row, which
+          replaces the explanation paragraphs and "What is this?" links that
+          used to sit between the rows. */}
+      <PillRow
+        label={
+          <LearnTerm term={`Sort: ${p.sort}`} explanation={sortNote ?? "Change the order the stocks are listed in."}>
+            <RowLabel>Sort</RowLabel>
+          </LearnTerm>
+        }
+      >
+        {SORTS.map((s) => (
+          <Pill key={s} label={s} active={p.sort === s} onPress={() => p.onSort(s)} />
+        ))}
+      </PillRow>
 
-      <View className="flex-row flex-wrap items-center gap-2">
-        <Pill label="Pays a dividend" active={p.dividendOnly} onPress={p.onToggleDividend} />
-        <LearnTerm term="Pays a dividend" explanation={DIVIDEND_EXPLANATION}>
-          What is this?
-        </LearnTerm>
-      </View>
+      <PillRow
+        label={
+          <LearnTerm term="Pays a dividend" explanation={DIVIDEND_EXPLANATION}>
+            <RowLabel>Filter</RowLabel>
+          </LearnTerm>
+        }
+      >
+        <Pill label="Pays a dividend" outlined active={p.dividendOnly} onPress={p.onToggleDividend} />
+      </PillRow>
 
       <View className="gap-1">
-        <PillRow>
-          <Pill label={`Score: ${p.showComposite ? "On" : "Off"}`} active={p.showComposite} onPress={p.onToggleComposite} />
+        <PillRow
+          label={
+            <LearnTerm term="Score" explanation={SCORE_EXPLANATION}>
+              <RowLabel>Score</RowLabel>
+            </LearnTerm>
+          }
+        >
+          <Pill
+            label={p.showComposite ? "On" : "Off"}
+            accessibilityLabel={`Score: ${p.showComposite ? "On" : "Off"}`}
+            outlined active={p.showComposite} onPress={p.onToggleComposite} />
           {p.showComposite &&
             COMPOSITE_INTERVALS.map((iv) => (
               <Pill key={iv} label={iv} active={p.interval === iv} onPress={() => p.onInterval(iv)} />
             ))}
         </PillRow>
-        <LearnTerm term="Score" explanation={SCORE_EXPLANATION}>
-          About the score
-        </LearnTerm>
         {/* Say plainly when the grid is NOT on the primary view. */}
         {p.showComposite && p.interval !== "Daily" && (
           <AppText className="text-[11px] text-[#ffaa00]">

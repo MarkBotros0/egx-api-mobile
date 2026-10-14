@@ -31,7 +31,7 @@ function StatRow({
   return (
     <View className="min-h-[36px] flex-row items-center justify-between gap-3 border-b border-white/5 py-2">
       {tooltip ? (
-        <LearnTerm term={tooltip.term} explanation={tooltip.explanation}>
+        <LearnTerm term={tooltip.term} explanation={tooltip.explanation} className="text-xs text-white/50">
           {label}
         </LearnTerm>
       ) : (

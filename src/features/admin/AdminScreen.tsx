@@ -140,10 +140,10 @@ export function AdminScreen() {
   return (
     <View className="flex-1 bg-charcoal-dark">
       <Screen>
-        <View className="pb-28 pt-6">
-          <View className="mb-6">
-            <AppText accessibilityRole="header" className="font-sans-bold text-2xl text-white">Users</AppText>
-            <AppText className="mt-1 text-sm text-white/50">
+        <View className="pb-28 pt-2">
+          {/* The top bar already says "Users"; only the count is new here. */}
+          <View className="mb-4">
+            <AppText className="text-sm text-white/50">
               {`${users.length} account${users.length === 1 ? "" : "s"}.`}
             </AppText>
           </View>

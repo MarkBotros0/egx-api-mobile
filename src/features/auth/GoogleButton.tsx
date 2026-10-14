@@ -5,7 +5,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import { errorMessage } from "@/lib/errors";
 import { isExpoGo } from "@/lib/runtime";
 import { googleSignInRequest } from "@/shared/api";
-import { Button } from "@/ui";
+
+import { ProviderIconButton } from "./ProviderIconButton";
 
 // Read at call time (not module load) so the values follow the environment.
 const webClientId = () => process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
@@ -63,5 +64,5 @@ export function GoogleButton({ onError }: { onError: (msg: string | null) => voi
     }
   };
 
-  return <Button variant="secondary" label={busy ? "Signing in…" : "Continue with Google"} accessibilityLabel="Continue with Google" onPress={onPress} disabled={busy} loading={busy} />;
+  return <ProviderIconButton provider="google" label="Continue with Google" busy={busy} onPress={() => void onPress()} />;
 }

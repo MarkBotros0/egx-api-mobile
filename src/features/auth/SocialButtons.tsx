@@ -14,8 +14,11 @@ export function SocialButtons() {
   if (!apple && !google) return null;
   return (
     <View className="mb-4 gap-3">
-      {apple ? <AppleButton onError={setErr} /> : null}
-      {google ? <GoogleButton onError={setErr} /> : null}
+      <AppText className="text-center text-xs text-white/40">Continue with</AppText>
+      <View className="flex-row justify-center gap-4">
+        {apple ? <AppleButton onError={setErr} /> : null}
+        {google ? <GoogleButton onError={setErr} /> : null}
+      </View>
       {err ? <AppText className="text-center text-xs text-loss">{err}</AppText> : null}
       <View className="flex-row items-center gap-3 py-1">
         <View className="h-px flex-1 bg-white/10" />

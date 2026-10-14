@@ -1,7 +1,7 @@
 import { fireEvent, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { renderWithProviders } from "@/test-utils/render";
 import type { ChartInterval } from "../logic/stockDetail";
-import { StockDetailScreen } from "../StockDetailScreen";
+import { StockDetailScreen, WatchStarButton } from "../StockDetailScreen";
 import { fail, mockMarketApi, requestsTo, type Route } from "../testing/api";
 import { lastChartProps } from "../testing/chartsMock";
 import { makeAnalysis } from "../testing/fixtures";
@@ -20,9 +20,8 @@ async function renderStock(routes: Record<string, Route> = {}, initialInterval: 
 
 const analysisCalls = (fetchMock: ReturnType<typeof mockMarketApi>) => requestsTo(fetchMock, "/analysis");
 
-it("loads the analysis and names the company beside the ticker", async () => {
+it("loads the analysis and names the company (the top bar carries the ticker)", async () => {
   const fetchMock = await renderStock();
-  expect(screen.getByText("COMI")).toBeTruthy();
   expect(screen.getByText("Commercial International Bank")).toBeTruthy();
   expect(screen.getByText("Daily · 200 bars")).toBeTruthy();
   const [first] = analysisCalls(fetchMock);
@@ -72,10 +71,11 @@ it("keeps the indicator panel collapsed until asked", async () => {
   expect(screen.getByTestId("chart-IndicatorPanel")).toBeTruthy();
 });
 
-it("adds the stock to the watchlist", async () => {
+it("the top-bar star adds the stock to the watchlist", async () => {
   const fetchMock = await renderStock();
-  await fireEvent.press(screen.getByText("Watch"));
-  expect(await screen.findByText("Watching")).toBeTruthy();
+  await renderWithProviders(<WatchStarButton symbol="COMI" />);
+  await fireEvent.press(screen.getByLabelText("Add to watchlist"));
+  expect(await screen.findByLabelText("Watching — remove from watchlist")).toBeTruthy();
   await waitFor(() => expect(requestsTo(fetchMock, "/watchlist", "POST")).toHaveLength(1));
 });
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, LearnTerm, Pill, PillRow, Sheet } from "@/ui";
+import { AppText, LearnTerm, Pill, PillRow, Sheet, RowLabel } from "@/ui";
 import {
   BAR_COUNTS,
   INTERVALS,
@@ -33,21 +33,27 @@ export function IntervalBarsControls({
 }) {
   return (
     <View className="gap-2">
-      <View className="flex-row items-center gap-2">
-        <LearnTerm term="Chart interval" explanation={INTERVAL_EXPLANATION}>
-          Interval
-        </LearnTerm>
-        <PillRow>
+      <View>
+        <PillRow
+          label={
+            <LearnTerm term="Chart interval" explanation={INTERVAL_EXPLANATION}>
+              <RowLabel>Interval</RowLabel>
+            </LearnTerm>
+          }
+        >
           {INTERVALS.map((iv) => (
             <Pill key={iv} label={iv} active={interval === iv} onPress={() => onInterval(iv)} />
           ))}
         </PillRow>
       </View>
-      <View className="flex-row items-center gap-2">
-        <LearnTerm term="History" explanation={HISTORY_EXPLANATION}>
-          History
-        </LearnTerm>
-        <PillRow>
+      <View>
+        <PillRow
+          label={
+            <LearnTerm term="History" explanation={HISTORY_EXPLANATION}>
+              <RowLabel>History</RowLabel>
+            </LearnTerm>
+          }
+        >
           {BAR_COUNTS.map((b) => (
             <Pill key={b} label={String(b)} active={bars === b} onPress={() => onBars(b)} />
           ))}
@@ -64,7 +70,7 @@ export function OverlayToggles({ value, onToggle }: { value: OverlayState; onTog
     <View className="gap-1">
       <View className="flex-row items-center gap-2">
         <LearnTerm term="Chart overlays" explanation={OVERLAYS_EXPLANATION}>
-          Overlays
+          <RowLabel>Overlays</RowLabel>
         </LearnTerm>
         <AppText className="text-[10px] text-white/30">Long-press one to learn what it draws</AppText>
       </View>

@@ -97,7 +97,7 @@ describe("SocialButtons", () => {
     setPlatform("ios");
     mockFetch("POST", "/auth/apple", SESSION);
     await renderButtons();
-    await fireEvent.press(await screen.findByTestId("apple-button"));
+    await fireEvent.press(await screen.findByLabelText("Continue with Apple"));
     await waitFor(() =>
       expect(fetchCalls()[0]?.body).toEqual({
         identityToken: "apple-identity-token",
@@ -111,7 +111,7 @@ describe("SocialButtons", () => {
 
   it("does not render Apple on Android", async () => {
     await renderButtons();
-    expect(screen.queryByTestId("apple-button")).toBeNull();
+    expect(screen.queryByLabelText("Continue with Apple")).toBeNull();
   });
 
   it("shows a backend error under the buttons", async () => {

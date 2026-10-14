@@ -43,7 +43,9 @@ export function DashboardScreen() {
   const { symbols: watchlistSymbols } = useWatchlist();
   const now = useNow();
   const { width } = useWindowDimensions();
-  const columns = width >= 400 ? 2 : 1; // the web's min-[400px]:grid-cols-2
+  // Two columns only on tablet widths. The web splits at 400px, but native
+  // type is larger: at 412pt two cards wrapped the change and clipped names.
+  const columns = width >= 600 ? 2 : 1;
 
   const [index, setIndex] = useState("EGX30");
   const [sector, setSector] = useState<string>(ALL_SECTORS);
@@ -129,8 +131,6 @@ export function DashboardScreen() {
 
   const header = (
     <View className="gap-4 px-1.5 pb-3">
-      <MarketRegimeCard />
-      <WatchlistPanel tickers={tickers} priceData={priceData} />
       <DashboardControls
         index={index}
         onIndex={resetting(setIndex)}
@@ -180,6 +180,10 @@ export function DashboardScreen() {
           )}
         </View>
       )}
+      {/* After the stocks, as on the web at phone width: the web's sidebar
+          (market condition, then watchlist) stacks below the grid there. */}
+      <MarketRegimeCard />
+      <WatchlistPanel tickers={tickers} priceData={priceData} />
     </View>
   );
 
@@ -200,6 +204,7 @@ export function DashboardScreen() {
         </View>
         <TextField
           label="Search"
+          hideLabel
           testID="dashboard-search"
           placeholder="Filter by name or symbol..."
           value={search}

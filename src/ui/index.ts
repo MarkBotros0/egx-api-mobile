@@ -5,7 +5,7 @@ export { confirm } from "./confirm";
 export { DateField } from "./DateField";
 export { IconButton } from "./IconButton";
 export { LearnTerm } from "./LearnTerm";
-export { Pill, PillRow } from "./Pill";
+export { Pill, PillRow, RowLabel } from "./Pill";
 export { Screen } from "./Screen";
 export { SegmentedControl } from "./SegmentedControl";
 export { Sheet } from "./Sheet";
