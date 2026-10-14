@@ -48,14 +48,15 @@ it("opens sorted by score and explains what the score is", async () => {
   await waitFor(() =>
     expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-ETEL", "stockcard-TMGH", "stockcard-ABUK"])
   );
-  // The explanation sits behind the dotted "Sort" label.
-  await fireEvent.press(screen.getByText("Sort"));
+  // The explanation sits in the Sort sheet.
+  await fireEvent.press(screen.getByLabelText("Sort: Score"));
   expect(await screen.findByText(/does not predict price/)).toBeTruthy();
 });
 
 it("Default restores the ticker-file order", async () => {
   await renderDashboard();
-  await fireEvent.press(screen.getByText("Default"));
+  await fireEvent.press(screen.getByLabelText("Sort: Score"));
+  await fireEvent.press(screen.getByLabelText("Default"));
   await waitFor(() =>
     expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-TMGH", "stockcard-ETEL", "stockcard-ABUK"])
   );
@@ -63,13 +64,15 @@ it("Default restores the ticker-file order", async () => {
 
 it("filters to dividend payers", async () => {
   await renderDashboard();
-  await fireEvent.press(screen.getByText("Pays a dividend"));
+  await fireEvent.press(screen.getByLabelText("Filter: All sectors"));
+  await fireEvent(screen.getByLabelText("Pays a dividend"), "valueChange", true);
   await waitFor(() => expect(cardOrder()).toEqual(["stockcard-COMI", "stockcard-ETEL"]));
 });
 
 it("turns scores off and shows the sector instead", async () => {
   await renderDashboard();
-  await fireEvent.press(screen.getByLabelText("Score: On"));
+  await fireEvent.press(screen.getByLabelText("Score: On, Daily"));
+  await fireEvent(screen.getByLabelText("Show scores on cards"), "valueChange", false);
   const card = screen.getByTestId("stockcard-COMI");
   expect(await within(card).findByText("Banking")).toBeTruthy();
   expect(within(card).queryByText("72")).toBeNull();
@@ -77,7 +80,8 @@ it("turns scores off and shows the sector instead", async () => {
 
 it("warns and re-scores on a non-daily interval", async () => {
   const fetchMock = await renderDashboard();
-  await fireEvent.press(screen.getByText("Weekly"));
+  await fireEvent.press(screen.getByLabelText("Score: On, Daily"));
+  await fireEvent.press(screen.getByLabelText("Weekly"));
   expect(screen.getByText("Showing weekly scores — trend context, not entry timing")).toBeTruthy();
   await waitFor(() =>
     expect(requestsTo(fetchMock, "/analysis").some((u) => u.searchParams.get("interval") === "Weekly")).toBe(true)

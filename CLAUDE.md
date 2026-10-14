@@ -68,14 +68,18 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - UI sweep rules (2026-10-14, from emulator screenshots against the web):
   - The phone layout follows the web AT PHONE WIDTH: dashboard = controls then
     stocks, market condition + watchlist after the list. Cards: 2 per row on a phone
-    (`StockCard compact`, the web's half-width card), 3 from 700pt, 1 under 340pt.
+    (`StockCard compact`, the web's half-width card; it uses `grow`, never `flex-1`,
+    which collapsed cards to zero height on a cold start), 3 from 700pt, 1 under 340pt.
   - The pill tab bar FLOATS over content (absolute, reports its height); tab screens
     pad their scroll content with `useTabBarClearance()`.
   - The tab header carries only the alerts bell and the account button; Compare and
     Dividends are labelled buttons under the dashboard title (no bare icons).
   - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its
     title (and actions, e.g. the stock page's watch star) — never repeat it in the body.
-  - Chip rows: `PillRow label=…` with a `RowLabel` ("SORT", "FILTER"); selectable
+  - Dashboard filters are TWO rows: index chips, then three dropdown chips (Filter =
+    sector + dividend payers, Sort, Score) that open sheets holding the choices and
+    their explanations (`DashboardControls`).
+  - Chip rows elsewhere: `PillRow label=…` with a `RowLabel` ("INTERVAL", "HISTORY"); selectable
     `Pill`s are borderless until chosen, on/off toggles pass `outlined`. Explanations
     hang off the dotted row label (`LearnTerm`), not paragraphs between rows.
   - `LearnTerm` draws its own dashed underline (Android renders a one-side dashed

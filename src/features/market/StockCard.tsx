@@ -171,7 +171,7 @@ export function StockCard({
         accessibilityRole="link"
         accessibilityLabel={`${symbol}, ${name}`}
         onPress={() => router.push(stockDetailHref(symbol, interval))}
-        className={`flex-1 rounded-xl border border-white/5 p-3.5 ${muted ? "bg-white/[0.01] opacity-60" : "bg-white/[0.03]"}`}
+        className={`grow rounded-xl border border-white/5 p-3.5 ${muted ? "bg-white/[0.01] opacity-60" : "bg-white/[0.03]"}`}
       >
         <View className="flex-row items-start justify-between gap-2">
           <View className="min-w-0 flex-1">
@@ -193,7 +193,7 @@ export function StockCard({
           </View>
         </View>
 
-        <View className="mt-3 flex-1 justify-end">{price2}</View>
+        <View className="mt-3 grow justify-end">{price2}</View>
         {price !== undefined && (stamp || (sparklineData && sparklineData.length > 1)) ? (
           <View className="mt-0.5 flex-row items-end justify-between gap-2">
             <AppText numberOfLines={2} className="flex-1 text-[9px] uppercase tracking-wide text-white/25">
