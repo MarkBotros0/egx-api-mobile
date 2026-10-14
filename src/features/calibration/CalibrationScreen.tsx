@@ -34,7 +34,7 @@ export function CalibrationScreen() {
 
   if (error) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <ErrorState
           message="Could not load the accuracy record."
           onRetry={() => {
@@ -48,7 +48,7 @@ export function CalibrationScreen() {
 
   if (!data) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <View className="gap-4 py-8">
           <CardSkeleton />
           <CardSkeleton />
@@ -60,7 +60,7 @@ export function CalibrationScreen() {
   const { forecast, risk_grade, what_failed } = data;
 
   return (
-    <Screen scroll edges={[]}>
+    <Screen scroll>
       <View className="pb-24 pt-8">
         <AppText accessibilityRole="header" className="font-sans-bold text-xl text-white">
           Checking our work

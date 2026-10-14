@@ -14,7 +14,7 @@ export function NewsScreen() {
   const data = news.data;
 
   return (
-    <Screen scroll={false} edges={["top"]}>
+    <Screen scroll={false}>
       <RefreshableScroll testID="news-scroll" refreshing={news.refreshing} onRefresh={news.refresh} contentClassName="px-4 py-6 pb-10">
         <AppText className="font-sans-bold text-2xl text-white">News</AppText>
         {news.refreshError && (

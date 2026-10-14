@@ -56,8 +56,12 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - NativeWind: em tracking → px, relative leading → px, `space-y` → `gap`, no `md:`/`hover:`.
 - Never `{n && <X/>}` with a number/string `n` — use a ternary.
 - Touch targets ≥ 44pt. Safe areas via `Screen` only, which already applies `px-4`
-  (screens must not add their own outer `px-4`); screens under a stack header pass
-  `edges={[]}`. Widths come from layout, never `Dimensions` at module scope.
+  (screens must not add their own outer `px-4`). `Screen` pads NO edge by default:
+  every signed-in screen sits under a tab or stack header that already clears the
+  notch, and a `["top"]` there doubled the gap (fixed 2026-10-14). Only the signed-out
+  screens (`AuthShell`, no header) pass `edges={["top", "bottom"]}`. The tab bar is
+  `src/features/shell/PillTabBar.tsx` — the web's floating pill, not the stock bar — and
+  pads the bottom inset itself. Widths come from layout, never `Dimensions` at module scope.
 - Everything must RUN in **Expo Go**. Two exceptions: (1) remote push (score alerts) — Expo Go cannot receive it, so `src/features/alerts` checks `isExpoGo()` and renders disabled there; (2) Google sign-in — `isExpoGo()` (in `src/lib/runtime.ts`) hides the button, and `@react-native-google-signin/google-signin` is `require`d lazily inside `GoogleButton.tsx` and must NEVER be imported at top level (it throws at import time in Expo Go). Apple sign-in in Expo Go on iOS works ONLY against a development backend that lists `host.exp.Exponent` in `APPLE_CLIENT_IDS` AND sets `APPLE_ALLOW_EXPO_GO=1`; the production backend refuses that audience (every Expo Go app receives it, so accepting it would allow account takeover by email), so in Expo Go against production Apple sign-in fails with 401 — use a development or store build. No other custom native modules.
 - Money inputs accept 3 decimals; share counts are integers.
 

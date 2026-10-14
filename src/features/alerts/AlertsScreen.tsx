@@ -132,7 +132,7 @@ export function AlertsScreen() {
 
   if (loadError) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <View className="pt-4">
           <ErrorState
             message={loadError}
@@ -147,7 +147,7 @@ export function AlertsScreen() {
   }
   if (!prefs) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <View className="pt-4">
           <CardSkeleton />
         </View>
@@ -157,7 +157,7 @@ export function AlertsScreen() {
 
   const controlsOff = expoGo || !prefs.enabled;
   return (
-    <Screen edges={[]}>
+    <Screen>
       <View className="gap-4 pt-4">
         {expoGo ? (
           <Card>

@@ -13,7 +13,7 @@ interface Props {
   contentClassName?: string;
 }
 
-export function Screen({ children, scroll = true, refreshing = false, onRefresh, edges = ["top"], contentClassName = "" }: Props) {
+export function Screen({ children, scroll = true, refreshing = false, onRefresh, edges = [], contentClassName = "" }: Props) {
   return (
     <SafeAreaView edges={edges} className="flex-1 bg-charcoal-dark">
       {scroll ? (

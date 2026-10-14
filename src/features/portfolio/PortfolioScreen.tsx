@@ -135,7 +135,7 @@ export function PortfolioScreen() {
       style={{ flex: 1 }}
       onLayout={() => sceneRef.current?.measureInWindow((_x, y, _w, h) => setSceneBottom(y + h))}
     >
-      <Screen scroll edges={["top"]} refreshing={pulling} onRefresh={onPull} contentClassName="gap-6 px-4 pt-4">
+      <Screen scroll refreshing={pulling} onRefresh={onPull} contentClassName="gap-6 px-4 pt-4">
         <View className="flex-row items-center justify-between gap-3">
           <View className="flex-1">
             <AppText variant="title" className="font-sans-bold text-xl text-white">My Portfolio</AppText>

@@ -184,7 +184,7 @@ export function DashboardScreen() {
   );
 
   return (
-    <Screen scroll={false} edges={["top"]}>
+    <Screen scroll={false}>
       <View className="gap-3 border-b border-white/5 bg-charcoal-dark px-4 pb-3 pt-4">
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">

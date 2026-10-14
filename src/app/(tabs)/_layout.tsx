@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { AccountHeaderButton } from "@/features/account/AccountHeaderButton";
 import { AdminHeaderButton } from "@/features/admin/AdminHeaderButton";
 import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
+import { PillTabBar } from "@/features/shell/PillTabBar";
 import { COLORS } from "@/shared/theme";
 import type { IoniconName } from "@/ui";
 
@@ -18,6 +19,7 @@ const TABS: { name: string; title: string; icon: IoniconName }[] = [
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={(props) => <PillTabBar {...props} />}
       screenOptions={{
         headerStyle: { backgroundColor: COLORS["charcoal-dark"] },
         headerTintColor: "#ffffff",
@@ -30,10 +32,6 @@ export default function TabsLayout() {
             <AccountHeaderButton />
           </View>
         ),
-        tabBarStyle: { backgroundColor: COLORS.charcoal, borderTopColor: "rgba(255,255,255,0.1)" },
-        tabBarActiveTintColor: COLORS.accent,
-        tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
-        tabBarLabelStyle: { fontFamily: "Outfit_500Medium", fontSize: 10 },
         sceneStyle: { backgroundColor: COLORS["charcoal-dark"] },
       }}
     >

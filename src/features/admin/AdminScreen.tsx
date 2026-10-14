@@ -113,7 +113,7 @@ export function AdminScreen() {
 
   if (authLoading) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <View className="py-8">
           <CardSkeleton />
         </View>
@@ -123,7 +123,7 @@ export function AdminScreen() {
 
   if (!isAdmin) {
     return (
-      <Screen edges={[]}>
+      <Screen>
         <View className="items-center py-16">
           <AppText accessibilityRole="header" className="font-sans-bold text-xl text-white">Admins only</AppText>
           <AppText className="mt-2 text-center text-sm text-white/50">
@@ -139,7 +139,7 @@ export function AdminScreen() {
 
   return (
     <View className="flex-1 bg-charcoal-dark">
-      <Screen edges={[]}>
+      <Screen>
         <View className="pb-28 pt-6">
           <View className="mb-6">
             <AppText accessibilityRole="header" className="font-sans-bold text-2xl text-white">Users</AppText>

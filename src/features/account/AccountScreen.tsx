@@ -28,7 +28,7 @@ export function AccountScreen() {
   };
 
   return (
-    <Screen edges={[]}>
+    <Screen>
       <View className="gap-6 py-6">
         <View className="rounded-xl border border-white/10 bg-charcoal p-4">
           <AppText className="font-sans-semibold text-lg text-white">{displayName(user)}</AppText>
