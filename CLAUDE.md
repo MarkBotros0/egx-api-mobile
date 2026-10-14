@@ -71,6 +71,8 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
     (`StockCard compact`, the web's half-width card), 3 from 700pt, 1 under 340pt.
   - The pill tab bar FLOATS over content (absolute, reports its height); tab screens
     pad their scroll content with `useTabBarClearance()`.
+  - The tab header carries only the alerts bell and the account button; Compare and
+    Dividends are labelled buttons under the dashboard title (no bare icons).
   - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its
     title (and actions, e.g. the stock page's watch star) — never repeat it in the body.
   - Chip rows: `PillRow label=…` with a `RowLabel` ("SORT", "FILTER"); selectable
@@ -116,7 +118,7 @@ Jest mocks for both providers: `src/test-utils/socialAuthMock.ts`.
 
 ## Admin
 
-Header Users button (admins only) → `/admin`, guarded by `Stack.Protected guard={isAdmin}` plus an in-screen
+"Manage users" button on the Account screen (admins only, `ManageUsersButton`) → `/admin`, guarded by `Stack.Protected guard={isAdmin}` plus an in-screen
 "Admins only". Admin **invites a user by email** (`InviteUserSheet`) and can **send a reset email** (or
 re-send the invitation); no passwords are generated or shown. No role picker (admin = server `AUTH_ADMINS`).
 You cannot disable/delete yourself.

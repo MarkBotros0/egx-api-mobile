@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, RefreshControl, useWindowDimensions, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { routes } from "@/lib/links";
 import { useScoreWeights } from "@/providers/scoreWeights";
@@ -8,7 +9,7 @@ import { useWatchlist } from "@/providers/watchlist";
 import { CARDS_PER_PAGE } from "@/shared/constants";
 import { COLORS } from "@/shared/theme";
 import type { Ticker } from "@/shared/types";
-import { AppText, Button, CardSkeleton, EmptyState, IconButton, Screen, TextField } from "@/ui";
+import { AppText, Button, CardSkeleton, EmptyState, Screen, TextField, type IoniconName } from "@/ui";
 import { DashboardControls } from "./DashboardControls";
 import { useDashboardSnapshot } from "./hooks/useDashboardSnapshot";
 import { useLiveUpgrade } from "./hooks/useLiveUpgrade";
@@ -194,17 +195,17 @@ export function DashboardScreen() {
   return (
     <Screen scroll={false}>
       <View className="gap-3 border-b border-white/5 bg-charcoal-dark px-4 pb-3 pt-4">
-        <View className="flex-row items-start justify-between gap-3">
-          <View className="flex-1">
-            <AppText className="font-sans-bold text-2xl text-white">EGX Market Overview</AppText>
-            <AppText className="mt-1 text-sm text-white/40">
-              Tap any card for detailed analysis. Pull down to refresh prices.
-            </AppText>
-          </View>
-          <View className="flex-row gap-2">
-            <IconButton icon="swap-horizontal" accessibilityLabel="Compare stocks" onPress={() => router.push(routes.compare)} />
-            <IconButton icon="calendar-outline" accessibilityLabel="Dividend calendar" onPress={() => router.push(routes.dividends)} />
-          </View>
+        <View>
+          <AppText className="font-sans-bold text-2xl text-white">EGX Market Overview</AppText>
+          <AppText className="mt-1 text-sm text-white/40">
+            Tap any card for detailed analysis. Pull down to refresh prices.
+          </AppText>
+        </View>
+        {/* Labelled tools rather than two bare icons beside the title: a reader
+            should not have to guess what ⇄ and a calendar glyph open. */}
+        <View className="flex-row gap-2">
+          <ToolButton icon="swap-horizontal" label="Compare" onPress={() => router.push(routes.compare)} />
+          <ToolButton icon="calendar-outline" label="Dividends" onPress={() => router.push(routes.dividends)} />
         </View>
         <TextField
           label="Search"
@@ -260,5 +261,19 @@ export function DashboardScreen() {
         }
       />
     </Screen>
+  );
+}
+
+function ToolButton({ icon, label, onPress }: { icon: IoniconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label === "Compare" ? "Compare stocks" : "Dividend calendar"}
+      onPress={onPress}
+      className="min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 active:opacity-70"
+    >
+      <Ionicons name={icon} size={18} color={COLORS.accent} />
+      <AppText className="font-sans-medium text-sm text-white/80">{label}</AppText>
+    </Pressable>
   );
 }

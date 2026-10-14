@@ -3,7 +3,6 @@ import { Tabs } from "expo-router";
 import { View } from "react-native";
 
 import { AccountHeaderButton } from "@/features/account/AccountHeaderButton";
-import { AdminHeaderButton } from "@/features/admin/AdminHeaderButton";
 import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
 import { BrandTitle } from "@/features/shell/BrandTitle";
 import { PillTabBar } from "@/features/shell/PillTabBar";
@@ -33,7 +32,6 @@ export default function TabsLayout() {
         headerRight: () => (
           <View className="flex-row items-center gap-1 pr-2">
             <AlertsHeaderButton />
-            <AdminHeaderButton />
             <AccountHeaderButton />
           </View>
         ),
