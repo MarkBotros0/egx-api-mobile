@@ -5,7 +5,9 @@
   },
   "build": {
     "base": {
-      "env": { "SKIP_SHARED_CHECK": "1" }
+      "env": {
+        "SKIP_SHARED_CHECK": "1"
+      }
     },
     "development": {
       "extends": "base",
@@ -17,7 +19,9 @@
       "extends": "base",
       "environment": "preview",
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "extends": "base",
@@ -26,6 +30,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6822621171"
+      }
+    }
   }
 }
