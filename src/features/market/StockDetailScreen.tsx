@@ -70,6 +70,11 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
       <Stack.Screen
         options={{
           headerRight: () => <WatchStarButton symbol={symbol} />,
+          // iOS 26 draws a glass pill behind a headerRight view; as a custom
+          // item the star can opt out of it.
+          unstable_headerRightItems: () => [
+            { type: "custom", element: <WatchStarButton symbol={symbol} />, hidesSharedBackground: true },
+          ],
         }}
       />
       <RefreshableScroll

@@ -1,8 +1,11 @@
 import { Stack } from "expo-router";
+import { Platform } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { NotificationRouter } from "@/features/alerts/NotificationRouter";
 import { COLORS } from "@/shared/theme";
+
+import { BackButton } from "./BackButton";
 
 /**
  * The app is CLOSED, like the web: nothing but /login, /signup and /forgot-password exist signed out.
@@ -18,6 +21,17 @@ export function RootNavigator() {
     headerTintColor: "#ffffff",
     headerTitleStyle: { fontFamily: "Outfit_600SemiBold" },
     headerShadowVisible: false,
+    // A bare back arrow. iOS otherwise labels it with the previous route's
+    // title — "(tabs)", the route GROUP, for anything opened from a tab — and
+    // iOS 26 wraps header buttons in a glass pill; the custom item hides that.
+    headerBackButtonDisplayMode: "minimal",
+    ...(Platform.OS === "ios"
+      ? {
+          headerBackVisible: false,
+          unstable_headerLeftItems: ({ canGoBack }: { canGoBack?: boolean }) =>
+            canGoBack ? [{ type: "custom" as const, element: <BackButton />, hidesSharedBackground: true }] : [],
+        }
+      : {}),
   } as const;
 
   // Until the stored session is restored, "signed out" is not yet known. Mounting the
