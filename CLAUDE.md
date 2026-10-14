@@ -66,7 +66,8 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - Money inputs accept 3 decimals; share counts are integers.
 - UI sweep rules (2026-10-14, from emulator screenshots against the web):
   - The phone layout follows the web AT PHONE WIDTH: dashboard = controls then
-    stocks, market condition + watchlist after the list; one card column below 600pt.
+    stocks, market condition + watchlist after the list. Cards: 2 per row on a phone
+    (`StockCard compact`, the web's half-width card), 3 from 700pt, 1 under 340pt.
   - The pill tab bar FLOATS over content (absolute, reports its height); tab screens
     pad their scroll content with `useTabBarClearance()`.
   - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its

@@ -45,9 +45,10 @@ export function DashboardScreen() {
   const now = useNow();
   const { width } = useWindowDimensions();
   const clearance = useTabBarClearance();
-  // Two columns only on tablet widths. The web splits at 400px, but native
-  // type is larger: at 412pt two cards wrapped the change and clipped names.
-  const columns = width >= 600 ? 2 : 1;
+  // Two compact cards per row on a phone, three on a tablet, one only on a
+  // really narrow screen (under 340pt, e.g. the first iPhone SE). Compact,
+  // because the full card at half width wrapped the change and clipped names.
+  const columns = width >= 700 ? 3 : width >= 340 ? 2 : 1;
 
   const [index, setIndex] = useState("EGX30");
   const [sector, setSector] = useState<string>(ALL_SECTORS);
@@ -103,7 +104,7 @@ export function DashboardScreen() {
     if (hasMore) setPage((p) => p + 1);
   };
 
-  const renderCard = (t: Ticker) => {
+  const renderCard = (t: Ticker, compact = false) => {
     const c = snap.cards[t.symbol.toUpperCase()];
     return (
       <StockCard
@@ -127,6 +128,7 @@ export function DashboardScreen() {
         fetchedAgo={agoLabel(c?.fetchedAt, now)}
         marketClosed={marketClosed}
         onRetry={() => upgrade([t.symbol])}
+        compact={compact}
       />
     );
   };
@@ -224,8 +226,8 @@ export function DashboardScreen() {
         keyExtractor={(t) => t.symbol}
         extraData={extra}
         renderItem={({ item }) => (
-          <View style={{ width: columns === 2 ? "50%" : "100%" }} className="p-1.5">
-            {renderCard(item)}
+          <View style={{ width: `${100 / columns}%` }} className="p-1.5">
+            {renderCard(item, columns > 1)}
           </View>
         )}
         contentContainerClassName="px-2.5 pt-3"
