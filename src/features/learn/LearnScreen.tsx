@@ -29,6 +29,7 @@ import { ModuleHeader } from "./ModuleHeader";
 import { useLearnProgress } from "./progress";
 import { CONTROLS_INDEX, buildRows, resolveTarget, toggledSet, withOpen, type LearnRow } from "./rows";
 import { useReduceMotion } from "./useReduceMotion";
+import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 
 const STICKY = [CONTROLS_INDEX];
 const VIEWABILITY = { itemVisiblePercentThreshold: 1 };
@@ -44,6 +45,7 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
   const { read, toggle, reset, hydrated } = useLearnProgress();
   const reduceMotion = useReduceMotion();
   const { height: viewportH } = useWindowDimensions();
+  const clearance = useTabBarClearance();
 
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
@@ -285,14 +287,15 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
           windowSize={9}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: 64 }}
+          contentContainerStyle={{ paddingBottom: 64 + clearance }}
         />
         {showTop ? (
           <Pressable
             onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: !reduceMotion })}
             accessibilityRole="button"
             accessibilityLabel="Back to top"
-            className="absolute bottom-4 right-4 h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-charcoal/90"
+            style={{ bottom: 16 + clearance }}
+            className="absolute right-4 h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-charcoal/90"
           >
             <Ionicons name="arrow-up" size={20} color="rgba(255,255,255,0.6)" />
           </Pressable>

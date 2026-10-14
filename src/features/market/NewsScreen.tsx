@@ -6,9 +6,11 @@ import { useNow } from "./hooks/useNow";
 import { newsCaveats, yourStocksEmptyNote } from "./logic/news";
 import { NewsList } from "./NewsList";
 import { RefreshableScroll } from "./RefreshableScroll";
+import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 
 /** Port of web `news/page.tsx`; pull-to-refresh re-requests the feed. */
 export function NewsScreen() {
+  const clearance = useTabBarClearance();
   const news = useKeyedFetch("news", fetchNews);
   const now = new Date(useNow(60_000));
   const data = news.data;
@@ -53,6 +55,7 @@ export function NewsScreen() {
             />
           </>
         ) : null}
+        <View style={{ height: clearance }} />
       </RefreshableScroll>
     </Screen>
   );

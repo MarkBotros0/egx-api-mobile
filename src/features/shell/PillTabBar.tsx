@@ -1,5 +1,5 @@
-import type { BottomTabBarProps } from "expo-router/tabs";
-import { useState } from "react";
+import { BottomTabBarHeightCallbackContext, type BottomTabBarProps } from "expo-router/tabs";
+import { useContext, useState } from "react";
 import { Pressable, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,9 +14,11 @@ import { AppText } from "@/ui";
  * indicator, with ONE highlight that slides between tabs rather than a
  * background toggled per tab.
  *
- * Not absolutely positioned: the bar keeps its own strip of page background,
- * so screens end above it and nothing (the portfolio FAB, a list's last row)
- * needs to know it floats.
+ * It FLOATS over the content, as on the web: absolutely positioned, with a
+ * transparent gutter (box-none, so taps there reach the content) and no strip
+ * of page background. It reports its height to the navigator, which hands it
+ * to every tab screen as BottomTabBarHeightContext — `useTabBarClearance()` —
+ * so each screen pads its scroll content and the portfolio FAB sits above it.
  */
 export const PILL_HEIGHT = 52;
 const TAB_HEIGHT = 44;
@@ -26,6 +28,7 @@ export function PillTabBar({ state, descriptors, navigation }: BottomTabBarProps
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
   const [width, setWidth] = useState(0);
+  const reportHeight = useContext(BottomTabBarHeightCallbackContext);
 
   const count = state.routes.length;
   const tabWidth = width > 0 ? (width - PAD * 2) / count : 0;
@@ -44,8 +47,10 @@ export function PillTabBar({ state, descriptors, navigation }: BottomTabBarProps
 
   return (
     <View
-      className="items-center bg-charcoal-dark px-4"
-      style={{ paddingBottom: insets.bottom + 8, paddingTop: 6 }}
+      pointerEvents="box-none"
+      onLayout={(e) => reportHeight?.(e.nativeEvent.layout.height)}
+      className="items-center px-4"
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingBottom: insets.bottom + 8 }}
     >
       <View
         onLayout={onLayout}

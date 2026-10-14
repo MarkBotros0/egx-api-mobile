@@ -26,6 +26,7 @@ import {
   type SortKey,
 } from "./logic/dashboardFilters";
 import { agoLabel, isEgxOpen, isTodaysSession, sessionLabel } from "./logic/marketClock";
+import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 import { MarketRegimeCard } from "./MarketRegimeCard";
 import { StockCard } from "./StockCard";
 import { WatchlistPanel } from "./WatchlistPanel";
@@ -43,6 +44,7 @@ export function DashboardScreen() {
   const { symbols: watchlistSymbols } = useWatchlist();
   const now = useNow();
   const { width } = useWindowDimensions();
+  const clearance = useTabBarClearance();
   // Two columns only on tablet widths. The web splits at 400px, but native
   // type is larger: at 412pt two cards wrapped the change and clipped names.
   const columns = width >= 600 ? 2 : 1;
@@ -226,7 +228,8 @@ export function DashboardScreen() {
             {renderCard(item)}
           </View>
         )}
-        contentContainerClassName="px-2.5 pb-8 pt-3"
+        contentContainerClassName="px-2.5 pt-3"
+        contentContainerStyle={{ paddingBottom: 32 + clearance }}
         ListHeaderComponent={header}
         ListEmptyComponent={
           loading ? (

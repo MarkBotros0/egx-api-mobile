@@ -67,6 +67,8 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - UI sweep rules (2026-10-14, from emulator screenshots against the web):
   - The phone layout follows the web AT PHONE WIDTH: dashboard = controls then
     stocks, market condition + watchlist after the list; one card column below 600pt.
+  - The pill tab bar FLOATS over content (absolute, reports its height); tab screens
+    pad their scroll content with `useTabBarClearance()`.
   - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its
     title (and actions, e.g. the stock page's watch star) — never repeat it in the body.
   - Chip rows: `PillRow label=…` with a `RowLabel` ("SORT", "FILTER"); selectable
