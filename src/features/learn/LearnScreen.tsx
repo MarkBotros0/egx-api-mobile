@@ -287,7 +287,7 @@ export function LearnScreen({ concept, onConceptHandled }: LearnScreenProps) {
           windowSize={9}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: 64 + clearance }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 64 + clearance }}
         />
         {showTop ? (
           <Pressable

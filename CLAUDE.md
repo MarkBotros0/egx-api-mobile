@@ -55,8 +55,9 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
 - Fonts are families: `font-sans`, `-medium`, `-semibold`, `-bold`, `font-mono`, `font-mono-semibold`.
 - NativeWind: em tracking → px, relative leading → px, `space-y` → `gap`, no `md:`/`hover:`.
 - Never `{n && <X/>}` with a number/string `n` — use a ternary.
-- Touch targets ≥ 44pt. Safe areas via `Screen` only, which already applies `px-4`
-  (screens must not add their own outer `px-4`). `Screen` pads NO edge by default:
+- Touch targets ≥ 44pt. Safe areas via `Screen` only. `Screen scroll` applies `px-4`
+  (don't add another); `Screen scroll={false}` applies NONE — the list or scroll view
+  inside pads itself to 16pt (double padding once put every margin at 32pt). `Screen` pads NO edge by default:
   every signed-in screen sits under a tab or stack header that already clears the
   notch, and a `["top"]` there doubled the gap (fixed 2026-10-14). Only the signed-out
   screens (`AuthShell`, no header) pass `edges={["top", "bottom"]}`. The tab bar is

@@ -27,7 +27,9 @@ export function Screen({ children, scroll = true, refreshing = false, onRefresh,
           {children}
         </ScrollView>
       ) : (
-        <View className={`flex-1 px-4 ${contentClassName}`}>{children}</View>
+        // No side padding here: a non-scrolling screen hosts its own list or
+        // scroll view, which pads itself. Padding both doubled the margin.
+        <View className={`flex-1 ${contentClassName}`}>{children}</View>
       )}
     </SafeAreaView>
   );
