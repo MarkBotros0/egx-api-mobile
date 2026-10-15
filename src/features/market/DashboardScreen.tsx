@@ -72,14 +72,17 @@ export function DashboardScreen() {
   const [compositeInterval, setCompositeInterval] = useState<CompositeInterval>("Daily");
   const [showNoFeed, setShowNoFeed] = useState(false);
 
-  // A market switch starts over on the new market's first tab: the old index
-  // and sector name nothing in the new list. Adjusted during render (not in an
-  // effect) so no frame filters the new market by the old market's tab.
+  // A market switch starts over on the new market's first tab with no search:
+  // the old index, sector and query name nothing in the new list (a US "BRK"
+  // left EG at "0 stocks"). Sort and the dividend toggle carry over. Adjusted
+  // during render (not in an effect) so no frame filters the new market by the
+  // old market's filters.
   const [shownMarket, setShownMarket] = useState(market.code);
   if (shownMarket !== market.code) {
     setShownMarket(market.code);
     setIndex(tabIds[0]);
     setSector(ALL_SECTORS);
+    setSearch("");
     setPage(1);
   }
 

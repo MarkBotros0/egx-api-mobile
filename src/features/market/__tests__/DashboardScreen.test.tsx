@@ -257,6 +257,27 @@ describe("per market", () => {
     expect(await screen.findByTestId("stockcard-AAPL")).toBeTruthy();
   });
 
+  it("clears the search when the market changes", async () => {
+    mockMarketApi(marketRoutes("US"));
+    function WithChanger() {
+      const { setMarket } = useMarket();
+      return (
+        <>
+          <Pressable testID="to-eg" onPress={() => setMarket("EG")} />
+          <DashboardScreen />
+        </>
+      );
+    }
+    await renderWithProviders(<WithChanger />);
+    await screen.findByTestId("stockcard-AAPL");
+    await fireEvent.changeText(screen.getByTestId("dashboard-search"), "BRK");
+    await waitFor(() => expect(screen.queryByTestId("stockcard-AAPL")).toBeNull());
+
+    await fireEvent.press(screen.getByTestId("to-eg"));
+    expect(await screen.findByTestId("stockcard-COMI")).toBeTruthy();
+    expect(screen.getByTestId("dashboard-search").props.value).toBe("");
+  });
+
   it("never asks for the market-condition reading on US, and shows no skeleton for it", async () => {
     const fetchMock = mockMarketApi(marketRoutes("US"));
     await renderWithProviders(<DashboardScreen />);
