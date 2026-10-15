@@ -2,11 +2,11 @@ import {
   agoLabel,
   cardStamp,
   changeIntervalNote,
-  isEgxOpen,
   isTodaysSession,
   sessionLabel,
 } from "../marketClock";
 import { dateToIso } from "@/lib/dates";
+import { EG_FALLBACK, isMarketOpen } from "@/shared/markets";
 
 describe("sessionLabel", () => {
   it("formats a bare ISO date as day + short month", () => {
@@ -55,7 +55,7 @@ describe("agoLabel", () => {
   });
 });
 
-describe("isEgxOpen (Sun–Thu, 10:00–14:30 Cairo)", () => {
+describe("isMarketOpen(EG_FALLBACK) (Sun–Thu, 10:00–14:30 Cairo)", () => {
   it.each([
     ["2026-10-11T07:00:00Z", true], // Sun 10:00 Cairo, summer time (UTC+3)
     ["2026-10-11T06:59:00Z", false], // Sun 09:59
@@ -66,15 +66,21 @@ describe("isEgxOpen (Sun–Thu, 10:00–14:30 Cairo)", () => {
     ["2026-10-09T09:00:00Z", false], // Friday
     ["2026-10-10T09:00:00Z", false], // Saturday
   ])("%s → open=%s", (iso, open) => {
-    expect(isEgxOpen(Date.parse(iso))).toBe(open);
+    expect(isMarketOpen(EG_FALLBACK, Date.parse(iso))).toBe(open);
   });
 
   it("claims open when the engine cannot resolve Cairo time", () => {
     const spy = jest.spyOn(Intl, "DateTimeFormat").mockImplementation(() => {
       throw new RangeError("no time zone data");
     });
-    expect(isEgxOpen(Date.parse("2026-10-10T09:00:00Z"))).toBe(true);
+    expect(isMarketOpen(EG_FALLBACK, Date.parse("2026-10-10T09:00:00Z"))).toBe(true);
     spy.mockRestore();
+  });
+
+  it("claims open for a timezone the engine cannot resolve", () => {
+    expect(
+      isMarketOpen({ ...EG_FALLBACK, timezone: "Not/AZone" }, Date.parse("2026-10-10T09:00:00Z"))
+    ).toBe(true);
   });
 });
 

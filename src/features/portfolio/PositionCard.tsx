@@ -3,14 +3,17 @@ import { Pressable, View } from "react-native";
 import { CompositeGauge } from "@/charts";
 import { peColor } from "@/shared/constants";
 import type { Position } from "@/shared/positions";
+import { formatMoney, formatPrice } from "@/shared/money";
 import type { HoldingAnalysis } from "@/shared/types";
 import { AppText, Button, Card } from "@/ui";
 import { LotList } from "./LotList";
 import { ZoneBadge, ZoneDetail } from "./ZoneBadge";
-import { egp, fmtExDate, pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
+import { fmtExDate, pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
 
 export interface PositionCardProps {
   position: Position;
+  /** The market's currency code, from the portfolio response. */
+  currency: string;
   expanded: boolean;
   onToggle: () => void;
   onEdit: (id: string) => void;
@@ -30,7 +33,7 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
 
 const mono = (text: string, tone = "text-white/70") => <AppText className={`font-mono text-xs ${tone}`}>{text}</AppText>;
 
-export function PositionCard({ position: h, expanded, onToggle, onEdit, onRequestDelete, onSell, onAddDividend }: PositionCardProps) {
+export function PositionCard({ position: h, currency, expanded, onToggle, onEdit, onRequestDelete, onSell, onAddDividend }: PositionCardProps) {
   // A position whose price feed is down must stay sellable — recording a sale
   // or a dividend needs no price.
   if (h.error) {
@@ -40,7 +43,7 @@ export function PositionCard({ position: h, expanded, onToggle, onEdit, onReques
         <AppText className="font-mono-semibold text-xs text-white">{h.symbol}</AppText>
         <AppText className="mt-1 font-sans text-xs text-loss">{h.error}</AppText>
         {/* Several lots: per-lot Edit/Delete. One lot: the same pair as the priced card. */}
-        <LotList position={h} onEdit={onEdit} onRequestDelete={onRequestDelete} />
+        <LotList position={h} currency={currency} onEdit={onEdit} onRequestDelete={onRequestDelete} />
         <View className="mt-3 flex-row flex-wrap gap-2 border-t border-white/5 pt-3">
           {errorLot?.id ? (
             <View className="min-w-[70px] flex-1"><Button label="Edit" variant="secondary" onPress={() => onEdit(errorLot.id as string)} /></View>
@@ -84,7 +87,7 @@ export function PositionCard({ position: h, expanded, onToggle, onEdit, onReques
               {multi ? <AppText className="font-sans text-xs text-white/30"> avg</AppText> : null}
             </AppText>
             <AppText className="font-sans text-xs text-white/30">=</AppText>
-            <AppText className="font-mono text-xs text-white">{`${egp(h.current_value)} EGP`}</AppText>
+            <AppText className="font-mono text-xs text-white">{formatMoney(h.current_value, currency, { digits: 0 })}</AppText>
           </View>
           {h.buy_date ? (
             <AppText className="mt-0.5 font-sans text-[10px] text-white/30">
@@ -155,16 +158,16 @@ export function PositionCard({ position: h, expanded, onToggle, onEdit, onReques
             )}
             {/* Dividend amounts carry no direction: neutral, per the roadmap. */}
             {(h.dividends_collected ?? 0) > 0 && (
-              <Stat label="Dividends collected">{mono(`${egp(h.dividends_collected ?? 0)} EGP`, "text-white")}</Stat>
+              <Stat label="Dividends collected">{mono(formatMoney(h.dividends_collected ?? 0, currency, { digits: 0 }), "text-white")}</Stat>
             )}
             {h.last_dividend_amount != null && h.last_dividend_ex_date ? (
               <Stat label="Last market dividend">
-                {mono(`${h.last_dividend_amount.toFixed(2)} EGP · ${fmtExDate(h.last_dividend_ex_date)}`, "text-white/80")}
+                {mono(`${formatPrice(h.last_dividend_amount, currency)} · ${fmtExDate(h.last_dividend_ex_date)}`, "text-white/80")}
               </Stat>
             ) : null}
           </View>
 
-          <LotList position={h} onEdit={onEdit} onRequestDelete={onRequestDelete} />
+          <LotList position={h} currency={currency} onEdit={onEdit} onRequestDelete={onRequestDelete} />
           <ZoneDetail entryExit={h.entry_exit} />
 
           <View className="mt-3 flex-row flex-wrap gap-2 border-t border-white/5 pt-3">

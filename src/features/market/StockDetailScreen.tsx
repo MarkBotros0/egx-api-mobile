@@ -50,7 +50,7 @@ export interface StockDetailScreenProps {
  */
 export function StockDetailScreen({ symbol, initialInterval, market: linkedMarket }: StockDetailScreenProps) {
   const { version: weightsVersion } = useScoreWeights();
-  const { market } = useMarket();
+  const { market, markets } = useMarket();
   // Pinned only when the link names the OTHER market; otherwise follow the app.
   const pinned = linkedMarket && linkedMarket !== market.code ? linkedMarket : null;
   const dataMarket = pinned ?? market.code;
@@ -63,6 +63,8 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
     fetchAnalysis(symbol, interval, bars, { market: dataMarket })
   );
   const data = analysis.data;
+  // The response names its currency; an older backend falls back to the data market's.
+  const currency = data?.currency ?? markets.find((m) => m.code === dataMarket)?.currency ?? market.currency;
   const priceData = useMemo(() => (data ? priceRows(data) : []), [data]);
   const volumeData = useMemo(() => (data ? volumeRows(data) : []), [data]);
   const indicatorData = useMemo(() => (data ? indicatorRows(data) : []), [data]);
@@ -137,12 +139,13 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
               atrPct={atrPercent(latestAtr, data.stats.current_price)}
               crossovers={data.crossovers}
               pe={data.pe}
+              currency={currency}
             />
             {data.composite_score && (
               <CompositeCard composite={data.composite_score} interval={interval} callouts={compositeCallouts(data)} />
             )}
-            <KeyLevelsCard keyLevels={data.key_levels} />
-            <EntryExitCard entryExit={data.entry_exit} />
+            <KeyLevelsCard keyLevels={data.key_levels} currency={currency} />
+            <EntryExitCard entryExit={data.entry_exit} currency={currency} />
 
             <View className="gap-2">
               <OverlayToggles value={overlays} onToggle={(k) => setOverlays((p) => ({ ...p, [k]: !p[k] }))} />
@@ -170,7 +173,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
             {showIndicators && <IndicatorPanel data={indicatorData} />}
 
             <RiskGradeCard symbol={symbol} market={dataMarket} />
-            <ForecastCard forecast={data.forecast} symbol={symbol} />
+            <ForecastCard forecast={data.forecast} symbol={symbol} currency={currency} />
             <DividendHistoryCard symbol={symbol} market={dataMarket} />
           </>
         ) : null}

@@ -6,7 +6,7 @@ import { HoldingsList } from "../HoldingsList";
 
 function setup(holdings = TWO_LOT_HOLDINGS) {
   const handlers = { onEdit: jest.fn(), onDelete: jest.fn(), onSell: jest.fn(), onAddDividend: jest.fn() };
-  return { handlers, render: () => renderWithProviders(<HoldingsList holdings={holdings} {...handlers} />) };
+  return { handlers, render: () => renderWithProviders(<HoldingsList holdings={holdings} currency="EGP" {...handlers} />) };
 }
 
 afterEach(() => jest.restoreAllMocks());

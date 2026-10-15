@@ -1,9 +1,20 @@
 import { View } from "react-native";
+import { formatPrice } from "@/shared/money";
 import type { KeyLevels, NearestLevel } from "@/shared/types";
 import { AppText, LearnTerm } from "@/ui";
 import { levelReading } from "./logic/levels";
 
-function LevelRow({ kind, level, currentPrice }: { kind: "support" | "resistance"; level: NearestLevel | null; currentPrice: number }) {
+function LevelRow({
+  kind,
+  level,
+  currentPrice,
+  currency,
+}: {
+  kind: "support" | "resistance";
+  level: NearestLevel | null;
+  currentPrice: number;
+  currency: string;
+}) {
   const label = kind === "support" ? "Nearest Support" : "Nearest Resistance";
   if (!level) {
     return (
@@ -13,7 +24,7 @@ function LevelRow({ kind, level, currentPrice }: { kind: "support" | "resistance
       </View>
     );
   }
-  const r = levelReading(kind, level, currentPrice);
+  const r = levelReading(kind, level, currentPrice, currency);
   return (
     <View
       className={`gap-1 rounded-lg border px-3 py-2 ${r.brokenThrough ? "border-yellow-400/20 bg-yellow-400/[0.04]" : "border-white/5 bg-white/[0.02]"}`}
@@ -27,7 +38,7 @@ function LevelRow({ kind, level, currentPrice }: { kind: "support" | "resistance
 }
 
 /** Port of web `KeyLevelsCard`. */
-export function KeyLevelsCard({ keyLevels }: { keyLevels: KeyLevels | null | undefined }) {
+export function KeyLevelsCard({ keyLevels, currency }: { keyLevels: KeyLevels | null | undefined; currency: string }) {
   if (!keyLevels) return null;
   const { current_price, nearest_support, nearest_resistance } = keyLevels;
 
@@ -40,7 +51,7 @@ export function KeyLevelsCard({ keyLevels }: { keyLevels: KeyLevels | null | und
         >
           Key Levels
         </LearnTerm>
-        <AppText className="font-mono text-[10px] text-white/30">{`${current_price.toFixed(2)} EGP`}</AppText>
+        <AppText className="font-mono text-[10px] text-white/30">{formatPrice(current_price, currency)}</AppText>
       </View>
 
       <View className="gap-3">
@@ -55,7 +66,7 @@ export function KeyLevelsCard({ keyLevels }: { keyLevels: KeyLevels | null | und
             </AppText>
           </View>
         ) : (
-          <LevelRow kind="resistance" level={nearest_resistance} currentPrice={current_price} />
+          <LevelRow kind="resistance" level={nearest_resistance} currentPrice={current_price} currency={currency} />
         )}
 
         <View className="flex-row items-center gap-2">
@@ -64,7 +75,7 @@ export function KeyLevelsCard({ keyLevels }: { keyLevels: KeyLevels | null | und
           <View className="h-px flex-1 border-t border-dashed border-white/10" />
         </View>
 
-        <LevelRow kind="support" level={nearest_support} currentPrice={current_price} />
+        <LevelRow kind="support" level={nearest_support} currentPrice={current_price} currency={currency} />
       </View>
     </View>
   );

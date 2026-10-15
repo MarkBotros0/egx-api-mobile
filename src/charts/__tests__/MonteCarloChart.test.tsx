@@ -64,7 +64,7 @@ describe("Monte Carlo helpers", () => {
 
 describe("MonteCarloChart", () => {
   it("shows the tiles with value-driven signs", async () => {
-    await renderChart(<MonteCarloChart data={result} />);
+    await renderChart(<MonteCarloChart data={result} currency="EGP" />);
     expect(screen.getByText("Monte Carlo Simulation")).toBeTruthy();
     expect(screen.getByText("1,000 simulated scenarios over 3 days based on your portfolio's historical behavior.")).toBeTruthy();
     expect(screen.getByText("38%")).toBeTruthy();
@@ -75,7 +75,7 @@ describe("MonteCarloChart", () => {
   });
 
   it("reads out every percentile in EGP for the touched day", async () => {
-    await renderChart(<MonteCarloChart data={result} />);
+    await renderChart(<MonteCarloChart data={result} currency="EGP" />);
     await layoutChart("monte-carlo-chart");
     await scrubChart("monte-carlo-chart", 336);
     expect(screen.getByText("Day 3")).toBeTruthy();

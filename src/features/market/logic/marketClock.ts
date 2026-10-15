@@ -42,38 +42,6 @@ export function agoLabel(at: number | undefined, now: number): string | null {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-/**
- * Is the EGX open right now? Sun–Thu, 10:00–14:30 Africa/Cairo, read through
- * Intl so it is right from any device timezone and across Egypt's DST.
- *
- * If this JS engine cannot resolve Cairo time it answers OPEN: the card then
- * shows its real "…ago" age, which is always true, rather than a "Market
- * closed" that might be false.
- */
-export function isEgxOpen(nowMs: number): boolean {
-  let parts: Intl.DateTimeFormatPart[];
-  try {
-    parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Africa/Cairo",
-      weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).formatToParts(new Date(nowMs));
-  } catch {
-    return true;
-  }
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  const weekday = get("weekday");
-  if (!weekday) return true;
-  if (weekday === "Fri" || weekday === "Sat") return false;
-  let hour = parseInt(get("hour"), 10);
-  if (hour === 24) hour = 0; // some engines emit "24" for midnight
-  const minutes = hour * 60 + parseInt(get("minute"), 10);
-  if (Number.isNaN(minutes)) return true;
-  return minutes >= 600 && minutes <= 870;
-}
-
 export interface StampInput {
   asOf: string | null;
   isToday: boolean;

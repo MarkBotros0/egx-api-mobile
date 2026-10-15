@@ -17,6 +17,7 @@ import {
   volumeRows,
   type PriceOverlays,
 } from "@/charts";
+import { EG_FALLBACK } from "@/shared/markets";
 import { AppText, Pill, PillRow, Screen } from "@/ui";
 
 import {
@@ -135,7 +136,7 @@ export function ChartGallery() {
       </Section>
 
       <Section title="MonteCarloChart">
-        <MonteCarloChart data={monteCarloFixture} />
+        <MonteCarloChart data={monteCarloFixture} currency={EG_FALLBACK.currency} />
       </Section>
 
       <Section title="CorrelationHeatmap">

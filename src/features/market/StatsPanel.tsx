@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { T_BILL_RATE_PCT } from "@/shared/constants";
+import { formatPrice } from "@/shared/money";
 import type { AnalysisStats, CrossoverInfo, PEData } from "@/shared/types";
 import { AppText, LearnTerm } from "@/ui";
 import { changeText, formatPE, formatVolume } from "./logic/format";
@@ -15,6 +16,8 @@ export interface StatsPanelProps {
   atrPct?: number | null;
   crossovers?: CrossoverInfo | null;
   pe?: PEData | null;
+  /** The market's currency code, from the analysis response. */
+  currency: string;
 }
 
 function StatRow({
@@ -53,6 +56,7 @@ export function StatsPanel({
   atrPct,
   crossovers,
   pe,
+  currency,
 }: StatsPanelProps) {
   const golden = crossovers?.current_signal === "golden_cross";
   return (
@@ -67,7 +71,7 @@ export function StatsPanel({
         </View>
       )}
 
-      <StatRow label="Current Price" value={`${stats.current_price.toFixed(2)} EGP`} />
+      <StatRow label="Current Price" value={formatPrice(stats.current_price, currency)} />
       <StatRow label="Change" value={changeText(stats.change, stats.change_pct)} valueClass={signedClass(stats.change_pct)} />
       <StatRow
         label="52W High"

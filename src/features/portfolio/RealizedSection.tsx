@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import type { Dividend, SaleOrder, SalesSummary } from "@/shared/types";
 import { AppText, Button, Card, LearnTerm, Pill, SegmentedControl, confirm } from "@/ui";
+import { formatMoney, formatPrice } from "@/shared/money";
 import { egp, pnlTone, signed } from "./logic/format";
 import {
   companyName,
@@ -19,6 +20,8 @@ export interface RealizedSectionProps {
   orders: SaleOrder[];
   dividends: Dividend[];
   riskFreeRatePct: number;
+  /** The market's currency code, from the sales response. */
+  currency: string;
   onDeleteSale: (id: string) => void;
   onDeleteDividend: (id: string) => void;
 }
@@ -47,7 +50,7 @@ function SupportTile({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-function OrderRow({ order: o, onUndo }: { order: SaleOrder; onUndo: (o: SaleOrder) => void }) {
+function OrderRow({ order: o, currency, onUndo }: { order: SaleOrder; currency: string; onUndo: (o: SaleOrder) => void }) {
   const [open, setOpen] = useState(false);
   const line = tBillLine(o);
   return (
@@ -56,7 +59,7 @@ function OrderRow({ order: o, onUndo }: { order: SaleOrder; onUndo: (o: SaleOrde
         <View className="min-w-0 flex-1">
           <SymbolLine symbol={o.symbol} name={o.name} extra={o.lots_count > 1 ? `${o.lots_count} lots` : undefined} />
           <AppText className="mt-0.5 font-sans text-[10px] text-white/30">
-            {`${o.quantity} shares sold @ ${o.sell_price.toFixed(2)} EGP · ${o.sell_date}`}
+            {`${o.quantity} shares sold @ ${formatPrice(o.sell_price, currency)} · ${o.sell_date}`}
           </AppText>
           <AppText className="mt-0.5 font-sans text-[10px] text-white/30">{heldLine(o)}</AppText>
           {line ? <AppText className="mt-0.5 font-sans text-[10px] text-white/40">{line}</AppText> : null}
@@ -103,8 +106,9 @@ function OrderRow({ order: o, onUndo }: { order: SaleOrder; onUndo: (o: SaleOrde
 }
 
 export function RealizedSection({
-  summary, orders, dividends, riskFreeRatePct, onDeleteSale, onDeleteDividend,
+  summary, orders, dividends, riskFreeRatePct, currency, onDeleteSale, onDeleteDividend,
 }: RealizedSectionProps) {
+  const money = (v: number) => formatMoney(v, currency, { digits: 0 });
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<RealizedTab>(initialRealizedTab(orders, dividends));
 
@@ -152,7 +156,7 @@ export function RealizedSection({
         <View className="min-w-0 flex-1">
           <AppText className="font-sans-medium text-sm text-white/70">Realized Winnings</AppText>
           <AppText className={`mt-1 font-mono-semibold text-3xl ${pnlTone(summary.total_winnings)}`}>
-            {`${signed(summary.total_winnings)} EGP`}
+            {`${summary.total_winnings >= 0 ? "+" : ""}${money(summary.total_winnings)}`}
           </AppText>
           {summary.total_dividends > 0 && (
             <AppText className="mt-1 font-mono text-xs text-white/50">
@@ -174,7 +178,7 @@ export function RealizedSection({
         <View className="mt-4">
           {summary.total_realized_pnl_pct !== null && (
             <AppText className="mb-4 font-sans text-sm text-white/40">
-              {`${signed(summary.total_realized_pnl_pct, 2)}% on ${egp(summary.total_cost)} EGP invested in closed trades`}
+              {`${signed(summary.total_realized_pnl_pct, 2)}% on ${money(summary.total_cost)} invested in closed trades`}
             </AppText>
           )}
 
@@ -231,7 +235,7 @@ export function RealizedSection({
           <View className="mt-4 gap-2">
             {tab === "sales" &&
               (orders.length ? (
-                orders.map((o) => <OrderRow key={o.id} order={o} onUndo={undo} />)
+                orders.map((o) => <OrderRow key={o.id} order={o} currency={currency} onUndo={undo} />)
               ) : (
                 <AppText className="py-4 text-center font-sans text-xs text-white/30">No sales recorded yet.</AppText>
               ))}
@@ -240,7 +244,7 @@ export function RealizedSection({
               (dividends.length ? (
                 <>
                   <AppText className="font-sans text-[10px] text-white/30">
-                    {`${dividends.length} payment${dividends.length === 1 ? "" : "s"} · ${egp(dividendTotal)} EGP received`}
+                    {`${dividends.length} payment${dividends.length === 1 ? "" : "s"} · ${money(dividendTotal)} received`}
                   </AppText>
                   {dividends.map((d) => (
                     <View key={d.id} className="rounded-lg bg-white/5 p-3">
@@ -248,7 +252,7 @@ export function RealizedSection({
                         <View className="min-w-0 flex-1">
                           <SymbolLine symbol={d.symbol} name={d.name} />
                           <AppText className="mt-0.5 font-sans text-[10px] text-white/30">
-                            {`Paid ${d.pay_date}${d.amount_per_share !== null ? ` · ${d.amount_per_share.toFixed(2)} EGP/share` : ""}`}
+                            {`Paid ${d.pay_date}${d.amount_per_share !== null ? ` · ${formatPrice(d.amount_per_share, currency)}/share` : ""}`}
                           </AppText>
                           {d.notes ? (
                             <AppText numberOfLines={1} className="mt-1 font-sans text-[10px] text-white/30">{d.notes}</AppText>

@@ -33,6 +33,7 @@ export function DividendCalendarScreen() {
   const { market } = useMarket();
   const cal = useKeyedFetch(`dividend-calendar:${market.code}`, fetchDividendCalendar);
   const data = cal.data;
+  const currency = data?.currency ?? market.currency;
   const index = useMemo(() => indexCalendar(data?.stocks ?? []), [data]);
   const [picked, setPicked] = useState<MonthView | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -139,7 +140,7 @@ export function DividendCalendarScreen() {
                 <View className="items-end">
                   <View className="flex-row items-baseline gap-1">
                     <AppText className="font-mono-semibold text-sm text-white/90">{s.amount != null ? s.amount.toFixed(2) : "—"}</AppText>
-                    <AppText className="text-[10px] text-white/40">EGP</AppText>
+                    <AppText className="text-[10px] text-white/40">{currency}</AppText>
                   </View>
                   {s.dividend_yield != null && s.dividend_yield > 0 && (
                     <AppText className="font-mono text-[11px] text-white/45">{`${s.dividend_yield.toFixed(1)}%`}</AppText>

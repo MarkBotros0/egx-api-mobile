@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { CorrelationHeatmap, MonteCarloChart } from "@/charts";
+import { useMarket } from "@/providers/market";
 import { useScoreWeights } from "@/providers/scoreWeights";
 import { useTickers } from "@/providers/tickers";
 import type { HoldingAnalysis } from "@/shared/types";
@@ -29,6 +30,9 @@ export function PortfolioScreen() {
   const { tickers } = useTickers();
   const { version } = useScoreWeights();
   const data = usePortfolioData(version);
+  const { market } = useMarket();
+  // The market's currency, from whichever response has landed first.
+  const currency = data.portfolio?.currency ?? data.sales?.currency ?? data.analysis?.currency ?? market.currency;
 
   const sceneRef = useRef<View>(null);
   const [sceneBottom, setSceneBottom] = useState<number | null>(null);
@@ -121,6 +125,7 @@ export function PortfolioScreen() {
       orders={data.sales.orders ?? []}
       dividends={data.sales.dividends ?? []}
       riskFreeRatePct={data.sales.risk_free_rate_pct}
+      currency={currency}
       onDeleteSale={data.deleteSale}
       onDeleteDividend={data.deleteDividend}
     />
@@ -205,10 +210,11 @@ export function PortfolioScreen() {
         {view === "holdings" && (
           <>
             <PEFreshnessBanner />
-            {a ? <PortfolioSummary metrics={a.portfolio_metrics} /> : !data.error && <ChartSkeleton height={192} />}
+            {a ? <PortfolioSummary metrics={a.portfolio_metrics} currency={currency} /> : !data.error && <ChartSkeleton height={192} />}
             {a ? (
               <HoldingsList
                 holdings={a.holdings}
+                currency={currency}
                 onEdit={openEdit}
                 onDelete={(id) => void data.deleteHolding(id)}
                 onSell={openSell}
@@ -226,11 +232,11 @@ export function PortfolioScreen() {
               (data.sales.sales.length > 0 || (data.sales.dividends ?? []).length > 0) &&
               realized}
             {a && a.signals.length > 0 && <AdvicePanel signals={a.signals} />}
-            {a?.portfolio_metrics.sharpe_ratio != null && <RiskDashboard metrics={a.portfolio_metrics} />}
+            {a?.portfolio_metrics.sharpe_ratio != null && <RiskDashboard metrics={a.portfolio_metrics} currency={currency} />}
             {a?.correlation_matrix && a.correlation_matrix.symbols.length >= 2 && (
               <CorrelationHeatmap data={a.correlation_matrix} />
             )}
-            {a?.monte_carlo && <MonteCarloChart data={a.monte_carlo} />}
+            {a?.monte_carlo && <MonteCarloChart data={a.monte_carlo} currency={currency} />}
             {a?.macro && <MacroCard data={a.macro} />}
             {data.analyzing && a && (
               <AppText className="text-center font-sans text-xs text-white/30">Refreshing analysis...</AppText>
@@ -278,6 +284,7 @@ export function PortfolioScreen() {
           <SellHoldingForm
             key={sellingPosition.symbol}
             position={sellingPosition}
+            currency={currency}
             onSubmit={submitSale}
             onCancel={() => setSellingSymbol(null)}
             error={sellError}
@@ -292,6 +299,7 @@ export function PortfolioScreen() {
             key={dividendFor || "general"}
             symbols={dividendSymbols}
             presetSymbol={dividendFor || undefined}
+            currency={currency}
             onSubmit={submitDividend}
             onCancel={() => setDividendFor(null)}
             error={dividendError}

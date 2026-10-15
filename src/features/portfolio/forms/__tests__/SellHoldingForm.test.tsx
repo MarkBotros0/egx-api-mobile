@@ -14,7 +14,7 @@ afterEach(() => jest.useRealTimers());
 
 async function renderForm(props: Partial<Parameters<typeof SellHoldingForm>[0]> = {}) {
   const onSubmit = jest.fn().mockResolvedValue(undefined);
-  await renderWithProviders(<SellHoldingForm position={position} onSubmit={onSubmit} onCancel={jest.fn()} {...props} />);
+  await renderWithProviders(<SellHoldingForm position={position} currency="EGP" onSubmit={onSubmit} onCancel={jest.fn()} {...props} />);
   return { onSubmit };
 }
 

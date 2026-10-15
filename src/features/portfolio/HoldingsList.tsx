@@ -7,6 +7,8 @@ import { PositionCard } from "./PositionCard";
 
 export interface HoldingsListProps {
   holdings: HoldingAnalysis[];
+  /** The market's currency code, from the portfolio response. */
+  currency: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   /** By SYMBOL: a sale comes out of the whole position; the screen resolves the lots. */
@@ -14,7 +16,7 @@ export interface HoldingsListProps {
   onAddDividend: (holding: HoldingAnalysis) => void;
 }
 
-export function HoldingsList({ holdings, onEdit, onDelete, onSell, onAddDividend }: HoldingsListProps) {
+export function HoldingsList({ holdings, currency, onEdit, onDelete, onSell, onAddDividend }: HoldingsListProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const positions = useMemo(() => groupHoldings(holdings), [holdings]);
 
@@ -38,6 +40,7 @@ export function HoldingsList({ holdings, onEdit, onDelete, onSell, onAddDividend
         <PositionCard
           key={p.symbol}
           position={p}
+          currency={currency}
           expanded={expanded === p.symbol}
           onToggle={() => setExpanded(expanded === p.symbol ? null : p.symbol)}
           onEdit={onEdit}

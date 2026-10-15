@@ -12,7 +12,7 @@ describe("formatLevelAge", () => {
 
 describe("levelReading", () => {
   it("describes an intact support below price", () => {
-    expect(levelReading("support", { price: 80, distance_pct: -3.03, strength: 3, bars_ago: 4 }, 82.5)).toEqual({
+    expect(levelReading("support", { price: 80, distance_pct: -3.03, strength: 3, bars_ago: 4 }, 82.5, "EGP")).toEqual({
       label: "Nearest Support",
       priceText: "80.00 EGP",
       brokenThrough: false,
@@ -21,12 +21,17 @@ describe("levelReading", () => {
     });
   });
   it("calls a one-touch level weak and a crossed level broken", () => {
-    const r = levelReading("resistance", { price: 80, distance_pct: -3.03, strength: 1, bars_ago: null }, 82.5);
+    const r = levelReading("resistance", { price: 80, distance_pct: -3.03, strength: 1, bars_ago: null }, 82.5, "EGP");
     expect(r.brokenThrough).toBe(true);
     expect(r.directionText).toBe("3.0% below current — broken");
     expect(r.strengthText).toBe("Touched once — weak level");
-    const s = levelReading("support", { price: 85, distance_pct: 3.03, strength: 2 }, 82.5);
+    const s = levelReading("support", { price: 85, distance_pct: 3.03, strength: 2 }, 82.5, "EGP");
     expect(s.directionText).toBe("3.0% above current — broken");
+  });
+  it("prices the level in the market's own currency", () => {
+    expect(levelReading("support", { price: 1234.5, distance_pct: -3.03, strength: 2 }, 1270, "USD").priceText).toBe(
+      "1,234.50 USD"
+    );
   });
 });
 

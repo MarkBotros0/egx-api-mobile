@@ -22,7 +22,7 @@ function RiskMetric({
 
 const pct1 = (v: number) => `${(v * 100).toFixed(1)}%`;
 
-export function RiskDashboard({ metrics }: { metrics: PortfolioMetrics }) {
+export function RiskDashboard({ metrics, currency }: { metrics: PortfolioMetrics; currency: string }) {
   const dd = metrics.max_drawdown?.value;
   const currentDd = metrics.max_drawdown?.current_drawdown;
 
@@ -54,11 +54,11 @@ export function RiskDashboard({ metrics }: { metrics: PortfolioMetrics }) {
           term="Max Drawdown"
           explanation="The largest peak-to-trough decline this mix of holdings would have gone through over the analysis window — at your current weights, including dates before you owned them. It measures how bumpy the mix is, not what your account actually did. Ask yourself: could I stomach this emotionally?"
         />
-        {/* The EGP figure is a magnitude and the backend's pct a negative return;
+        {/* The money figure is a magnitude and the backend's pct a negative return;
             abs() keeps both halves of the tile saying the same loss. */}
         <RiskMetric
           label="Daily VaR (95%)"
-          value={metrics.var_95_egp != null ? `${metrics.var_95_egp.toLocaleString("en-US")} EGP` : "--"}
+          value={metrics.var_95_egp != null ? `${metrics.var_95_egp.toLocaleString("en-US")} ${currency}` : "--"}
           suffix={metrics.var_95_pct != null ? `${Math.abs(metrics.var_95_pct * 100).toFixed(1)}% of portfolio` : undefined}
           term="Value at Risk (VaR)"
           explanation="On 95% of days, your portfolio won't lose more than this amount. On the worst 5% of days, losses could exceed this. Make sure you're comfortable with this number."

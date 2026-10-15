@@ -85,7 +85,7 @@ describe("DividendHistoryCard", () => {
 describe("ForecastCard", () => {
   it("shows typical moves with measured coverage and the outcome range", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
     expect(screen.getByText("±1.8%")).toBeTruthy();
     expect(screen.getByText("79% land inside")).toBeTruthy();
     expect(screen.getByText("21% are bigger")).toBeTruthy();
@@ -98,7 +98,7 @@ describe("ForecastCard", () => {
 
   it("draws the cone once it knows its width", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
     expect(screen.queryByTestId("cone-svg")).toBeNull();
     await fireEvent(screen.getByTestId("outcome-cone"), "layout", {
       nativeEvent: { layout: { x: 0, y: 0, width: 280, height: 160 } },
@@ -110,14 +110,14 @@ describe("ForecastCard", () => {
 
   it("links to the calibration record", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
     await fireEvent.press(screen.getByText("See how often these ranges held →"));
     expect(router.push).toHaveBeenCalledWith(routes.calibration);
   });
 
   it("renders nothing without a forecast", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={null} symbol="COMI" />);
+    await renderWithProviders(<ForecastCard forecast={null} symbol="COMI" currency="EGP" />);
     expect(screen.queryByText("Typical moves & outcome range")).toBeNull();
   });
 });

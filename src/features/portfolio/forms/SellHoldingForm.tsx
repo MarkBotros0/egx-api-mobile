@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { formatPrice } from "@/shared/money";
 import { AppText, Button, DateField, TextField } from "@/ui";
 import { pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
 import { todayIso } from "@/lib/dates";
@@ -10,13 +11,15 @@ import { useSingleFlight } from "./useSingleFlight";
 
 export interface SellHoldingFormProps {
   position: SellPosition;
+  /** The market's currency code, from the portfolio response. */
+  currency: string;
   onSubmit: (data: SaleSubmit) => Promise<void>;
   onCancel: () => void;
   error?: string | null;
   onDismissError?: () => void;
 }
 
-export function SellHoldingForm({ position, onSubmit, onCancel, error = null, onDismissError }: SellHoldingFormProps) {
+export function SellHoldingForm({ position, currency, onSubmit, onCancel, error = null, onDismissError }: SellHoldingFormProps) {
   const [quantityText, setQuantityText] = useState(() =>
     String(position.lots.reduce((n, l) => n + l.quantity, 0)),
   );
@@ -44,8 +47,8 @@ export function SellHoldingForm({ position, onSubmit, onCancel, error = null, on
     <FormScroll>
       <AppText className="font-sans text-xs text-white/40">
         {p.multiLot
-          ? `${p.held} shares held across ${position.lots.length} purchases · average ${p.avgBuyPrice.toFixed(2)} EGP`
-          : `${p.held} shares held · bought at ${p.avgBuyPrice.toFixed(2)} EGP`}
+          ? `${p.held} shares held across ${position.lots.length} purchases · average ${formatPrice(p.avgBuyPrice, currency)}`
+          : `${p.held} shares held · bought at ${formatPrice(p.avgBuyPrice, currency)}`}
       </AppText>
 
       <View>
@@ -64,7 +67,7 @@ export function SellHoldingForm({ position, onSubmit, onCancel, error = null, on
       </View>
 
       <TextField
-        label="Sell Price (EGP) *"
+        label={`Sell Price (${currency}) *`}
         value={priceText}
         onChangeText={(t) => {
           setPriceText(t);
@@ -125,7 +128,7 @@ export function SellHoldingForm({ position, onSubmit, onCancel, error = null, on
         <View className="rounded-lg border border-white/5 bg-white/5 p-3">
           <AppText className="font-sans text-xs text-white/40">This sale realizes</AppText>
           <View className="flex-row items-baseline gap-2">
-            <AppText className={`font-mono-semibold text-lg ${pnlTone(p.pnl)}`}>{`${signed(p.pnl, 2)} EGP`}</AppText>
+            <AppText className={`font-mono-semibold text-lg ${pnlTone(p.pnl)}`}>{`${signed(p.pnl, 2)} ${currency}`}</AppText>
             {p.pnlPct !== null ? (
               <AppText className={`font-mono text-sm ${pnlTone(p.pnl)}`}>{`(${signedPct(p.pnlPct, 2)})`}</AppText>
             ) : null}

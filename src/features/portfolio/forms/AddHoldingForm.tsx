@@ -176,7 +176,7 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
         error={errors?.quantity ?? null}
       />
       <TextField
-        label="Buy Price (EGP) *"
+        label={`Buy Price (${market.currency}) *`}
         value={priceText}
         onChangeText={(t) => {
           setPriceText(t);

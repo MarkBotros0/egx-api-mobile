@@ -28,6 +28,7 @@ describe("StatsPanel", () => {
         atrPct={2.5}
         crossovers={d.crossovers}
         pe={d.pe}
+        currency="EGP"
       />
     );
     expect(screen.getByText("Golden Cross Active (12d ago)")).toBeTruthy();
@@ -46,7 +47,7 @@ describe("StatsPanel", () => {
   it("says loss-making instead of a P/E", async () => {
     mockMarketApi();
     await renderWithProviders(
-      <StatsPanel stats={d.stats} pe={{ ...d.pe!, pe_ratio: null, loss_making: true }} />
+      <StatsPanel stats={d.stats} pe={{ ...d.pe!, pe_ratio: null, loss_making: true }} currency="EGP" />
     );
     expect(screen.getByText("Loss-making")).toBeTruthy();
     expect(screen.queryByText(/as of 2026/)).toBeNull();
@@ -56,7 +57,7 @@ describe("StatsPanel", () => {
 describe("KeyLevelsCard", () => {
   it("shows the nearest levels with strength and age", async () => {
     mockMarketApi();
-    await renderWithProviders(<KeyLevelsCard keyLevels={KEY_LEVELS} />);
+    await renderWithProviders(<KeyLevelsCard keyLevels={KEY_LEVELS} currency="EGP" />);
     expect(screen.getByText("85.00 EGP")).toBeTruthy();
     expect(screen.getByText("Touched once — weak level · ~3 months ago")).toBeTruthy();
     expect(screen.getByText("3.0% above current")).toBeTruthy();
@@ -67,14 +68,14 @@ describe("KeyLevelsCard", () => {
 
   it("names clear air instead of a stale resistance", async () => {
     mockMarketApi();
-    await renderWithProviders(<KeyLevelsCard keyLevels={{ ...KEY_LEVELS, clear_air_above: true }} />);
+    await renderWithProviders(<KeyLevelsCard keyLevels={{ ...KEY_LEVELS, clear_air_above: true }} currency="EGP" />);
     expect(screen.getByText("No resistance above")).toBeTruthy();
     expect(screen.queryByText("85.00 EGP")).toBeNull();
   });
 
   it("renders nothing without levels", async () => {
     mockMarketApi();
-    await renderWithProviders(<KeyLevelsCard keyLevels={null} />);
+    await renderWithProviders(<KeyLevelsCard keyLevels={null} currency="EGP" />);
     expect(screen.queryByText("Key Levels")).toBeNull();
   });
 });
@@ -82,7 +83,7 @@ describe("KeyLevelsCard", () => {
 describe("EntryExitCard", () => {
   it("shows an active entry zone with confidence and stop-loss", async () => {
     mockMarketApi();
-    await renderWithProviders(<EntryExitCard entryExit={ENTRY_EXIT} />);
+    await renderWithProviders(<EntryExitCard entryExit={ENTRY_EXIT} currency="EGP" />);
     expect(screen.getByText("80.00 – 81.50 EGP")).toBeTruthy();
     expect(screen.getByText("High confidence")).toBeTruthy();
     expect(screen.getByText("77.30 EGP")).toBeTruthy();
@@ -98,6 +99,7 @@ describe("EntryExitCard", () => {
           entry_zone: { ...ENTRY_EXIT.entry_zone, active: false },
           exit_zone: { active: true, confidence: "low", price_range: { low: 90, high: 92 }, reasons: [] },
         }}
+        currency="EGP"
       />
     );
     expect(screen.getByText("90.00 – 92.00 EGP")).toBeTruthy();
@@ -109,6 +111,7 @@ describe("EntryExitCard", () => {
     await renderWithProviders(
       <EntryExitCard
         entryExit={{ entry_zone: { ...ENTRY_EXIT.entry_zone, active: false }, exit_zone: ENTRY_EXIT.exit_zone }}
+        currency="EGP"
       />
     );
     expect(screen.getByText(/No active entry or exit zone right now/)).toBeTruthy();

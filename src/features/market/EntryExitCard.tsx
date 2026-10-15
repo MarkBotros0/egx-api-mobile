@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
+import { formatMoney, formatPrice } from "@/shared/money";
 import type { EntryExit, ZoneConfidence } from "@/shared/types";
 import { AppText, LearnTerm } from "@/ui";
 import { zoneTone } from "./logic/levels";
@@ -11,12 +12,14 @@ function ZoneBlock({
   priceRange,
   suggestedStopLoss,
   reasons,
+  currency,
 }: {
   kind: "entry" | "exit";
   confidence: ZoneConfidence | null;
   priceRange: { low: number; high: number } | null;
   suggestedStopLoss: number | null;
   reasons: string[];
+  currency: string;
 }) {
   const tone = zoneTone(kind, confidence);
   const isEntry = kind === "entry";
@@ -29,7 +32,7 @@ function ZoneBlock({
             <AppText className="text-[11px] uppercase tracking-wider text-white/50">{isEntry ? "Entry Zone" : "Exit Zone"}</AppText>
             {priceRange && (
               <AppText className={`font-mono-semibold text-sm ${tone.textClass}`}>
-                {`${priceRange.low.toFixed(2)} – ${priceRange.high.toFixed(2)} EGP`}
+                {`${formatMoney(priceRange.low, currency, { withCode: false })} – ${formatPrice(priceRange.high, currency)}`}
               </AppText>
             )}
           </View>
@@ -43,7 +46,7 @@ function ZoneBlock({
       {suggestedStopLoss != null && (
         <View className="mt-2 flex-row items-center justify-between border-t border-white/5 pt-2">
           <AppText className="text-[11px] text-white/50">Suggested stop-loss</AppText>
-          <AppText className="font-mono text-xs text-white/80">{`${suggestedStopLoss.toFixed(2)} EGP`}</AppText>
+          <AppText className="font-mono text-xs text-white/80">{formatPrice(suggestedStopLoss, currency)}</AppText>
         </View>
       )}
       {reasons.length > 0 && (
@@ -58,7 +61,7 @@ function ZoneBlock({
 }
 
 /** Port of web `EntryExitCard`. */
-export function EntryExitCard({ entryExit }: { entryExit: EntryExit | null | undefined }) {
+export function EntryExitCard({ entryExit, currency }: { entryExit: EntryExit | null | undefined; currency: string }) {
   if (!entryExit) return null;
   const { entry_zone, exit_zone } = entryExit;
   const anyActive = entry_zone.active || exit_zone.active;
@@ -92,6 +95,7 @@ export function EntryExitCard({ entryExit }: { entryExit: EntryExit | null | und
               priceRange={entry_zone.price_range}
               suggestedStopLoss={entry_zone.suggested_stop_loss}
               reasons={entry_zone.reasons}
+              currency={currency}
             />
           )}
           {exit_zone.active && (
@@ -101,6 +105,7 @@ export function EntryExitCard({ entryExit }: { entryExit: EntryExit | null | und
               priceRange={exit_zone.price_range}
               suggestedStopLoss={null}
               reasons={exit_zone.reasons}
+              currency={currency}
             />
           )}
         </View>

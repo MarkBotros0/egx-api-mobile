@@ -12,7 +12,7 @@ afterEach(() => jest.useRealTimers());
 async function renderForm(props: Partial<Parameters<typeof AddDividendForm>[0]> = {}) {
   const onSubmit = props.onSubmit ?? jest.fn().mockResolvedValue(undefined);
   await renderWithProviders(
-    <AddDividendForm symbols={options} presetSymbol="COMI" onSubmit={onSubmit} onCancel={jest.fn()} {...props} />,
+    <AddDividendForm symbols={options} presetSymbol="COMI" currency="EGP" onSubmit={onSubmit} onCancel={jest.fn()} {...props} />,
   );
   return { onSubmit };
 }

@@ -12,6 +12,7 @@ import {
   SHARPE_GOOD,
   SHARPE_OKAY,
 } from "@/shared/constants";
+import { formatMoney } from "@/shared/money";
 import type { MacroData, PortfolioMetrics } from "@/shared/types";
 import { egp } from "./format";
 
@@ -93,9 +94,9 @@ export function formatMacroValue(v: number): string {
 }
 
 /** Totals cover only priced holdings; silently dropping one used to show a phantom loss. */
-export function excludedNotice(m: PortfolioMetrics): string | null {
+export function excludedNotice(m: PortfolioMetrics, currency: string): string | null {
   const n = m.excluded_count;
   if (!n) return null;
-  const basis = m.excluded_invested > 0 ? ` (${egp(m.excluded_invested)} EGP of cost basis)` : "";
+  const basis = m.excluded_invested > 0 ? ` (${formatMoney(m.excluded_invested, currency, { digits: 0 })} of cost basis)` : "";
   return `${n} holding${n > 1 ? "s" : ""} could not be priced and ${n > 1 ? "are" : "is"} left out of these totals${basis}. The figures below describe the rest of your portfolio.`;
 }

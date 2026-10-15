@@ -66,11 +66,11 @@ describe("macro", () => {
 
 describe("excludedNotice", () => {
   it("says what the totals leave out", () => {
-    expect(excludedNotice(metrics())).toBeNull();
-    expect(excludedNotice(metrics({ excluded_count: 1, excluded_invested: 0 }))).toBe(
+    expect(excludedNotice(metrics(), "EGP")).toBeNull();
+    expect(excludedNotice(metrics({ excluded_count: 1, excluded_invested: 0 }), "EGP")).toBe(
       "1 holding could not be priced and is left out of these totals. The figures below describe the rest of your portfolio.",
     );
-    expect(excludedNotice(metrics({ excluded_count: 2, excluded_invested: 5000 }))).toBe(
+    expect(excludedNotice(metrics({ excluded_count: 2, excluded_invested: 5000 }), "EGP")).toBe(
       "2 holdings could not be priced and are left out of these totals (5,000 EGP of cost basis). The figures below describe the rest of your portfolio.",
     );
   });

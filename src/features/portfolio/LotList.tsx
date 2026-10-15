@@ -1,5 +1,6 @@
 import { Pressable, View } from "react-native";
 import type { Position } from "@/shared/positions";
+import { formatPrice } from "@/shared/money";
 import { AppText } from "@/ui";
 import { pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
 
@@ -10,10 +11,12 @@ import { pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
  */
 export function LotList({
   position,
+  currency,
   onEdit,
   onRequestDelete,
 }: {
   position: Position;
+  currency: string;
   onEdit: (id: string) => void;
   onRequestDelete: (lot: { id: string; symbol: string }) => void;
 }) {
@@ -21,7 +24,7 @@ export function LotList({
   return (
     <View className="mt-3 border-t border-white/5 pt-3">
       <AppText className="font-sans text-[10px] uppercase tracking-wide text-white/30">
-        {`${position.lots.length} purchases · average ${position.avg_buy_price.toFixed(2)} EGP`}
+        {`${position.lots.length} purchases · average ${formatPrice(position.avg_buy_price, currency)}`}
       </AppText>
       <View className="mt-2 gap-2">
         {position.lots.map((lot) => (

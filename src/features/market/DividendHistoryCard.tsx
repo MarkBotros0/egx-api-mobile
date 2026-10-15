@@ -46,7 +46,7 @@ function Empty({ note }: { note: string }) {
  */
 /** `market`: a deep link's market, read without switching the app's; omitted, the app's. */
 export function DividendHistoryCard({ symbol, market: linked }: { symbol: string; market?: MarketCode }) {
-  const { market } = useMarket();
+  const { market, markets } = useMarket();
   const dataMarket = linked ?? market.code;
   const { data, error, loading } = useKeyedFetch(`divhist:${dataMarket}:${symbol}`, () =>
     fetchDividendHistory(symbol, { market: dataMarket })
@@ -68,6 +68,7 @@ export function DividendHistoryCard({ symbol, market: linked }: { symbol: string
     return <Empty note="Dividend history is unavailable right now." />;
   }
   const { dividends, cadence } = data;
+  const currency = data.currency ?? markets.find((m) => m.code === dataMarket)?.currency ?? market.currency;
   if (dividends.length === 0) return <Empty note="No dividend history on record for this stock." />;
 
   const shown = dividends.slice(0, shownCount);
@@ -82,7 +83,7 @@ export function DividendHistoryCard({ symbol, market: linked }: { symbol: string
             <AppText className="font-mono text-xs text-white/40">{String(d.year)}</AppText>
             <View className="flex-1 flex-row items-baseline justify-end gap-1">
               <AppText className="font-mono-semibold text-sm text-white/90">{d.amount.toFixed(2)}</AppText>
-              <AppText className="text-[10px] text-white/40">EGP</AppText>
+              <AppText className="text-[10px] text-white/40">{currency}</AppText>
             </View>
             <AppText className="w-16 text-right font-mono text-[11px] text-white/50">{dayMonth(d.ex_date)}</AppText>
           </View>

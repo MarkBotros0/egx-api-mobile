@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { View } from "react-native";
 
 import type { MonteCarloResult } from "@/shared/types";
@@ -12,6 +12,8 @@ import type { LineSeries, XYSeries } from "./kit/xyModel";
 
 export interface MonteCarloChartProps {
   data: MonteCarloResult;
+  /** The market's currency code, for the readout. */
+  currency: string;
 }
 
 /**
@@ -66,7 +68,6 @@ export function monteCarloSeries(data: MonteCarloResult): { labels: string[]; se
 }
 
 const dayTitle = (label: string) => `Day ${label}`;
-const egpReadout = (v: number) => `${v.toLocaleString("en-US")} EGP`;
 
 function Tile({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
@@ -77,8 +78,9 @@ function Tile({ label, value, tone }: { label: string; value: string; tone: stri
   );
 }
 
-export function MonteCarloChart({ data }: MonteCarloChartProps) {
+export function MonteCarloChart({ data, currency }: MonteCarloChartProps) {
   const { labels, series } = useMemo(() => monteCarloSeries(data), [data]);
+  const readout = useCallback((v: number) => `${v.toLocaleString("en-US")} ${currency}`, [currency]);
   const { days, probability_of_loss } = data;
 
   return (
@@ -96,7 +98,7 @@ export function MonteCarloChart({ data }: MonteCarloChartProps) {
         yAxisWidth={55}
         yTickFormat={formatCompact}
         readoutTitle={dayTitle}
-        readoutFormat={egpReadout}
+        readoutFormat={readout}
       />
       <AppText className="mt-1 text-center text-[10px] text-white/30">Days</AppText>
 

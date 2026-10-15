@@ -3,10 +3,12 @@ import { FlatList, Pressable, RefreshControl, useWindowDimensions, View } from "
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { routes } from "@/lib/links";
+import { useMarket } from "@/providers/market";
 import { useScoreWeights } from "@/providers/scoreWeights";
 import { useTickers } from "@/providers/tickers";
 import { useWatchlist } from "@/providers/watchlist";
 import { CARDS_PER_PAGE } from "@/shared/constants";
+import { isMarketOpen } from "@/shared/markets";
 import { COLORS } from "@/shared/theme";
 import type { Ticker } from "@/shared/types";
 import { AppText, Button, CardSkeleton, EmptyState, Screen, TextField, type IoniconName } from "@/ui";
@@ -26,7 +28,7 @@ import {
   DEFAULT_SORT,
   type SortKey,
 } from "./logic/dashboardFilters";
-import { agoLabel, isEgxOpen, isTodaysSession, sessionLabel } from "./logic/marketClock";
+import { agoLabel, isTodaysSession, sessionLabel } from "./logic/marketClock";
 import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 import { MarketRegimeCard } from "./MarketRegimeCard";
 import { StockCard } from "./StockCard";
@@ -43,6 +45,7 @@ export function DashboardScreen() {
   const { tickers, loading } = useTickers();
   const { version: weightsVersion } = useScoreWeights();
   const { symbols: watchlistSymbols } = useWatchlist();
+  const { market } = useMarket();
   const now = useNow();
   const { width } = useWindowDimensions();
   const clearance = useTabBarClearance();
@@ -95,7 +98,7 @@ export function DashboardScreen() {
 
   const priceData = useMemo(() => watchlistPriceData(snap.cards), [snap.cards]);
   // One clock reading for the whole grid, so every card flips together.
-  const marketClosed = !isEgxOpen(now);
+  const marketClosed = !isMarketOpen(market, now);
   const today = new Date(now);
   const extra = useMemo(
     () => ({ cards: snap.cards, now, showComposite, compositeInterval }),

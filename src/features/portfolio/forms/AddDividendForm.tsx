@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { formatPrice } from "@/shared/money";
 import { AppText, Button, DateField, Pill, PillRow, TextField } from "@/ui";
 import {
   buildDividendPayload,
@@ -17,13 +18,15 @@ export interface AddDividendFormProps {
   /** Open holdings AND sold-out symbols: a dividend can land after selling out. */
   symbols: DividendSymbolOption[];
   presetSymbol?: string;
+  /** The market's currency code, from the portfolio response. */
+  currency: string;
   onSubmit: (payload: DividendPayload) => Promise<void>;
   onCancel: () => void;
   error?: string | null;
   onDismissError?: () => void;
 }
 
-export function AddDividendForm({ symbols, presetSymbol, onSubmit, onCancel, error = null, onDismissError }: AddDividendFormProps) {
+export function AddDividendForm({ symbols, presetSymbol, currency, onSubmit, onCancel, error = null, onDismissError }: AddDividendFormProps) {
   const [symbol, setSymbol] = useState(() => presetSymbol || symbols[0]?.symbol || "");
   const [amountText, setAmountText] = useState("");
   const [payDate, setPayDate] = useState(() => todayIso());
@@ -78,7 +81,7 @@ export function AddDividendForm({ symbols, presetSymbol, onSubmit, onCancel, err
 
       <View>
         <TextField
-          label="Amount received (EGP) *"
+          label={`Amount received (${currency}) *`}
           value={amountText}
           onChangeText={(t) => {
             setAmountText(t);
@@ -131,7 +134,7 @@ export function AddDividendForm({ symbols, presetSymbol, onSubmit, onCancel, err
       {perShare !== null && (
         <View className="rounded-lg border border-white/5 bg-white/5 p-3">
           <AppText className="font-sans text-xs text-white/40">That works out to</AppText>
-          <AppText className="font-mono-semibold text-lg text-white">{`${perShare.toFixed(2)} EGP per share`}</AppText>
+          <AppText className="font-mono-semibold text-lg text-white">{`${formatPrice(perShare, currency)} per share`}</AppText>
         </View>
       )}
 

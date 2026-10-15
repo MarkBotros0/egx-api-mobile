@@ -1,4 +1,5 @@
 import { isStrongZone } from "@/lib/zones";
+import { formatPrice } from "@/shared/money";
 import type { NearestLevel, ZoneConfidence } from "@/shared/types";
 
 /** A level from last week and one from last spring are not equally relevant. */
@@ -22,7 +23,8 @@ export interface LevelReading {
 export function levelReading(
   kind: "support" | "resistance",
   level: NearestLevel,
-  currentPrice: number
+  currentPrice: number,
+  currency: string
 ): LevelReading {
   const isSupport = kind === "support";
   const abs = Math.abs(level.distance_pct).toFixed(1);
@@ -32,7 +34,7 @@ export function levelReading(
   const strength = level.strength >= 2 ? `Tested ${level.strength}x` : "Touched once — weak level";
   return {
     label: isSupport ? "Nearest Support" : "Nearest Resistance",
-    priceText: `${level.price.toFixed(2)} EGP`,
+    priceText: formatPrice(level.price, currency),
     brokenThrough,
     directionText: `${abs}% ${side} current${brokenThrough ? " — broken" : ""}`,
     strengthText: level.bars_ago != null ? `${strength} · ${formatLevelAge(level.bars_ago)}` : strength,

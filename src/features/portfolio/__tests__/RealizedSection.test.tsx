@@ -14,6 +14,7 @@ async function renderSection(over: { orders?: SaleOrder[]; dividends?: Dividend[
       orders={over.orders ?? [order(), TWO_LOT_ORDER]}
       dividends={over.dividends ?? [dividend()]}
       riskFreeRatePct={19}
+      currency="EGP"
       onDeleteSale={onDeleteSale}
       onDeleteDividend={onDeleteDividend}
     />,

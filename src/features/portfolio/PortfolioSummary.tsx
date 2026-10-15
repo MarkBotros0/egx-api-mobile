@@ -27,11 +27,11 @@ function Tile({ label, term, help, children }: { label: string; term?: string; h
   );
 }
 
-export function PortfolioSummary({ metrics }: { metrics: PortfolioMetrics }) {
+export function PortfolioSummary({ metrics, currency }: { metrics: PortfolioMetrics; currency: string }) {
   const tone = pnlTone(metrics.total_pnl);
   const sign = metrics.total_pnl >= 0 ? "+" : "";
   const sectors = Object.entries(metrics.sector_allocation).map(([name, value]) => ({ name, value }));
-  const notice = excludedNotice(metrics);
+  const notice = excludedNotice(metrics, currency);
 
   return (
     <Card>
@@ -48,7 +48,7 @@ export function PortfolioSummary({ metrics }: { metrics: PortfolioMetrics }) {
       <View className="flex-row flex-wrap">
         <Tile label="Total Value">
           <AppText className="font-mono-semibold text-xl text-white">{egp2(metrics.total_value)}</AppText>
-          <AppText className="font-sans text-xs text-white/30">EGP</AppText>
+          <AppText className="font-sans text-xs text-white/30">{currency}</AppText>
         </Tile>
         <Tile label="Total P&L">
           <AppText className={`font-mono-semibold text-xl ${tone}`}>

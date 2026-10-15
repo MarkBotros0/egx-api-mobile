@@ -14,7 +14,7 @@ const HEIGHT = 160;
  * Centred on today's price; no median line — that would be a price target
  * with a direction attached. Width comes from onLayout.
  */
-export function OutcomeCone({ data, symbol }: { data: StockOutcomeBand; symbol: string }) {
+export function OutcomeCone({ data, symbol, currency }: { data: StockOutcomeBand; symbol: string; currency: string }) {
   const [width, setWidth] = useState(0);
   const geo = useMemo(() => coneGeometry(data, width, HEIGHT), [data, width]);
   if (!data.bands.length) return null;
@@ -25,7 +25,7 @@ export function OutcomeCone({ data, symbol }: { data: StockOutcomeBand; symbol: 
   return (
     <View className="gap-2">
       <AppText className="text-[11px] leading-relaxed text-white/50">
-        {`Over the next ${data.days} trading days, ${symbol} has historically ended between ${coarse(endpoint.lo)} and ${coarse(endpoint.hi)} EGP about ${endpoint.coverage_pct}% of the time — so roughly ${100 - endpoint.coverage_pct}% of the time it ended outside, about as often below as above.`}
+        {`Over the next ${data.days} trading days, ${symbol} has historically ended between ${coarse(endpoint.lo)} and ${coarse(endpoint.hi)} ${currency} about ${endpoint.coverage_pct}% of the time — so roughly ${100 - endpoint.coverage_pct}% of the time it ended outside, about as often below as above.`}
       </AppText>
 
       <View className="flex-row" style={{ height: HEIGHT }}>

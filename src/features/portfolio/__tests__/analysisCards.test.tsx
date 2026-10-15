@@ -7,7 +7,7 @@ import { RiskDashboard } from "../RiskDashboard";
 
 describe("PortfolioSummary", () => {
   it("shows totals, signed P&L and the average score", async () => {
-    await renderWithProviders(<PortfolioSummary metrics={metrics()} />);
+    await renderWithProviders(<PortfolioSummary metrics={metrics()} currency="EGP" />);
     expect(screen.getByText("15,600.00")).toBeTruthy();
     expect(screen.getByText("+2,880.00")).toBeTruthy();
     expect(screen.getByText("+22.64%")).toBeTruthy();
@@ -16,14 +16,14 @@ describe("PortfolioSummary", () => {
   });
 
   it("says when holdings were left out of the totals", async () => {
-    await renderWithProviders(<PortfolioSummary metrics={metrics({ excluded_count: 2, excluded_invested: 5000 })} />);
+    await renderWithProviders(<PortfolioSummary metrics={metrics({ excluded_count: 2, excluded_invested: 5000 })} currency="EGP" />);
     expect(screen.getByText(/2 holdings could not be priced/)).toBeTruthy();
   });
 });
 
 describe("RiskDashboard", () => {
   it("formats each metric and dashes the missing ones", async () => {
-    await renderWithProviders(<RiskDashboard metrics={metrics({ sortino_ratio: null })} />);
+    await renderWithProviders(<RiskDashboard metrics={metrics({ sortino_ratio: null })} currency="EGP" />);
     expect(screen.getByText("0.42")).toBeTruthy();
     expect(screen.getByText("-18.0%")).toBeTruthy();
     expect(screen.getByText("on 2026-03-15")).toBeTruthy();
@@ -31,6 +31,11 @@ describe("RiskDashboard", () => {
     expect(screen.getByText("2.8% of portfolio")).toBeTruthy();
     expect(screen.getByText("-3.0%")).toBeTruthy();
     expect(screen.getByText("--")).toBeTruthy();
+  });
+
+  it("names the market's currency on the VaR figure", async () => {
+    await renderWithProviders(<RiskDashboard metrics={metrics()} currency="USD" />);
+    expect(screen.getByText("437 USD")).toBeTruthy();
   });
 });
 
