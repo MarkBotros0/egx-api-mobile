@@ -34,6 +34,10 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
   there, `npm run sync:shared` here, commit here. Must stay platform-neutral.
 - `src/ui/` UI kit (`Screen`, `Card`, `Sheet`, `Button`, `TextField`, …) · `src/charts/` chart kit ·
   `src/auth/`, `src/providers/` (app-wide state).
+- Markets: `src/providers/market.tsx` (`MarketProvider`, `useMarket`) owns the selected
+  market and calls `setApiMarket`; the chip, sheet and `MarketRow` live in `src/features/shell`.
+  The rules (EG default, `ENABLED_MARKETS`, the per-user preference) are in the **Markets**
+  section of `../egx-api-be/CLAUDE.md`.
 - `src/features/<name>/` — one folder per area: `admin`, `alerts`, `auth`, `calibration`, `common`
   (shared widgets), `learn`, `market` (dashboard, stock, compare, news, dividends),
   `portfolio`, `shell`.
