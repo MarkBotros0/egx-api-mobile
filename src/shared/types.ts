@@ -10,7 +10,20 @@ export interface Ticker {
   symbol: string;
   name: string;
   sector: string;
-  index: string; // EGX30, EGX70, EGX100, NILEX
+  index: string; // EGX30, EGX70, EGX100, NILEX (EG) or the first index id (US)
+  /** Every index the symbol belongs to (US: SPX/NDX/DJI; EG: [index]). Absent on older backends. */
+  indices?: string[];
+  /** Listing exchange (US rows only). */
+  exchange?: string;
+}
+
+export interface TickerSearchResult {
+  symbol: string;
+  name: string;
+  sector: string;
+  exchange: string;
+  /** "dr" is an ADR/depositary receipt. */
+  kind: "stock" | "fund" | "dr";
 }
 
 // ============================================================

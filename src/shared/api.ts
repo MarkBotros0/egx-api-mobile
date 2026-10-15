@@ -7,9 +7,10 @@ import {
 } from "./constants";
 import { getApiConfig } from "./apiConfig";
 import { parseAuthUser, type AuthUser } from "./auth";
-import { DEFAULT_MARKET, type Market, type MarketCode } from "./markets";
+import { DEFAULT_MARKET, withMarketDefaults, type Market, type MarketCode } from "./markets";
 import type {
   Ticker,
+  TickerSearchResult,
   OHLCVResponse,
   AnalysisResponse,
   HistoricalResponse,
@@ -119,6 +120,17 @@ export async function fetchTickers(filters?: {
   if (filters?.search) params.set("search", filters.search);
   const qs = params.toString();
   return fetchJSON<Ticker[]>(`${base()}/tickers${qs ? `?${qs}` : ""}`);
+}
+
+/** Name/symbol search (up to 20 hits). Throws on a scanner error (502). */
+export async function searchTickers(
+  q: string,
+  opts?: MarketOpts & { signal?: AbortSignal }
+): Promise<TickerSearchResult[]> {
+  return fetchJSON<TickerSearchResult[]>(
+    `${base()}/tickers/search?q=${encodeURIComponent(q)}`,
+    { market: opts?.market, signal: opts?.signal }
+  );
 }
 
 export async function validateTicker(
@@ -876,7 +888,13 @@ export async function deleteMyAccount(): Promise<void> {
 // ---- Markets ----
 
 export async function fetchMarkets(): Promise<{ markets: Market[]; default: MarketCode }> {
-  return fetchJSON(`${base()}/markets`);
+  const res = await fetchJSON<{ markets: Partial<Market>[]; default: MarketCode }>(
+    `${base()}/markets`
+  );
+  return {
+    ...res,
+    markets: res.markets.map((m) => withMarketDefaults(m as Partial<Market> & { code: MarketCode })),
+  };
 }
 
 export async function fetchMarketPref(): Promise<{ market: MarketCode }> {

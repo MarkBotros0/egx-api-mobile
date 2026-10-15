@@ -9,9 +9,20 @@
  */
 export type MarketCode = "EG" | "US";
 
+export interface MarketIndex {
+  id: string;
+  label: string;
+}
+
 export interface Market {
   code: MarketCode;
   name: string;
+  /** Short label for chips and badges ("EGX", "US"). */
+  short_name: string;
+  /** False while the market's composite score is not calibrated (US: preliminary). */
+  score_calibrated: boolean;
+  /** Index filters the market offers on the dashboard. */
+  indices: MarketIndex[];
   flag: string;
   currency: string;
   locale: string;
@@ -29,6 +40,14 @@ export const DEFAULT_MARKET: MarketCode = "EG";
 export const EG_FALLBACK: Market = {
   code: "EG",
   name: "Egypt",
+  short_name: "EGX",
+  score_calibrated: true,
+  indices: [
+    { id: "EGX30", label: "EGX30" },
+    { id: "EGX70", label: "EGX70" },
+    { id: "EGX100", label: "EGX100" },
+    { id: "NILEX", label: "NILEX" },
+  ],
   flag: "🇪🇬",
   currency: "EGP",
   locale: "en-EG",
@@ -39,6 +58,16 @@ export const EG_FALLBACK: Market = {
   benchmark_label: "EGX30",
   holidays: [],
 };
+
+/** A fallback for older backends: fields missing from /api/markets take these defaults. */
+export function withMarketDefaults(m: Partial<Market> & { code: MarketCode }): Market {
+  return {
+    ...(m as Market),
+    short_name: m.short_name ?? m.code,
+    score_calibrated: m.score_calibrated ?? m.code === "EG",
+    indices: m.indices ?? [],
+  };
+}
 
 const WEEKDAY: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
 
