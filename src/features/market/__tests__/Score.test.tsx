@@ -56,7 +56,10 @@ describe("ScoreWeightsSheet", () => {
     const fetchMock = mockMarketApi();
     const onClose = jest.fn();
     await renderWithProviders(<ScoreWeightsSheet open onClose={onClose} />);
-    await waitFor(() => expect(requestsTo(fetchMock, "/settings")).toHaveLength(1));
+    // MarketProvider also GETs /settings?section=market; count only the weights load.
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, "/settings").filter((u) => u.searchParams.get("section") === "weights")).toHaveLength(1)
+    );
     expect(await screen.findByText("raw 18")).toBeTruthy();
     await fireEvent.press(screen.getByLabelText("Increase Trend weight"));
     expect(screen.getByText("raw 20")).toBeTruthy();

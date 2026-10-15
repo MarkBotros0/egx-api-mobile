@@ -6,6 +6,7 @@ import type { ReactElement, ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
 import { AppProviders } from "@/providers/AppProviders";
 import type { AuthUser } from "@/shared/auth";
+import { EG_FALLBACK } from "@/shared/markets";
 
 import { prependMockFetch } from "./fetch";
 import { TestSafeArea } from "./safeArea";
@@ -46,6 +47,7 @@ function Providers({ children }: { children: ReactNode }) {
 export async function renderWithProviders(ui: ReactElement, opts: { user?: AuthUser | null } = {}): Promise<RenderResult> {
   const user = opts.user === undefined ? DEFAULT_USER : opts.user;
 
+  prependMockFetch("GET", "/markets", { markets: [EG_FALLBACK], default: "EG" });
   prependMockFetch("GET", "/tickers", []);
   prependMockFetch("GET", "/watchlist", { symbols: [] });
   prependMockFetch("GET", "/settings", { weights: DEFAULT_WEIGHTS, raw: DEFAULT_WEIGHTS, presets: {} });
