@@ -21,7 +21,10 @@ import {
   ALL_SECTORS,
   filterDividendPayers,
   filterTickers,
+  indexLabel,
+  indexTabs,
   pageSlice,
+  sectorsFor,
   sortTickers,
   splitByFeed,
   type CompositeInterval,
@@ -31,6 +34,7 @@ import {
 import { agoLabel, isTodaysSession, sessionLabel } from "./logic/marketClock";
 import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 import { MarketRegimeCard } from "./MarketRegimeCard";
+import { RemoteSearchResults } from "./RemoteSearchResults";
 import { StockCard } from "./StockCard";
 import { WatchlistPanel } from "./WatchlistPanel";
 
@@ -54,7 +58,11 @@ export function DashboardScreen() {
   // because the full card at half width wrapped the change and clipped names.
   const columns = width >= 700 ? 3 : width >= 340 ? 2 : 1;
 
-  const [index, setIndex] = useState("EGX30");
+  const tabIds = useMemo(() => indexTabs(market), [market]);
+  const tabs = useMemo(() => tabIds.map((id) => ({ id, label: indexLabel(market, id) })), [tabIds, market]);
+  const sectors = useMemo(() => sectorsFor(market, tickers), [market, tickers]);
+
+  const [index, setIndex] = useState(tabIds[0]);
   const [sector, setSector] = useState<string>(ALL_SECTORS);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
@@ -63,6 +71,17 @@ export function DashboardScreen() {
   const [showComposite, setShowComposite] = useState(true);
   const [compositeInterval, setCompositeInterval] = useState<CompositeInterval>("Daily");
   const [showNoFeed, setShowNoFeed] = useState(false);
+
+  // A market switch starts over on the new market's first tab: the old index
+  // and sector name nothing in the new list. Adjusted during render (not in an
+  // effect) so no frame filters the new market by the old market's tab.
+  const [shownMarket, setShownMarket] = useState(market.code);
+  if (shownMarket !== market.code) {
+    setShownMarket(market.code);
+    setIndex(tabIds[0]);
+    setSector(ALL_SECTORS);
+    setPage(1);
+  }
 
   // Any filter change returns to page 1 (the web did this in an effect).
   function resetting<T>(set: (v: T) => void) {
@@ -77,6 +96,7 @@ export function DashboardScreen() {
     () => filterTickers(tickers, { index, sector, search }),
     [tickers, index, sector, search]
   );
+  const knownSymbols = useMemo(() => new Set(filtered.map((t) => t.symbol.toUpperCase())), [filtered]);
   const { quoted, unquoted } = useMemo(() => splitByFeed(filtered, snap.noFeed), [filtered, snap.noFeed]);
   const payers = useMemo(
     () => filterDividendPayers(quoted, snap.cards, dividendOnly),
@@ -140,9 +160,11 @@ export function DashboardScreen() {
   const header = (
     <View className="gap-4 px-1.5 pb-3">
       <DashboardControls
+        tabs={tabs}
         index={index}
         onIndex={resetting(setIndex)}
         sector={sector}
+        sectors={sectors}
         onSector={resetting(setSector)}
         quotedCount={quoted.length}
         unquotedCount={unquoted.length}
@@ -160,6 +182,8 @@ export function DashboardScreen() {
 
   const footer = (
     <View className="gap-4 px-1.5 pt-3">
+      {/* Below an empty or short search result: listings outside the grid's universe. */}
+      <RemoteSearchResults query={search} localCount={filtered.length} knownSymbols={knownSymbols} />
       {hasMore && (
         <Button label={`Load more (${remaining} remaining)`} variant="secondary" onPress={loadMore} />
       )}
@@ -199,7 +223,7 @@ export function DashboardScreen() {
     <Screen scroll={false}>
       <View className="gap-3 border-b border-white/5 bg-charcoal-dark px-4 pb-3 pt-4">
         <View>
-          <AppText className="font-sans-bold text-2xl text-white">EGX Market Overview</AppText>
+          <AppText className="font-sans-bold text-2xl text-white">{`${market.short_name} Market Overview`}</AppText>
           <AppText className="mt-1 text-sm text-white/40">
             Tap any card for detailed analysis. Pull down to refresh prices.
           </AppText>

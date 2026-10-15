@@ -3,6 +3,8 @@ import { mockFetch, mockFetchHandler } from "@/test-utils/fetch";
 import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi, sent } from "@/features/portfolio/testing/api";
 import { LOT_A, NO_SALES, analysisResponse, holdingFromRow, portfolio } from "@/features/portfolio/testing/fixtures";
+import { US_MARKET } from "@/features/market/testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
 import { PortfolioScreen } from "../PortfolioScreen";
 
 /** Every text node of the rendered tree, in document order. */
@@ -42,6 +44,24 @@ describe("PortfolioScreen", () => {
     for (const { t, at } of order) expect({ t, found: at >= 0 }).toEqual({ t, found: true });
     const positions = order.map((o) => o.at);
     expect(positions).toEqual([...positions].sort((x, y) => x - y));
+  });
+
+  it("shows no EGX macro context on another market", async () => {
+    const fetchMock = mockPortfolioApi();
+    mockFetch("GET", "/markets", { markets: [EG_FALLBACK, US_MARKET], default: "EG" });
+    mockFetchHandler("GET", "/settings", (url) =>
+      new URL(url).searchParams.get("section") === "market"
+        ? { status: 200, body: { market: "US" } }
+        : { status: 200, body: { weights: {}, raw: {}, presets: {} } }
+    );
+    await renderWithProviders(<PortfolioScreen />);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([u]) => String(u).includes("/portfolio_analysis") && String(u).includes("market=US"))
+      ).toBe(true)
+    );
+    await screen.findByText("Portfolio Summary");
+    expect(screen.queryByText("Macro Context")).toBeNull();
   });
 
   it("does not show realized winnings above skeletons: the page appears in one piece", async () => {

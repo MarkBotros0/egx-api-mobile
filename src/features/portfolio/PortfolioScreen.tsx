@@ -237,7 +237,8 @@ export function PortfolioScreen() {
               <CorrelationHeatmap data={a.correlation_matrix} />
             )}
             {a?.monte_carlo && <MonteCarloChart data={a.monte_carlo} currency={currency} />}
-            {a?.macro && <MacroCard data={a.macro} />}
+            {/* EGX30 / USD-EGP / CBE rate: EG-only context. */}
+            {market.code === "EG" && a?.macro ? <MacroCard data={a.macro} /> : null}
             {data.analyzing && a && (
               <AppText className="text-center font-sans text-xs text-white/30">Refreshing analysis...</AppText>
             )}

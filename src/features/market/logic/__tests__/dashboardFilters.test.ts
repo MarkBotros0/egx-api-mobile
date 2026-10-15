@@ -1,9 +1,14 @@
-import { DASHBOARD, TICKERS } from "@/features/market/testing/fixtures";
+import { DASHBOARD, TICKERS, US_MARKET, US_TICKERS } from "@/features/market/testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
 import { cardsFromSnapshot } from "../cards";
 import {
   filterDividendPayers,
   filterTickers,
+  indexLabel,
+  indexTabs,
   pageSlice,
+  SECTORS,
+  sectorsFor,
   sortTickers,
   splitByFeed,
 } from "../dashboardFilters";
@@ -20,6 +25,37 @@ describe("filterTickers", () => {
     expect(symbols(filterTickers(TICKERS, { ...base, search: "telecom" }))).toEqual(["ETEL"]);
     expect(symbols(filterTickers(TICKERS, { ...base, search: "comi " }))).toEqual(["COMI"]);
     expect(filterTickers(TICKERS, { index: "EGX70", sector: "Banking", search: "" })).toEqual([]);
+  });
+});
+
+describe("per-market index tabs", () => {
+  it("lists the market's indices, then All", () => {
+    expect(indexTabs(US_MARKET)).toEqual(["SPX", "NDX", "DJI", "All"]);
+    expect(indexTabs(EG_FALLBACK)).toEqual(["EGX30", "EGX70", "EGX100", "NILEX", "All"]);
+  });
+  it("falls back to the EG tabs when the market lists no indices", () => {
+    expect(indexTabs({ ...US_MARKET, indices: [] })).toEqual(["EGX30", "EGX70", "EGX100", "NILEX", "All"]);
+  });
+  it("labels an index id, or echoes it", () => {
+    expect(indexLabel(US_MARKET, "SPX")).toBe("S&P 500");
+    expect(indexLabel(US_MARKET, "All")).toBe("All");
+    expect(indexLabel(EG_FALLBACK, "EGX30")).toBe("EGX30");
+  });
+  it("filters on every index a ticker belongs to", () => {
+    const f = { index: "DJI", sector: "All Sectors", search: "" };
+    expect(symbols(filterTickers(US_TICKERS, f))).toEqual(["AAPL", "KO"]);
+    expect(symbols(filterTickers(US_TICKERS, { ...f, index: "NDX" }))).toEqual(["AAPL"]);
+  });
+});
+
+describe("sectorsFor", () => {
+  it("keeps the fixed EG list", () => {
+    expect(sectorsFor(EG_FALLBACK, TICKERS)).toEqual([...SECTORS]);
+  });
+  it("derives the other markets' sectors from the tickers: sorted, unique, no Unknown", () => {
+    expect(sectorsFor(US_MARKET, [...US_TICKERS, US_TICKERS[2]])).toEqual([
+      "All Sectors", "Consumer Non-Durables", "Electronic Technology", "Technology Services",
+    ]);
   });
 });
 

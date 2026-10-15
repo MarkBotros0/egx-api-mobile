@@ -1,7 +1,20 @@
+import type { Market } from "@/shared/markets";
 import type { Ticker } from "@/shared/types";
 import type { CardMap } from "./cards";
 
+/** EG's index tabs: the fallback when a market (an older backend) lists no indices. */
 export const INDICES = ["EGX30", "EGX70", "EGX100", "NILEX", "All"] as const;
+export const ALL_INDICES = "All";
+
+/** The market's index tab ids, then "All". */
+export function indexTabs(market: Market): string[] {
+  return market.indices.length ? [...market.indices.map((i) => i.id), ALL_INDICES] : [...INDICES];
+}
+
+/** The tab's display label ("S&P 500" for "SPX"), or the id itself. */
+export function indexLabel(market: Market, id: string): string {
+  return market.indices.find((i) => i.id === id)?.label ?? id;
+}
 
 export const ALL_SECTORS = "All Sectors";
 export const SECTORS = [
@@ -9,6 +22,18 @@ export const SECTORS = [
   "Consumer Goods", "Basic Materials", "Healthcare", "Technology", "Energy",
   "Telecommunications",
 ] as const;
+
+/**
+ * EG keeps its fixed sector list. Other markets use the feed's own sector names
+ * (TradingView's), so the list is whatever the tickers carry — minus "Unknown",
+ * which is not a sector anyone filters for.
+ */
+export function sectorsFor(market: Market, tickers: Ticker[]): string[] {
+  if (market.code === "EG") return [...SECTORS];
+  const names = new Set<string>();
+  for (const t of tickers) if (t.sector && t.sector !== "Unknown") names.add(t.sector);
+  return [ALL_SECTORS, ...[...names].sort((a, b) => a.localeCompare(b))];
+}
 
 export const SORTS = ["Default", "Score", "Change", "Risk", "Recently paid"] as const;
 export type SortKey = (typeof SORTS)[number];
@@ -30,10 +55,14 @@ export interface TickerFilter {
   search: string;
 }
 
-/** Index, sector, then symbol/name search. The search is trimmed — phone keyboards add trailing spaces. */
+/**
+ * Index, sector, then symbol/name search. A ticker matches an index tab when it
+ * belongs to it (`indices`, US: SPX/NDX/DJI), else by its single `index` (older
+ * backends). The search is trimmed — phone keyboards add trailing spaces.
+ */
 export function filterTickers(tickers: Ticker[], f: TickerFilter): Ticker[] {
   let result = tickers;
-  if (f.index !== "All") result = result.filter((t) => t.index === f.index);
+  if (f.index !== ALL_INDICES) result = result.filter((t) => t.indices?.includes(f.index) ?? t.index === f.index);
   if (f.sector !== ALL_SECTORS) result = result.filter((t) => t.sector === f.sector);
   const q = f.search.trim().toLowerCase();
   if (q) {

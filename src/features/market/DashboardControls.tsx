@@ -4,11 +4,10 @@ import { Pressable, ScrollView, Switch, View } from "react-native";
 
 import { COLORS } from "@/shared/theme";
 import { AppText, Sheet, type IoniconName } from "@/ui";
-import { IndexFilter } from "./IndexFilter";
+import { IndexFilter, type IndexTab } from "./IndexFilter";
 import {
   ALL_SECTORS,
   COMPOSITE_INTERVALS,
-  SECTORS,
   SORT_EXPLANATIONS,
   SORTS,
   type CompositeInterval,
@@ -22,9 +21,13 @@ const SCORE_EXPLANATION =
   "Turns on the 0-100 composite score on each card. The number tells you more than a Buy/Hold word does: 61 and 79 are very different setups. Scores are computed on DAILY bars, the timeframe every entry zone, stop-loss and portfolio alert is built on, and they match the gauge on the stock page exactly. You can switch to Weekly or Monthly for trend context; that resets to Daily next time you open the app.";
 
 export interface DashboardControlsProps {
+  /** The market's index tabs, "All" last. */
+  tabs: IndexTab[];
   index: string;
   onIndex: (v: string) => void;
   sector: string;
+  /** The market's sector choices, "All Sectors" first. */
+  sectors: string[];
   onSector: (v: string) => void;
   quotedCount: number;
   unquotedCount: number;
@@ -57,7 +60,7 @@ export function DashboardControls(p: DashboardControlsProps) {
 
   return (
     <View className="gap-2">
-      <IndexFilter selected={p.index} onChange={p.onIndex} />
+      <IndexFilter tabs={p.tabs} selected={p.index} onChange={p.onIndex} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 py-1">
         <DropChip
@@ -101,7 +104,7 @@ export function DashboardControls(p: DashboardControlsProps) {
         <SwitchRow label="Pays a dividend" value={p.dividendOnly} onToggle={p.onToggleDividend} />
         <Note>{DIVIDEND_EXPLANATION}</Note>
         <SectionLabel>Sector</SectionLabel>
-        {SECTORS.map((s) => (
+        {p.sectors.map((s) => (
           <OptionRow
             key={s}
             label={s}

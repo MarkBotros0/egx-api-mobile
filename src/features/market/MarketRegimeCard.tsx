@@ -95,6 +95,10 @@ export function MarketRegimeCard() {
     );
   }
 
+  // Outside EG the bands are not calibrated yet (the backend sends band null):
+  // no reading beats an uncalibrated one.
+  if (market.code !== "EG" && data.band == null) return null;
+
   const tone = (data.band && TONE[data.band]) || NEUTRAL;
   const pos = regimePosition(data.mean_score);
   const split = data.hist_positive_rate != null ? positiveRateSplit(data.hist_positive_rate) : null;

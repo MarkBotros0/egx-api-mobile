@@ -13,8 +13,38 @@ import type {
   StockForecast,
   Ticker,
 } from "@/shared/types";
+import { EG_FALLBACK, type Market } from "@/shared/markets";
 
 /** Test data shared by every market test. Not a test file. */
+
+/** The US market as GET /api/markets describes it. */
+export const US_MARKET: Market = {
+  ...EG_FALLBACK,
+  code: "US",
+  name: "United States",
+  short_name: "US",
+  score_calibrated: false,
+  indices: [
+    { id: "SPX", label: "S&P 500" },
+    { id: "NDX", label: "NASDAQ-100" },
+    { id: "DJI", label: "Dow 30" },
+  ],
+  flag: "🇺🇸",
+  currency: "USD",
+  locale: "en-US",
+  timezone: "America/New_York",
+  trading_days: [0, 1, 2, 3, 4],
+  open: "09:30",
+  close: "16:00",
+  benchmark_label: "S&P 500",
+};
+
+export const US_TICKERS: Ticker[] = [
+  { symbol: "AAPL", name: "Apple Inc.", sector: "Electronic Technology", index: "SPX", indices: ["SPX", "NDX", "DJI"], exchange: "NASDAQ" },
+  { symbol: "KO", name: "Coca-Cola Company", sector: "Consumer Non-Durables", index: "SPX", indices: ["SPX", "DJI"], exchange: "NYSE" },
+  { symbol: "PLTR", name: "Palantir Technologies", sector: "Technology Services", index: "SPX", indices: ["SPX"], exchange: "NASDAQ" },
+  { symbol: "XYZQ", name: "Mystery Corp", sector: "Unknown", index: "NYSE", indices: [], exchange: "NYSE" },
+];
 
 export const TICKERS: Ticker[] = [
   { symbol: "COMI", name: "Commercial International Bank", sector: "Banking", index: "EGX30" },

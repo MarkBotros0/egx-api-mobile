@@ -7,7 +7,8 @@ import { EG_FALLBACK } from "@/shared/markets";
 import { renderWithProviders } from "@/test-utils/render";
 import { DashboardScreen } from "../DashboardScreen";
 import { mockMarketApi, requestsTo, type Route } from "../testing/api";
-import { batch, makeDashboard, makeDashboardRow, TICKERS } from "../testing/fixtures";
+import { DEFAULT_WEIGHTS, FALLBACK_WEIGHT_PRESETS } from "@/shared/constants";
+import { batch, makeDashboard, makeDashboardRow, REGIME, TICKERS, US_MARKET, US_TICKERS } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
@@ -187,5 +188,74 @@ describe("market switch", () => {
       .flatMap((u) => (u.searchParams.get("symbols") ?? "").split(","));
     expect(usSymbols.filter((s) => EG_SYMBOLS.has(s))).toEqual([]);
     expect(usSymbols).toContain("AAPL");
+  });
+});
+
+describe("per market", () => {
+  /** A user whose saved market preference is `code`, with EG and US enabled. */
+  function marketRoutes(code: "EG" | "US"): Record<string, Route> {
+    return {
+      "/markets": { markets: [EG_FALLBACK, US_MARKET], default: "EG" },
+      "/settings": (url: URL) =>
+        url.searchParams.get("section") === "market"
+          ? { market: code }
+          : { weights: DEFAULT_WEIGHTS, raw: DEFAULT_WEIGHTS, presets: FALLBACK_WEIGHT_PRESETS },
+      "/tickers": (url: URL) => (url.searchParams.get("market") === "US" ? US_TICKERS : TICKERS),
+      "/dashboard": (url: URL) =>
+        url.searchParams.get("market") === "US"
+          ? makeDashboard(US_TICKERS.map((t) => makeDashboardRow(t.symbol)))
+          : makeDashboard([makeDashboardRow("COMI", { score: 72, price: 82.5 })]),
+      "/market_regime": (url: URL) =>
+        url.searchParams.get("market") === "US" ? { ...REGIME, band: null, label: "No reading" } : REGIME,
+    };
+  }
+
+  const tab = (label: string) => screen.getByRole("button", { name: label });
+
+  it("titles the screen and offers the market's own index tabs", async () => {
+    mockMarketApi(marketRoutes("US"));
+    await renderWithProviders(<DashboardScreen />);
+    expect(await screen.findByText("US Market Overview")).toBeTruthy();
+    for (const label of ["S&P 500", "NASDAQ-100", "Dow 30", "All"]) expect(tab(label)).toBeTruthy();
+    expect(tab("S&P 500")).toBeSelected();
+    expect(screen.queryByText("EGX30")).toBeNull();
+  });
+
+  it("keeps the EGX title on EG", async () => {
+    mockMarketApi(marketRoutes("EG"));
+    await renderWithProviders(<DashboardScreen />);
+    expect(await screen.findByText("EGX Market Overview")).toBeTruthy();
+  });
+
+  it("returns to the new market's first tab when the market changes", async () => {
+    mockMarketApi(marketRoutes("EG"));
+    function WithChanger() {
+      const { setMarket } = useMarket();
+      return (
+        <>
+          <Pressable testID="to-us" onPress={() => setMarket("US")} />
+          <DashboardScreen />
+        </>
+      );
+    }
+    await renderWithProviders(<WithChanger />);
+    await screen.findByTestId("stockcard-COMI");
+    await fireEvent.press(tab("EGX70"));
+    expect(tab("EGX70")).toBeSelected();
+
+    await fireEvent.press(screen.getByTestId("to-us"));
+    await waitFor(() => expect(tab("S&P 500")).toBeSelected());
+    expect(await screen.findByTestId("stockcard-AAPL")).toBeTruthy();
+  });
+
+  it("hides the market-condition card when the market has no calibrated band", async () => {
+    const fetchMock = mockMarketApi(marketRoutes("US"));
+    await renderWithProviders(<DashboardScreen />);
+    await screen.findByTestId("stockcard-AAPL");
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(true)
+    );
+    await waitFor(() => expect(screen.queryByTestId("regime-skeleton")).toBeNull());
+    expect(screen.queryByText("Market Condition")).toBeNull();
   });
 });
