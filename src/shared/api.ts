@@ -7,6 +7,7 @@ import {
 } from "./constants";
 import { getApiConfig } from "./apiConfig";
 import { parseAuthUser, type AuthUser } from "./auth";
+import { DEFAULT_MARKET, type Market, type MarketCode } from "./markets";
 import type {
   Ticker,
   OHLCVResponse,
@@ -39,9 +40,35 @@ function base(): string {
   return getApiConfig().baseUrl;
 }
 
+let currentMarket: MarketCode = DEFAULT_MARKET;
+
+/** Set by each app's market provider; every data request carries it. */
+export function setApiMarket(code: MarketCode): void {
+  currentMarket = code;
+}
+
+export function getApiMarket(): MarketCode {
+  return currentMarket;
+}
+
+/** Routes that are not market data never get `market=`. */
+const MARKETLESS = ["/auth/", "/markets", "/settings", "/users", "/push/", "/alerts/preferences"];
+
+/**
+ * Append `market=` to a URL. `market` overrides the current one (a deep link
+ * into the other market); `null` means "send none". An explicit market= already
+ * in the URL wins.
+ */
+export function withMarket(url: string, market?: MarketCode | null): string {
+  if (market === null) return url;
+  if (MARKETLESS.some((p) => url.includes(p))) return url;
+  if (/[?&]market=/.test(url)) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}market=${market ?? currentMarket}`;
+}
+
 async function fetchJSON<T>(
   url: string,
-  options?: RequestInit & { timeoutMs?: number }
+  options?: RequestInit & { timeoutMs?: number; market?: MarketCode | null }
 ): Promise<T> {
   const { getToken, onUnauthorized } = getApiConfig();
   const token = getToken();
@@ -53,7 +80,7 @@ async function fetchJSON<T>(
   // dashboard card could sit blank until the user changed a filter. AbortController
   // rather than AbortSignal.timeout, because this ships as a PWA to phones and
   // the latter is not universally available on older mobile Safari.
-  const { timeoutMs, ...init } = options ?? {};
+  const { timeoutMs, market, ...init } = options ?? {};
   const controller = timeoutMs ? new AbortController() : null;
   const timer =
     controller && timeoutMs
@@ -61,7 +88,7 @@ async function fetchJSON<T>(
       : null;
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(withMarket(url, market), {
       ...init,
       headers,
       signal: controller?.signal ?? init.signal,
@@ -663,7 +690,7 @@ export interface RiskRow {
   /** EWMA(0.94). Forecasts better, but is NOT what the ranking uses. */
   sigma_ewma_ann_pct: number | null;
   beta: number | null;
-  turnover_egp: number | null;
+  turnover: number | null;
   traded_share: number | null;
   last_price: number | null;
   tradeable: boolean | null;
@@ -682,7 +709,7 @@ export interface RiskResponse {
   /** The STALEST row, not the freshest — a snapshot is only as current as that. */
   oldest_measurement?: string | null;
   newest_measurement?: string | null;
-  liquidity_floor_egp?: number;
+  liquidity_floor?: number;
   calibration?: {
     fitted_at: string;
     n_observations: number;
@@ -833,4 +860,22 @@ export async function fetchMe(): Promise<AuthUser> {
 /** DELETE /auth/me — deletes the account and everything in it. */
 export async function deleteMyAccount(): Promise<void> {
   await fetchJSON<unknown>(`${base()}/auth/me`, { method: "DELETE" });
+}
+
+// ---- Markets ----
+
+export async function fetchMarkets(): Promise<{ markets: Market[]; default: MarketCode }> {
+  return fetchJSON(`${base()}/markets`);
+}
+
+export async function fetchMarketPref(): Promise<{ market: MarketCode }> {
+  return fetchJSON(`${base()}/settings?section=market`);
+}
+
+export async function putMarketPref(code: MarketCode): Promise<{ market: MarketCode }> {
+  return fetchJSON(`${base()}/settings?section=market`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ market: code }),
+  });
 }

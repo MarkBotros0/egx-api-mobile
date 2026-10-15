@@ -25,6 +25,8 @@ const SHARED_FILES = [
   "learnWidgets.ts",
   "learnLive.ts",
   "curriculum.ts",
+  "markets.ts",
+  "money.ts",
 ];
 
 const header = (file) =>

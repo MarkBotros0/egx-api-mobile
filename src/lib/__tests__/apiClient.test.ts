@@ -11,7 +11,7 @@ describe("shared API client on mobile", () => {
     mockFetch("GET", "/tickers", [{ symbol: "COMI" }]);
 
     await expect(fetchTickers()).resolves.toEqual([{ symbol: "COMI" }]);
-    expect(fetchCalls()[0].url).toBe("https://api.test/api/tickers");
+    expect(fetchCalls()[0].url).toBe("https://api.test/api/tickers?market=EG");
     expect(fetchCalls()[0].headers.authorization).toBe("Bearer tok-9");
   });
 

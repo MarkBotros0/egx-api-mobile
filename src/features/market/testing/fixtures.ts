@@ -257,7 +257,7 @@ export const RISK: RiskResponse = {
       sigma_63_ann_pct: 24.4,
       sigma_ewma_ann_pct: 23,
       beta: 1.05,
-      turnover_egp: 120_000_000,
+      turnover: 120_000_000,
       traded_share: 1,
       last_price: 82.5,
       tradeable: true,
