@@ -1,16 +1,9 @@
-import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useMarket } from "@/providers/market";
-import { searchTickers } from "@/shared/api";
-import type { TickerSearchResult } from "@/shared/types";
 import { AppText } from "@/ui";
+import { FEW_LOCAL_MATCHES, useTickerSearch } from "./hooks/useTickerSearch";
 import { stockDetailHref } from "./links";
-
-const DEBOUNCE_MS = 300;
-const MIN_QUERY = 2;
-/** Below this many local matches, the market's wider listing is worth asking. */
-const FEW_LOCAL = 5;
 
 export interface RemoteSearchResultsProps {
   query: string;
@@ -28,32 +21,9 @@ export interface RemoteSearchResultsProps {
  */
 export function RemoteSearchResults({ query, localCount, knownSymbols }: RemoteSearchResultsProps) {
   const { market } = useMarket();
-  const q = query.trim();
-  const active = market.code !== "EG" && q.length >= MIN_QUERY && localCount < FEW_LOCAL;
-  // Keyed by what was asked, so a stale answer never shows under a new query.
-  const [found, setFound] = useState<{ key: string; items: TickerSearchResult[] } | null>(null);
-  const key = `${market.code}:${q}`;
-
-  useEffect(() => {
-    if (!active) return;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => {
-      searchTickers(q, { market: market.code, signal: ctrl.signal })
-        .then((items) => {
-          if (!ctrl.signal.aborted) setFound({ key, items });
-        })
-        .catch(() => {
-          if (!ctrl.signal.aborted) setFound({ key, items: [] });
-        });
-    }, DEBOUNCE_MS);
-    return () => {
-      clearTimeout(timer);
-      ctrl.abort();
-    };
-  }, [active, q, key, market.code]);
-
-  if (!active || found?.key !== key) return null;
-  const rows = found.items.filter((r) => !knownSymbols.has(r.symbol.toUpperCase()));
+  const found = useTickerSearch(query, localCount < FEW_LOCAL_MATCHES);
+  if (!found) return null;
+  const rows = found.filter((r) => !knownSymbols.has(r.symbol.toUpperCase()));
   if (rows.length === 0) return null;
 
   return (

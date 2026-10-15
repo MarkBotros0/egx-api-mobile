@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { Sparkline, scoreColor } from "@/charts";
+import { useMarket } from "@/providers/market";
 import { RISK_BAND_COLOR } from "@/shared/riskBands";
 import { COLORS } from "@/shared/theme";
 import type { CompositeSignal } from "@/shared/types";
@@ -77,6 +78,13 @@ export function StockCard({
   });
   const intervalNote = changeIntervalNote(changeInterval);
   const band = riskBand && state !== "unavailable" ? riskBand : null;
+  // A market whose score bands are not fitted yet says so on the score itself.
+  const { market } = useMarket();
+  const scoreCaption = market.score_calibrated ? "score" : "prelim";
+  const scoreLabel =
+    compositeScore != null
+      ? `${market.score_calibrated ? "Score" : "Preliminary score"} ${compositeScore.toFixed(0)} of 100${compositeSignal ? `, ${compositeSignal}` : ""}`
+      : undefined;
 
   let body;
   if (price !== undefined) {
@@ -127,12 +135,12 @@ export function StockCard({
     compositeScore != null ? (
       <View
         className="items-end"
-        accessibilityLabel={`Score ${compositeScore.toFixed(0)} of 100${compositeSignal ? `, ${compositeSignal}` : ""}`}
+        accessibilityLabel={scoreLabel}
       >
         <AppText className="font-mono-semibold text-lg leading-[22px]" style={{ color: scoreColor(compositeScore) }}>
           {compositeScore.toFixed(0)}
         </AppText>
-        <AppText className="text-[8px] uppercase tracking-wider text-white/30">score</AppText>
+        <AppText className="text-[8px] uppercase tracking-wider text-white/30">{scoreCaption}</AppText>
       </View>
     ) : null;
   const riskDot = band ? (
@@ -228,12 +236,12 @@ export function StockCard({
           {compositeScore != null ? (
             <View
               className="items-center"
-              accessibilityLabel={`Score ${compositeScore.toFixed(0)} of 100${compositeSignal ? `, ${compositeSignal}` : ""}`}
+              accessibilityLabel={scoreLabel}
             >
               <AppText className="font-mono-semibold text-lg" style={{ color: scoreColor(compositeScore) }}>
                 {compositeScore.toFixed(0)}
               </AppText>
-              <AppText className="text-[8px] uppercase tracking-wider text-white/30">score</AppText>
+              <AppText className="text-[8px] uppercase tracking-wider text-white/30">{scoreCaption}</AppText>
             </View>
           ) : sector ? (
             <View className="rounded-full bg-accent/10 px-2 py-0.5">

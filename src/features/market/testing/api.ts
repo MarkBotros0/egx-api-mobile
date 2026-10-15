@@ -1,6 +1,7 @@
 import { mockFetchHandler } from "@/test-utils/fetch";
 import { DEFAULT_WEIGHTS, FALLBACK_WEIGHT_PRESETS } from "@/shared/constants";
-import { batch, DASHBOARD, DIVIDEND_HISTORY, makeAnalysis, REGIME, TICKERS } from "./fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
+import { batch, DASHBOARD, DIVIDEND_HISTORY, makeAnalysis, REGIME, TICKERS, US_MARKET } from "./fixtures";
 
 /**
  * The ONE place market tests touch the Plan 1 fetch mock. Routes are keyed by
@@ -78,4 +79,15 @@ export function requestsTo(fetchMock: FetchMock, path: string, method = "GET"): 
     .filter(([, init]) => (((init as RequestInit | undefined)?.method ?? "GET").toUpperCase() === method))
     .map(([input]) => new URL(String(input), "http://localhost"))
     .filter((u) => u.pathname.endsWith(path));
+}
+
+/** Routes for a user whose saved market is `code`, with EG and US enabled. */
+export function marketPrefRoutes(code: "EG" | "US"): Record<string, Route> {
+  return {
+    "/markets": { markets: [EG_FALLBACK, US_MARKET], default: "EG" },
+    "/settings": (url: URL, init?: RequestInit) =>
+      url.searchParams.get("section") === "market"
+        ? { market: code }
+        : (DEFAULTS["/settings"] as (u: URL, i?: RequestInit) => unknown)(url, init),
+  };
 }

@@ -3,6 +3,7 @@ import { CompositeGauge, scoreColor } from "@/charts";
 import type { CompositeScore } from "@/shared/types";
 import { AppText } from "@/ui";
 import type { Callout, CalloutTone, ChartInterval } from "./logic/stockDetail";
+import { PreliminaryTag } from "./PreliminaryTag";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 
 const CALLOUT_BOX: Record<CalloutTone, string> = {
@@ -37,9 +38,12 @@ export function CompositeCard({
       <View className="items-center gap-1">
         <CompositeGauge score={composite.score} signal={composite.signal} size="lg" />
         <AppText className="mt-1 text-[10px] uppercase tracking-wider text-white/40">Technical Condition</AppText>
-        <AppText className="font-mono-semibold text-base" style={{ color: scoreColor(composite.score) }}>
-          {composite.signal}
-        </AppText>
+        <View className="flex-row items-center gap-2">
+          <AppText className="font-mono-semibold text-base" style={{ color: scoreColor(composite.score) }}>
+            {composite.signal}
+          </AppText>
+          <PreliminaryTag />
+        </View>
         <AppText className="text-[10px] text-white/30">{`on ${interval.toLowerCase()} bars`}</AppText>
         {interval !== "Daily" && (
           <AppText className="text-[10px] text-white/25">Daily is the primary view for timing</AppText>

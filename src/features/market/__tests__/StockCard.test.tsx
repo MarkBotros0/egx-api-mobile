@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { renderWithProviders } from "@/test-utils/render";
 import { stockDetailHref } from "../links";
 import { StockCard } from "../StockCard";
-import { mockMarketApi } from "../testing/api";
+import { marketPrefRoutes, mockMarketApi } from "../testing/api";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
@@ -79,4 +79,24 @@ it("opens the stock on the card's interval", async () => {
   await renderWithProviders(<StockCard {...base} price={1} changePct={0} interval="Weekly" />);
   await fireEvent.press(screen.getByTestId("stockcard-COMI"));
   expect(router.push).toHaveBeenCalledWith(stockDetailHref("COMI", "Weekly"));
+});
+
+describe("score caption per market", () => {
+  it.each([false, true])("reads prelim on an uncalibrated market (compact: %s)", async (compact) => {
+    mockMarketApi(marketPrefRoutes("US"));
+    await renderWithProviders(
+      <StockCard {...base} price={1} changePct={0} compositeScore={61} compact={compact} />
+    );
+    expect(await screen.findByText("prelim")).toBeTruthy();
+    expect(screen.queryByText("score")).toBeNull();
+  });
+
+  it.each([false, true])("reads score on a calibrated market (compact: %s)", async (compact) => {
+    mockMarketApi(marketPrefRoutes("EG"));
+    await renderWithProviders(
+      <StockCard {...base} price={1} changePct={0} compositeScore={61} compact={compact} />
+    );
+    expect(await screen.findByText("score")).toBeTruthy();
+    expect(screen.queryByText("prelim")).toBeNull();
+  });
 });

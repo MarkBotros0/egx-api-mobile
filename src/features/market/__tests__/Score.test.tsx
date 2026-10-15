@@ -3,7 +3,7 @@ import { renderWithProviders } from "@/test-utils/render";
 import { CompositeCard } from "../CompositeCard";
 import { ScoreBreakdown } from "../ScoreBreakdown";
 import { ScoreWeightsSheet } from "../ScoreWeightsSheet";
-import { mockMarketApi, requestsTo } from "../testing/api";
+import { marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
 import { makeAnalysis } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
@@ -105,5 +105,18 @@ describe("CompositeCard", () => {
     expect(screen.getByText("on weekly bars")).toBeTruthy();
     expect(screen.getByText("Daily is the primary view for timing")).toBeTruthy();
     expect(screen.getByText("✅ Daily + Weekly aligned (up)")).toBeTruthy();
+  });
+
+  it("tags the score Preliminary on an uncalibrated market, and only there", async () => {
+    mockMarketApi(marketPrefRoutes("US"));
+    await renderWithProviders(<CompositeCard composite={composite} interval="Daily" callouts={[]} />);
+    expect(await screen.findByText("Preliminary")).toBeTruthy();
+  });
+
+  it("carries no tag on a calibrated market", async () => {
+    mockMarketApi(marketPrefRoutes("EG"));
+    await renderWithProviders(<CompositeCard composite={composite} interval="Daily" callouts={[]} />);
+    expect(screen.getByText("Technical Condition")).toBeTruthy();
+    expect(screen.queryByText("Preliminary")).toBeNull();
   });
 });

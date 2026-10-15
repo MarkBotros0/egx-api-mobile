@@ -3,6 +3,8 @@ import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi } from "@/features/portfolio/testing/api";
 import { TICKERS } from "@/features/portfolio/testing/fixtures";
 import { todayIso } from "@/lib/dates";
+import { US_MARKET } from "@/features/market/testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
 import { AddHoldingForm } from "../AddHoldingForm";
 
 afterEach(() => jest.useRealTimers());
@@ -106,5 +108,77 @@ describe("AddHoldingForm", () => {
     expect(screen.getByRole("button", { name: "Add to Portfolio" })).toBeDisabled();
     await fireEvent.press(screen.getByText("Add to Portfolio"));
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  describe("remote suggestions", () => {
+    const VOO = { symbol: "VOO", name: "Vanguard S&P 500 ETF", sector: "Miscellaneous", exchange: "AMEX", kind: "fund" };
+
+    /** A user whose saved market is `code`, with EG and US enabled, and a search that finds VOO. */
+    function onMarket(code: "EG" | "US") {
+      return mockPortfolioApi({
+        extra: [
+          { path: "/markets", body: { markets: [EG_FALLBACK, US_MARKET], default: "EG" } },
+          { path: /\/settings\?section=market/, body: { market: code } },
+          { path: "/tickers/search", body: [VOO] },
+        ],
+      });
+    }
+    const searches = (fetchMock: jest.Mock) => fetchMock.mock.calls.filter(([u]) => String(u).includes("/tickers/search"));
+
+    it("offers the market's wider listing after a pause and picks it like a local ticker", async () => {
+      jest.useFakeTimers();
+      const fetchMock = onMarket("US");
+      const onSubmit = jest.fn().mockResolvedValue(undefined);
+      await renderWithProviders(<AddHoldingForm tickers={TICKERS} onSubmit={onSubmit} onCancel={jest.fn()} />);
+      await screen.findByText("Buy Price (USD) *");
+
+      await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "vo");
+      await act(async () => {
+        jest.advanceTimersByTime(299);
+      });
+      expect(screen.queryByText("VOO")).toBeNull();
+      await act(async () => {
+        jest.advanceTimersByTime(1);
+      });
+      await fireEvent.press(await screen.findByText("VOO"));
+      expect(searches(fetchMock)).toHaveLength(1);
+      expect(String(searches(fetchMock)[0][0])).toContain("market=US");
+
+      expect(screen.getByPlaceholderText("Search by symbol or name...").props.value).toBe("VOO");
+      expect(screen.getByText("Vanguard S&P 500 ETF — Miscellaneous")).toBeTruthy();
+      await fireEvent.changeText(screen.getByPlaceholderText("100"), "3");
+      await fireEvent.changeText(screen.getByPlaceholderText("85.50"), "512.4");
+      await fireEvent.press(screen.getByText("Add to Portfolio"));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ symbol: "VOO", name: "Vanguard S&P 500 ETF", sector: "Miscellaneous" }),
+        ),
+      );
+    });
+
+    it("does not ask while five local matches already show", async () => {
+      jest.useFakeTimers();
+      const fetchMock = onMarket("US");
+      const many = ["AA", "AB", "AC", "AD", "AE"].map((s) => ({ symbol: s, name: `${s} Corp`, sector: "Tech", index: "SPX" }));
+      await renderWithProviders(<AddHoldingForm tickers={many} onSubmit={jest.fn()} onCancel={jest.fn()} />);
+      await screen.findByText("Buy Price (USD) *");
+      await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "corp");
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(searches(fetchMock)).toHaveLength(0);
+    });
+
+    it("never searches on EG", async () => {
+      jest.useFakeTimers();
+      const fetchMock = onMarket("EG");
+      await renderWithProviders(<AddHoldingForm tickers={TICKERS} onSubmit={jest.fn()} onCancel={jest.fn()} />);
+      await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "vo");
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(searches(fetchMock)).toHaveLength(0);
+      expect(screen.queryByText("VOO")).toBeNull();
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
+import { FEW_LOCAL_MATCHES, useTickerSearch } from "@/features/market/hooks/useTickerSearch";
 import { useMarket } from "@/providers/market";
 import { validateTicker } from "@/shared/api";
 import type { MarketCode } from "@/shared/markets";
@@ -95,7 +96,18 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
         ? { symbol: sym, name: answer.name || sym, sector: "Unknown" }
         : null);
 
-  const suggestions = useMemo(() => filterTickers(tickers, search), [tickers, search]);
+  const local = useMemo(() => filterTickers(tickers, search), [tickers, search]);
+  // Off EG the ticker list is the index universe; a few local matches widen
+  // to the market's whole listing (an ETF, a stock in no index).
+  const remoteFound = useTickerSearch(search, showList && !picked && local.length < FEW_LOCAL_MATCHES);
+  const suggestions = useMemo(() => {
+    if (!remoteFound) return local;
+    const seen = new Set(local.map((t) => t.symbol.toUpperCase()));
+    const extra = remoteFound
+      .filter((r) => !seen.has(r.symbol.toUpperCase()))
+      .map((r) => ({ symbol: r.symbol, name: r.name, sector: r.sector }));
+    return [...local, ...extra];
+  }, [local, remoteFound]);
   const result = buildHoldingPayload({ ticker: effective, quantityText, priceText, buyDate, initial: initialValues });
   const errors = result.ok ? null : result.errors;
   const canSubmit = result.ok && validation !== "validating" && validation !== "invalid" && !submitting;
