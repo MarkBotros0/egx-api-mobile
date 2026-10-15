@@ -19,6 +19,13 @@ export function CalibrationScreen() {
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const { market } = useMarket();
+  // Another market's calibration (or failure) is not this one's.
+  const [shownMarket, setShownMarket] = useState(market.code);
+  if (shownMarket !== market.code) {
+    setShownMarket(market.code);
+    setData(null);
+    setError(false);
+  }
 
   useEffect(() => {
     let alive = true;

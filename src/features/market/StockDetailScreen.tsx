@@ -42,7 +42,6 @@ export interface StockDetailScreenProps {
   market?: MarketCode;
 }
 
-
 /**
  * Port of web `stock/[symbol]/page.tsx`, mobile branch: Key Statistics first,
  * composite card, levels + zones, overlays attached to the price chart, volume,

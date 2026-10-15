@@ -158,6 +158,7 @@ describe("market switch", () => {
     });
     await renderWithProviders(<MarketHarness />);
     await screen.findByTestId("card-COMI");
+    const analysisBefore = requestsTo(fetchMock, "/analysis").length;
     await fireEvent.press(screen.getByTestId("to-us"));
     expect((await screen.findByTestId("card-AAPL")).props.children).toMatch(/^(stale|live):/);
     expect(screen.queryByTestId("card-COMI")).toBeNull();
@@ -167,5 +168,7 @@ describe("market switch", () => {
     await waitFor(() =>
       expect(requestsTo(fetchMock, "/analysis").some((u) => u.searchParams.get("market") === "US")).toBe(true)
     );
+    const after = requestsTo(fetchMock, "/analysis").slice(analysisBefore);
+    expect(after.filter((u) => u.searchParams.get("market") !== "US")).toEqual([]);
   });
 });

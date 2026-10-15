@@ -52,3 +52,14 @@ it("discards a response from the previous market", async () => {
   await act(async () => resolveEg([{ symbol: "COMI" } as never]));
   expect(result.current.t.tickers[0]?.symbol).toBe("AAPL");
 });
+
+it("drops the old market's list as soon as the market changes", async () => {
+  jest.spyOn(api, "fetchTickers").mockImplementation(() =>
+    api.getApiMarket() === "US" ? new Promise(() => {}) : Promise.resolve([{ symbol: "COMI" } as never])
+  );
+  const { result } = await renderHook(() => ({ t: useTickers(), m: useMarket() }), { wrapper });
+  await waitFor(() => expect(result.current.t.tickers[0]?.symbol).toBe("COMI"));
+  await act(async () => result.current.m.setMarket("US"));
+  expect(result.current.t.tickers).toEqual([]);
+  expect(result.current.t.loading).toBe(true);
+});

@@ -1,10 +1,13 @@
-import { fireEvent, screen, userEvent, waitFor, within } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent, waitFor, within } from "@testing-library/react-native";
+import { Pressable } from "react-native";
 import { router } from "expo-router";
 import { routes } from "@/lib/links";
+import { useMarket } from "@/providers/market";
+import { EG_FALLBACK } from "@/shared/markets";
 import { renderWithProviders } from "@/test-utils/render";
 import { DashboardScreen } from "../DashboardScreen";
 import { mockMarketApi, requestsTo, type Route } from "../testing/api";
-import { batch, makeDashboard, makeDashboardRow } from "../testing/fixtures";
+import { batch, makeDashboard, makeDashboardRow, TICKERS } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
@@ -131,4 +134,58 @@ it("opens Compare and the dividend calendar from the header", async () => {
   expect(router.push).toHaveBeenCalledWith(routes.compare);
   await fireEvent.press(screen.getByLabelText("Dividend calendar"));
   expect(router.push).toHaveBeenCalledWith(routes.dividends);
+});
+
+describe("market switch", () => {
+  const US = { ...EG_FALLBACK, code: "US" as const, currency: "USD" };
+  const EG_SYMBOLS = new Set(TICKERS.map((t) => t.symbol));
+
+  function WithChanger() {
+    const { setMarket } = useMarket();
+    return (
+      <>
+        <Pressable testID="to-us" onPress={() => setMarket("US")} />
+        <DashboardScreen />
+      </>
+    );
+  }
+
+  it("never live-scores the old market's symbols in the new one while its list loads", async () => {
+    let releaseUsTickers: () => void = () => {};
+    const usTickers = new Promise<void>((r) => (releaseUsTickers = r));
+    const fetchMock = mockMarketApi({
+      "/markets": { markets: [EG_FALLBACK, US], default: "EG" },
+      "/tickers": async (url: URL) => {
+        if (url.searchParams.get("market") !== "US") return TICKERS;
+        await usTickers;
+        return [{ symbol: "AAPL", name: "Apple", sector: "Technology", index: "EGX30" }];
+      },
+      "/watchlist": (url: URL) => ({ symbols: url.searchParams.get("market") === "US" ? ["AAPL"] : ["COMI"] }),
+      "/dashboard": (url: URL) =>
+        url.searchParams.get("market") === "US"
+          ? makeDashboard([makeDashboardRow("AAPL", { score: 60, price: 230 })])
+          : makeDashboard([makeDashboardRow("COMI", { score: 72, price: 82.5 })]),
+    });
+    await renderWithProviders(<WithChanger />);
+    await screen.findByTestId("stockcard-COMI");
+    await waitFor(() => expect(requestsTo(fetchMock, "/analysis").length).toBeGreaterThan(0));
+
+    await fireEvent.press(screen.getByTestId("to-us"));
+    // The US snapshot lands while the US ticker list is still loading.
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, "/dashboard").some((u) => u.searchParams.get("market") === "US")).toBe(true)
+    );
+    await waitFor(() => expect(screen.queryByTestId("stockcard-COMI")).toBeNull());
+    await act(async () => releaseUsTickers());
+    await screen.findByTestId("stockcard-AAPL");
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, "/analysis").some((u) => u.searchParams.get("market") === "US")).toBe(true)
+    );
+
+    const usSymbols = requestsTo(fetchMock, "/analysis")
+      .filter((u) => u.searchParams.get("market") === "US")
+      .flatMap((u) => (u.searchParams.get("symbols") ?? "").split(","));
+    expect(usSymbols.filter((s) => EG_SYMBOLS.has(s))).toEqual([]);
+    expect(usSymbols).toContain("AAPL");
+  });
 });

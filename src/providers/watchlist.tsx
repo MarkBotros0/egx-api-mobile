@@ -21,6 +21,14 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const { market } = useMarket();
 
+  // The watchlist is per market: drop the old one while the new one loads.
+  const [listMarket, setListMarket] = useState(market.code);
+  if (listMarket !== market.code) {
+    setListMarket(market.code);
+    setSymbols([]);
+    setLoading(true);
+  }
+
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- ported verbatim from web: reset on sign-out

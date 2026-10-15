@@ -23,6 +23,15 @@ export function TickersProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const { market } = useMarket();
 
+  // Another market's list must not linger while this one loads: the dashboard
+  // would queue its symbols for live scoring in the new market.
+  const [listMarket, setListMarket] = useState(market.code);
+  if (listMarket !== market.code) {
+    setListMarket(market.code);
+    setTickers([]);
+    setLoading(true);
+  }
+
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- ported verbatim from web: reset on sign-out

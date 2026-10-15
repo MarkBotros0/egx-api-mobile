@@ -14,6 +14,12 @@ export function PEFreshnessBanner({ market: linked }: { market?: MarketCode } = 
   const [message, setMessage] = useState<string | null>(null);
   const { market } = useMarket();
   const dataMarket = linked ?? market.code;
+  // Another market's staleness says nothing about this one.
+  const [messageMarket, setMessageMarket] = useState(dataMarket);
+  if (messageMarket !== dataMarket) {
+    setMessageMarket(dataMarket);
+    setMessage(null);
+  }
 
   useEffect(() => {
     let cancelled = false;

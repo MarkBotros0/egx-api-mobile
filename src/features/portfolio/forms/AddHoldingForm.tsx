@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { validateTicker } from "@/shared/api";
+import type { MarketCode } from "@/shared/markets";
 import { TICKER_VALIDATION_DEBOUNCE_MS } from "@/shared/constants";
 import type { Ticker } from "@/shared/types";
 import { AppText, Button, DateField, TextField } from "@/ui";
@@ -31,6 +33,8 @@ export interface AddHoldingFormProps {
 interface RemoteCheck {
   /** The symbol this answer is for — an answer for "ABU" never applies to "ABUK". */
   symbol: string;
+  /** ...and the market: a symbol valid in EG says nothing about US. */
+  market: MarketCode;
   state: "valid" | "invalid" | "error";
   name: string | null;
 }
@@ -45,11 +49,12 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
   const [priceText, setPriceText] = useState(initialValues?.buy_price?.toString() ?? "");
   const [buyDate, setBuyDate] = useState(initialValues?.buy_date ?? todayIso());
   const { run, pending: submitting } = useSingleFlight();
+  const { market } = useMarket();
 
   const sym = search.trim().toUpperCase();
   const known = picked ? undefined : findKnownTicker(tickers, sym);
   const knownSymbol = known?.symbol ?? null;
-  const answer = remote && remote.symbol === sym ? remote : null;
+  const answer = remote && remote.symbol === sym && remote.market === market.code ? remote : null;
 
   // Only an unknown, non-empty, un-picked symbol goes to the server.
   useEffect(() => {
@@ -60,17 +65,17 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
         const data = await validateTicker(sym);
         if (cancelled) return;
         const state = data.valid === true ? "valid" : data.valid === false ? "invalid" : "error";
-        setRemote({ symbol: sym, state, name: data.name });
+        setRemote({ symbol: sym, market: market.code, state, name: data.name });
       } catch {
         // Network inconclusive: let the user proceed; analysis will fail gracefully.
-        if (!cancelled) setRemote({ symbol: sym, state: "error", name: null });
+        if (!cancelled) setRemote({ symbol: sym, market: market.code, state: "error", name: null });
       }
     }, TICKER_VALIDATION_DEBOUNCE_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [sym, picked, knownSymbol]);
+  }, [sym, picked, knownSymbol, market.code]);
 
   const validation: TickerValidation = picked
     ? "valid"
