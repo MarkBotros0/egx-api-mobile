@@ -42,14 +42,6 @@ export interface StockDetailScreenProps {
   market?: MarketCode;
 }
 
-/**
- * `fetchAnalysis` takes no market option, but it puts the symbol into the URL
- * unencoded and the shared client leaves an explicit `market=` alone — so the
- * pinned market rides along with the symbol.
- */
-function analysisSymbol(symbol: string, pinned: MarketCode | null): string {
-  return pinned ? `${symbol}&market=${pinned}` : symbol;
-}
 
 /**
  * Port of web `stock/[symbol]/page.tsx`, mobile branch: Key Statistics first,
@@ -69,7 +61,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
   const [showIndicators, setShowIndicators] = useState(false);
 
   const analysis = useKeyedFetch(`${dataMarket}|${symbol}|${interval}|${bars}|${weightsVersion}`, () =>
-    fetchAnalysis(analysisSymbol(symbol, pinned), interval, bars)
+    fetchAnalysis(symbol, interval, bars, { market: dataMarket })
   );
   const data = analysis.data;
   const priceData = useMemo(() => (data ? priceRows(data) : []), [data]);
@@ -89,12 +81,14 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
           already shows — not as a second header repeating the symbol. */}
       <Stack.Screen
         options={{
-          headerRight: () => <WatchStarButton symbol={symbol} />,
+          // No star on another market's stock: the watchlist is this market's list.
+          headerRight: () => (pinned ? null : <WatchStarButton symbol={symbol} />),
           // iOS 26 draws a glass pill behind a headerRight view; as a custom
           // item the star can opt out of it.
-          unstable_headerRightItems: () => [
-            { type: "custom", element: <WatchStarButton symbol={symbol} />, hidesSharedBackground: true },
-          ],
+          unstable_headerRightItems: () =>
+            pinned
+              ? []
+              : [{ type: "custom", element: <WatchStarButton symbol={symbol} />, hidesSharedBackground: true }],
         }}
       />
       <RefreshableScroll
@@ -133,8 +127,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
           </View>
         ) : data ? (
           <>
-            {/* These fetch in the app's market only: off while the page is pinned to the other one. */}
-            {!pinned && <PEFreshnessBanner />}
+            <PEFreshnessBanner market={dataMarket} />
             <StatsPanel
               stats={data.stats}
               latestRsi={latestNonNull(data.indicators.rsi)}
@@ -177,9 +170,9 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
             </Pressable>
             {showIndicators && <IndicatorPanel data={indicatorData} />}
 
-            {!pinned && <RiskGradeCard symbol={symbol} />}
+            <RiskGradeCard symbol={symbol} market={dataMarket} />
             <ForecastCard forecast={data.forecast} symbol={symbol} />
-            {!pinned && <DividendHistoryCard symbol={symbol} />}
+            <DividendHistoryCard symbol={symbol} market={dataMarket} />
           </>
         ) : null}
       </RefreshableScroll>

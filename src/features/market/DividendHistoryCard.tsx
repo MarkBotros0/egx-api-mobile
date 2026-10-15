@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { useMarket } from "@/providers/market";
 import { fetchDividendHistory } from "@/shared/api";
+import type { MarketCode } from "@/shared/markets";
 import { AppText, Button, LearnTerm } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
 import { dayMonth } from "./logic/format";
@@ -43,9 +44,13 @@ function Empty({ note }: { note: string }) {
  * Self-fetching, so a slow Yahoo call can never hold up or fail the rest of
  * the stock page. No gain/loss colour: an amount carries no direction.
  */
-export function DividendHistoryCard({ symbol }: { symbol: string }) {
+/** `market`: a deep link's market, read without switching the app's; omitted, the app's. */
+export function DividendHistoryCard({ symbol, market: linked }: { symbol: string; market?: MarketCode }) {
   const { market } = useMarket();
-  const { data, error, loading } = useKeyedFetch(`divhist:${market.code}:${symbol}`, () => fetchDividendHistory(symbol));
+  const dataMarket = linked ?? market.code;
+  const { data, error, loading } = useKeyedFetch(`divhist:${dataMarket}:${symbol}`, () =>
+    fetchDividendHistory(symbol, { market: dataMarket })
+  );
   const [shownCount, setShownCount] = useState(PAGE);
 
   if (loading) {

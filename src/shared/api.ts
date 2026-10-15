@@ -139,13 +139,23 @@ export async function fetchOHLCV(
   );
 }
 
+/**
+ * Per-call market override for the stock page's fetchers: a deep link into the
+ * other market reads it without switching the app's. Omitted, the current one.
+ */
+export interface MarketOpts {
+  market?: MarketCode | null;
+}
+
 export async function fetchAnalysis(
   symbol: string,
   interval = "Daily",
-  bars = 200
+  bars = 200,
+  opts?: MarketOpts
 ): Promise<AnalysisResponse> {
   return fetchJSON<AnalysisResponse>(
-    `${base()}/analysis?symbol=${symbol}&interval=${interval}&bars=${bars}`
+    `${base()}/analysis?symbol=${symbol}&interval=${interval}&bars=${bars}`,
+    { market: opts?.market }
   );
 }
 
@@ -495,11 +505,11 @@ export interface PEFeedStatus {
   last_attempt_status: string | null;
 }
 
-export async function fetchPEFeedStatus(): Promise<PEFeedStatus> {
+export async function fetchPEFeedStatus(opts?: MarketOpts): Promise<PEFeedStatus> {
   const data = await fetchJSON<{
     last_successful_fetch: string | null;
     last_attempt_status: string | null;
-  }>(`${base()}/pe`);
+  }>(`${base()}/pe`, { market: opts?.market });
   return {
     last_successful_fetch: data.last_successful_fetch ?? null,
     last_attempt_status: data.last_attempt_status ?? null,
@@ -723,9 +733,9 @@ export interface RiskResponse {
   note?: string;
 }
 
-export async function fetchRisk(symbol?: string): Promise<RiskResponse> {
+export async function fetchRisk(symbol?: string, opts?: MarketOpts): Promise<RiskResponse> {
   const q = symbol ? `?symbol=${encodeURIComponent(symbol)}` : "";
-  return fetchJSON<RiskResponse>(`${base()}/risk${q}`);
+  return fetchJSON<RiskResponse>(`${base()}/risk${q}`, { market: opts?.market });
 }
 
 export async function fetchMarketRegime(): Promise<MarketRegime> {
@@ -735,11 +745,12 @@ export async function fetchMarketRegime(): Promise<MarketRegime> {
 // ---- News ----
 
 export async function fetchDividendHistory(
-  symbol: string
+  symbol: string,
+  opts?: MarketOpts
 ): Promise<DividendHistoryResponse> {
   return fetchJSON<DividendHistoryResponse>(
     `${base()}/dividend_history?symbol=${encodeURIComponent(symbol)}`,
-    { timeoutMs: 15000 }
+    { timeoutMs: 15000, market: opts?.market }
   );
 }
 

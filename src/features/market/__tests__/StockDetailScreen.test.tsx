@@ -7,7 +7,15 @@ import { fail, mockMarketApi, requestsTo, type Route } from "../testing/api";
 import { lastChartProps } from "../testing/chartsMock";
 import { makeAnalysis } from "../testing/fixtures";
 
-jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
+// The shared stub, but Stack.Screen renders the header's right side so the star can be asserted.
+jest.mock("expo-router", () => {
+  const actual = jest.requireActual("@/features/market/testing/expoRouterMock");
+  const { createElement: h } = jest.requireActual("react");
+  const { View } = jest.requireActual("react-native");
+  const Screen = ({ options }: { options?: { headerRight?: () => unknown } }) =>
+    h(View, { testID: "header-right" }, options?.headerRight?.() ?? null);
+  return { ...actual, Stack: Object.assign(() => null, { ...actual.Stack, Screen }) };
+});
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
 
 beforeEach(() => jest.clearAllMocks());
@@ -120,11 +128,29 @@ it("a deep link into the other market fetches that market without switching the 
   await screen.findByText("Technical Condition");
   const [first] = analysisCalls(fetchMock);
   expect(first.searchParams.getAll("market")).toEqual(["US"]);
-  expect(first.searchParams.get("symbol")).toBe("COMI");
+  expect(first.searchParams.getAll("symbol")).toEqual(["COMI"]);
+  expect(first.searchParams.get("interval")).toBe("Daily");
   expect(getApiMarket()).toBe("EG");
-  // Cards that cannot be pinned to the other market stay off rather than show this market's data.
-  expect(requestsTo(fetchMock, "/risk")).toHaveLength(0);
-  expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(0);
+  // The self-fetching cards and the P/E banner read the linked market too.
+  await waitFor(() => expect(requestsTo(fetchMock, "/risk")).toHaveLength(1));
+  await waitFor(() => expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(1));
+  await waitFor(() => expect(requestsTo(fetchMock, "/pe")).toHaveLength(1));
+  for (const path of ["/risk", "/dividend_history", "/pe"]) {
+    expect(requestsTo(fetchMock, path)[0].searchParams.getAll("market")).toEqual(["US"]);
+  }
+  expect(requestsTo(fetchMock, "/risk")[0].searchParams.get("symbol")).toBe("COMI");
+});
+
+it("hides the watch star on another market's stock (the watchlist is this market's)", async () => {
+  mockMarketApi({});
+  await renderWithProviders(<StockDetailScreen symbol="AAPL" initialInterval="Daily" market="US" />);
+  await screen.findByText("Technical Condition");
+  expect(screen.queryByLabelText("Add to watchlist")).toBeNull();
+});
+
+it("shows the watch star in the header for this market's stock", async () => {
+  await renderStock();
+  expect(screen.getByLabelText("Add to watchlist")).toBeTruthy();
 });
 
 it("without a deep-linked market, fetches in the app's market", async () => {

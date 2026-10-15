@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { useMarket } from "@/providers/market";
 import { fetchRisk, type RiskResponse, type RiskRow } from "@/shared/api";
+import type { MarketCode } from "@/shared/markets";
 import { RISK_BAND_BLURB, RISK_BAND_COLOR, RISK_BAND_ORDER } from "@/shared/riskBands";
 import { COLORS } from "@/shared/theme";
 import { AppText, LearnTerm } from "@/ui";
@@ -110,9 +111,13 @@ function Ungraded({ row }: { row: RiskRow }) {
   );
 }
 
-export function RiskGradeCard({ symbol }: { symbol: string }) {
+/** `market`: a deep link's market, read without switching the app's; omitted, the app's. */
+export function RiskGradeCard({ symbol, market: linked }: { symbol: string; market?: MarketCode }) {
   const { market } = useMarket();
-  const { data: res, error, loading } = useKeyedFetch(`risk:${market.code}:${symbol}`, () => fetchRisk(symbol));
+  const dataMarket = linked ?? market.code;
+  const { data: res, error, loading } = useKeyedFetch(`risk:${dataMarket}:${symbol}`, () =>
+    fetchRisk(symbol, { market: dataMarket })
+  );
   const now = useNow(60_000);
 
   // A 404 means "not measured yet" — normal while the snapshot walks the

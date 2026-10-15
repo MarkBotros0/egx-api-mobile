@@ -18,9 +18,10 @@ jest.mock("@/features/market/StockDetailScreen", () => {
   const { Text } = jest.requireActual("react-native");
   return {
     // Holds a tap count so a test can see whether the screen was remounted.
-    StockDetailScreen: ({ symbol, initialInterval }: { symbol: string; initialInterval: string }) => {
+    StockDetailScreen: ({ symbol, initialInterval, market }: { symbol: string; initialInterval: string; market?: string }) => {
       const [taps, setTaps] = jest.requireActual("react").useState(0);
-      return h(Text, { onPress: () => setTaps(taps + 1) }, `${symbol}|${initialInterval}|${taps}`);
+      const suffix = market ? `|${market}` : "";
+      return h(Text, { onPress: () => setTaps(taps + 1) }, `${symbol}|${initialInterval}|${taps}${suffix}`);
     },
   };
 });
@@ -56,6 +57,16 @@ it("upper-cases the symbol and keeps a valid interval", async () => {
 
 it("falls back to Daily for an unknown interval", async () => {
   await renderRouter({ _layout: layout, "stock/[symbol]": StockRoute }, { initialUrl: "/stock/COMI?interval=Hourly" });
+  expect(await screen.findByText("COMI|Daily|0")).toBeTruthy();
+});
+
+it("passes a deep link's market through", async () => {
+  await renderRouter({ _layout: layout, "stock/[symbol]": StockRoute }, { initialUrl: "/stock/aapl?market=us" });
+  expect(await screen.findByText("AAPL|Daily|0|US")).toBeTruthy();
+});
+
+it("ignores an unknown deep-link market", async () => {
+  await renderRouter({ _layout: layout, "stock/[symbol]": StockRoute }, { initialUrl: "/stock/COMI?market=XX" });
   expect(await screen.findByText("COMI|Daily|0")).toBeTruthy();
 });
 
