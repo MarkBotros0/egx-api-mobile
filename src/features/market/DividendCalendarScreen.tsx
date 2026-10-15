@@ -31,6 +31,31 @@ const CELL_WIDTH = "14.2857%"; // 7 columns
  */
 export function DividendCalendarScreen() {
   const { market } = useMarket();
+  // EG only until US dividends ship (sub-project 4); a deep link elsewhere
+  // gets the empty state and never asks the server.
+  return market.code === "EG" ? <EgDividendCalendar /> : <NoDividendCalendar />;
+}
+
+function NoDividendCalendar() {
+  return (
+    <Screen scroll={false}>
+      <View className="gap-4 px-4 py-4 pb-10">
+        <EmptyCalendar />
+      </View>
+    </Screen>
+  );
+}
+
+function EmptyCalendar() {
+  return (
+    <View className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-5">
+      <AppText className="text-sm text-white/50">No dividends on record yet.</AppText>
+    </View>
+  );
+}
+
+function EgDividendCalendar() {
+  const { market } = useMarket();
   const cal = useKeyedFetch(`dividend-calendar:${market.code}`, fetchDividendCalendar);
   const data = cal.data;
   const currency = data?.currency ?? market.currency;
@@ -153,11 +178,7 @@ export function DividendCalendarScreen() {
       </>
     );
   } else {
-    body = (
-      <View className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-5">
-        <AppText className="text-sm text-white/50">No dividends on record yet.</AppText>
-      </View>
-    );
+    body = <EmptyCalendar />;
   }
 
   return (

@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { T_BILL_RATE_PCT } from "@/shared/constants";
+import type { Market } from "@/shared/markets";
 import { formatPrice } from "@/shared/money";
 import type { AnalysisStats, CrossoverInfo, PEData } from "@/shared/types";
 import { AppText, LearnTerm } from "@/ui";
@@ -18,6 +19,23 @@ export interface StatsPanelProps {
   pe?: PEData | null;
   /** The market's currency code, from the analysis response. */
   currency: string;
+  /** The market this stock trades on: names the benchmark and the currency in the explanations. */
+  market: Market;
+}
+
+/** The tooltip copy that names a market. EG medians and the EG policy rate are EG facts, so they are EG-only. */
+export function statExplanations(market: Market) {
+  const eg = market.code === "EG";
+  const cur = market.currency;
+  const bench = market.benchmark_label;
+  return {
+    betaTerm: `Beta vs ${bench}`,
+    beta: `Measures how much this stock moves relative to the ${bench} index. Beta > 1 = more volatile than market. Beta < 1 = less volatile. Beta = 1 = moves with the market. A negative beta means it tends to move in the OPPOSITE direction to the index — its size still tells you how big those moves are.`,
+    pe: `Price-to-Earnings: how many ${cur} investors pay for every 1 ${cur} of annual profit.${eg ? " Judge it against the EGX median of about 12, not against global markets — under 8 is genuinely cheap here, over 25 is expensive." : ""} Below 3 is a warning, not a bargain: it usually means one-off earnings or a collapsed share price.`,
+    dividendYield: eg
+      ? `Annual dividends as a percentage of the current share price. The EGX median is about 3%. Read a healthy yield as evidence the company generates real cash, not as income — even 8% loses to the ~${T_BILL_RATE_PCT}% policy rate. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed.`
+      : "Annual dividends as a percentage of the current share price. Read a healthy yield as evidence the company generates real cash. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed.",
+  };
 }
 
 function StatRow({
@@ -57,7 +75,9 @@ export function StatsPanel({
   crossovers,
   pe,
   currency,
+  market,
 }: StatsPanelProps) {
+  const copy = statExplanations(market);
   const golden = crossovers?.current_signal === "golden_cross";
   return (
     <View className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
@@ -116,7 +136,7 @@ export function StatsPanel({
           label="Beta"
           value={beta.toFixed(2)}
           valueClass={betaClass(beta)}
-          tooltip={{ term: "Beta vs EGX30", explanation: "Measures how much this stock moves relative to the EGX30 index. Beta > 1 = more volatile than market. Beta < 1 = less volatile. Beta = 1 = moves with the market. A negative beta means it tends to move in the OPPOSITE direction to the index — its size still tells you how big those moves are." }}
+          tooltip={{ term: copy.betaTerm, explanation: copy.beta }}
         />
       )}
       {atr != null && (
@@ -139,7 +159,7 @@ export function StatsPanel({
           label="P/E Ratio"
           value={formatPE(pe)}
           valueClass={peClass(pe.pe_ratio)}
-          tooltip={{ term: "P/E Ratio", explanation: "Price-to-Earnings: how many EGP investors pay for every 1 EGP of annual profit. Judge it against the EGX median of about 12, not against global markets — under 8 is genuinely cheap here, over 25 is expensive. Below 3 is a warning, not a bargain: it usually means one-off earnings or a collapsed share price." }}
+          tooltip={{ term: "P/E Ratio", explanation: copy.pe }}
         />
       )}
       {pe && pe.dividend_yield != null && pe.dividend_yield > 0 && (
@@ -147,7 +167,7 @@ export function StatsPanel({
           label="Dividend Yield"
           value={`${pe.dividend_yield.toFixed(2)}%`}
           valueClass={dividendYieldClass(pe.dividend_yield)}
-          tooltip={{ term: "Dividend Yield", explanation: `Annual dividends as a percentage of the current share price. The EGX median is about 3%. Read a healthy yield as evidence the company generates real cash, not as income — even 8% loses to the ~${T_BILL_RATE_PCT}% policy rate. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed.` }}
+          tooltip={{ term: "Dividend Yield", explanation: copy.dividendYield }}
         />
       )}
     </View>

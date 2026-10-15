@@ -96,7 +96,9 @@ export function DashboardScreen() {
     () => filterTickers(tickers, { index, sector, search }),
     [tickers, index, sector, search]
   );
-  const knownSymbols = useMemo(() => new Set(filtered.map((t) => t.symbol.toUpperCase())), [filtered]);
+  // The WHOLE loaded list, not this tab's slice: a universe stock on another
+  // tab is still a known listing, never a "more stocks" result.
+  const knownSymbols = useMemo(() => new Set(tickers.map((t) => t.symbol.toUpperCase())), [tickers]);
   const { quoted, unquoted } = useMemo(() => splitByFeed(filtered, snap.noFeed), [filtered, snap.noFeed]);
   const payers = useMemo(
     () => filterDividendPayers(quoted, snap.cards, dividendOnly),
@@ -232,7 +234,10 @@ export function DashboardScreen() {
             should not have to guess what ⇄ and a calendar glyph open. */}
         <View className="flex-row gap-2">
           <ToolButton icon="swap-horizontal" label="Compare" onPress={() => router.push(routes.compare)} />
-          <ToolButton icon="calendar-outline" label="Dividends" onPress={() => router.push(routes.dividends)} />
+          {/* EG only until US dividends ship (sub-project 4). */}
+          {market.code === "EG" && (
+            <ToolButton icon="calendar-outline" label="Dividends" onPress={() => router.push(routes.dividends)} />
+          )}
         </View>
         <TextField
           label="Search"

@@ -6,6 +6,8 @@
  * recently registered match wins, so the defaults are registered first and
  * `extra` routes last.
  */
+import { US_MARKET } from "@/features/market/testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
 import { fetchCalls, mockFetch } from "@/test-utils/fetch";
 import type { Portfolio, PortfolioAnalysisResponse, SalesResponse } from "@/shared/types";
 import { analysisResponse, portfolio, salesResponse } from "./fixtures";
@@ -66,4 +68,12 @@ export function sent(_fetchMock: FetchMock, method: string, path: string): SentR
   return fetchCalls()
     .filter((c) => c.method === method.toUpperCase() && c.url.split("?")[0].endsWith(path))
     .map((c) => ({ method: c.method, url: c.url, body: c.body ?? undefined }));
+}
+
+/** `extra` routes for a user whose saved market is `code`, with EG and US enabled. */
+export function marketPrefRoutes(code: "EG" | "US"): Route[] {
+  return [
+    { path: "/markets", body: { markets: [EG_FALLBACK, US_MARKET], default: "EG" } },
+    { path: /\/settings\?section=market/, body: { market: code } },
+  ];
 }

@@ -54,6 +54,8 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
   // Pinned only when the link names the OTHER market; otherwise follow the app.
   const pinned = linkedMarket && linkedMarket !== market.code ? linkedMarket : null;
   const dataMarket = pinned ?? market.code;
+  // The facts of the market this stock trades on (benchmark, currency).
+  const dataMarketInfo = markets.find((m) => m.code === dataMarket) ?? market;
   const [interval, setChartInterval] = useState<ChartInterval>(initialInterval);
   const [bars, setBars] = useState<BarCount>(DEFAULT_BARS);
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAYS);
@@ -64,7 +66,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
   );
   const data = analysis.data;
   // The response names its currency; an older backend falls back to the data market's.
-  const currency = data?.currency ?? markets.find((m) => m.code === dataMarket)?.currency ?? market.currency;
+  const currency = data?.currency ?? dataMarketInfo.currency;
   const priceData = useMemo(() => (data ? priceRows(data) : []), [data]);
   const volumeData = useMemo(() => (data ? volumeRows(data) : []), [data]);
   const indicatorData = useMemo(() => (data ? indicatorRows(data) : []), [data]);
@@ -140,6 +142,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
               crossovers={data.crossovers}
               pe={data.pe}
               currency={currency}
+              market={dataMarketInfo}
             />
             {data.composite_score && (
               <CompositeCard composite={data.composite_score} interval={interval} callouts={compositeCallouts(data)} />
@@ -174,7 +177,8 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
 
             <RiskGradeCard symbol={symbol} market={dataMarket} />
             <ForecastCard forecast={data.forecast} symbol={symbol} currency={currency} />
-            <DividendHistoryCard symbol={symbol} market={dataMarket} />
+            {/* EG only until US dividend history ships (sub-project 4). */}
+            {dataMarket === "EG" && <DividendHistoryCard symbol={symbol} market={dataMarket} />}
           </>
         ) : null}
       </RefreshableScroll>

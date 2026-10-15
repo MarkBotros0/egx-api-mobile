@@ -2,15 +2,20 @@ import { fireEvent, screen, userEvent, waitFor } from "@testing-library/react-na
 import { Linking } from "react-native";
 import { router } from "expo-router";
 import { stockHref } from "@/lib/links";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setApiMarket } from "@/shared/api";
 import { renderWithProviders } from "@/test-utils/render";
+import { EG_WORDING, renderedText } from "@/test-utils/text";
 import { NewsScreen } from "../NewsScreen";
-import { fail, mockMarketApi, requestsTo } from "../testing/api";
+import { fail, marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
 import { NEWS } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  await AsyncStorage.clear();
+  setApiMarket("EG");
   jest.spyOn(Linking, "openURL").mockResolvedValue(true);
 });
 
@@ -67,4 +72,27 @@ it("keeps the news on screen when a refresh fails", async () => {
   await userEvent.pullToRefresh(screen.getByTestId("news-scroll"));
   expect(await screen.findByText("Couldn't refresh — showing the last loaded data")).toBeTruthy();
   expect(screen.getByText("CIB posts record quarterly profit")).toBeTruthy();
+});
+
+describe("the empty market half", () => {
+  const empty = { ...NEWS, market: [] };
+
+  it("names EGX30 on EG, word for word", async () => {
+    mockMarketApi({ ...marketPrefRoutes("EG"), "/news": empty });
+    await renderWithProviders(<NewsScreen />);
+    expect(await screen.findByText("No EGX30 news in the last 30 days.")).toBeTruthy();
+  });
+
+  it("says market news on US, and nothing Egyptian", async () => {
+    mockMarketApi({
+      ...marketPrefRoutes("US"),
+      "/news": (url: URL) =>
+        url.searchParams.get("market") === "US"
+          ? { ...empty, your_stocks: [], coverage: { ...NEWS.coverage, symbols_requested: 0, symbols_without_news: [] }, status: "ok" }
+          : empty,
+    });
+    await renderWithProviders(<NewsScreen />);
+    expect(await screen.findByText("No market news in the last 30 days.")).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
+  });
 });

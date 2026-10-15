@@ -1,5 +1,7 @@
 import { View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { CURRENT_DD_NEUTRAL, T_BILL_RATE_PCT } from "@/shared/constants";
+import type { Market } from "@/shared/markets";
 import type { PortfolioMetrics } from "@/shared/types";
 import { AppText, Card, LearnTerm } from "@/ui";
 import { currentDrawdownTone, drawdownTone, sharpeTone, sortinoTone } from "./logic/display";
@@ -22,7 +24,30 @@ function RiskMetric({
 
 const pct1 = (v: number) => `${(v * 100).toFixed(1)}%`;
 
-export function RiskDashboard({ metrics, currency }: { metrics: PortfolioMetrics; currency: string }) {
+/**
+ * Where the risk-free hurdle comes from. EG: Egyptian cash at the shared
+ * constant. Elsewhere: the market's 3-month T-bill at the server's rate, which
+ * the sales response carries (null until it lands, so no number is guessed).
+ */
+export function sharpeExplanation(market: Market, riskFreeRatePct: number | null): string {
+  const cash =
+    market.code === "EG"
+      ? `risk-free Egyptian cash (~${T_BILL_RATE_PCT}%)`
+      : `the ${market.short_name} 3-month T-bill${riskFreeRatePct != null ? ` (~${riskFreeRatePct.toFixed(1)}%)` : ""}`;
+  return `Measures risk-adjusted return. Higher = better. A ratio > 1 means your returns strongly justify the risk. Below 0 means you would earn more in ${cash}.`;
+}
+
+export function RiskDashboard({
+  metrics,
+  currency,
+  riskFreeRatePct = null,
+}: {
+  metrics: PortfolioMetrics;
+  currency: string;
+  /** The server's risk-free rate for this market; used outside EG. */
+  riskFreeRatePct?: number | null;
+}) {
+  const { market } = useMarket();
   const dd = metrics.max_drawdown?.value;
   const currentDd = metrics.max_drawdown?.current_drawdown;
 
@@ -37,7 +62,7 @@ export function RiskDashboard({ metrics, currency }: { metrics: PortfolioMetrics
           value={metrics.sharpe_ratio != null ? metrics.sharpe_ratio.toFixed(2) : "--"}
           tone={sharpeTone(metrics.sharpe_ratio)}
           term="Sharpe Ratio"
-          explanation={`Measures risk-adjusted return. Higher = better. A ratio > 1 means your returns strongly justify the risk. Below 0 means you would earn more in risk-free Egyptian cash (~${T_BILL_RATE_PCT}%).`}
+          explanation={sharpeExplanation(market, riskFreeRatePct)}
         />
         <RiskMetric
           label="Sortino Ratio"
@@ -73,10 +98,13 @@ export function RiskDashboard({ metrics, currency }: { metrics: PortfolioMetrics
           explanation="How far your portfolio is currently below its recent peak value. If 0%, you're at or near all-time highs. A negative value means you're in a drawdown."
         />
       </View>
-      <AppText className="font-sans text-[10px] text-white/30">
-        Note: Egypt&apos;s risk-free rate is ~{T_BILL_RATE_PCT}%, which is very high globally. This makes it harder for
-        stocks to have a positive Sharpe ratio compared to other markets.
-      </AppText>
+      {/* An EG fact: other markets' rates are not unusually high. */}
+      {market.code === "EG" && (
+        <AppText className="font-sans text-[10px] text-white/30">
+          Note: Egypt&apos;s risk-free rate is ~{T_BILL_RATE_PCT}%, which is very high globally. This makes it harder for
+          stocks to have a positive Sharpe ratio compared to other markets.
+        </AppText>
+      )}
     </Card>
   );
 }

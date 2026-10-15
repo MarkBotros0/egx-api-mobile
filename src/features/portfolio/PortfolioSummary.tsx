@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { View } from "react-native";
 import { AllocationBar, CompositeGauge, scoreColor } from "@/charts";
 import type { PortfolioMetrics } from "@/shared/types";
+import { PreliminaryTag } from "@/features/market/PreliminaryTag";
 import { AppText, Card, LearnTerm } from "@/ui";
 import { diversificationTone, excludedNotice } from "./logic/display";
 import { egp2, pnlTone, signedPct } from "./logic/format";
@@ -73,6 +74,7 @@ export function PortfolioSummary({ metrics, currency }: { metrics: PortfolioMetr
               >
                 {metrics.avg_composite_score.toFixed(0)}
               </AppText>
+              <PreliminaryTag compact />
             </View>
             <AppText className="font-sans text-xs text-white/30">/100</AppText>
           </Tile>

@@ -12,8 +12,9 @@ import { peStalenessMessage } from "./peFreshness";
  */
 export function PEFreshnessBanner({ market: linked }: { market?: MarketCode } = {}) {
   const [message, setMessage] = useState<string | null>(null);
-  const { market } = useMarket();
+  const { market, markets } = useMarket();
   const dataMarket = linked ?? market.code;
+  const feedName = (markets.find((m) => m.code === dataMarket) ?? market).short_name;
   // Another market's staleness says nothing about this one.
   const [messageMarket, setMessageMarket] = useState(dataMarket);
   if (messageMarket !== dataMarket) {
@@ -26,13 +27,13 @@ export function PEFreshnessBanner({ market: linked }: { market?: MarketCode } = 
     fetchPEFeedStatus({ market: dataMarket })
       .then((s) => {
         // Age is computed here, not in render: Date.now() is impure.
-        if (!cancelled) setMessage(peStalenessMessage(s, Date.now()));
+        if (!cancelled) setMessage(peStalenessMessage(s, Date.now(), feedName));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [dataMarket]);
+  }, [dataMarket, feedName]);
 
   if (!message) return null;
   return (

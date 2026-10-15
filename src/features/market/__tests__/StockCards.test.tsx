@@ -6,7 +6,9 @@ import { EntryExitCard } from "../EntryExitCard";
 import { KeyLevelsCard } from "../KeyLevelsCard";
 import { StatsPanel } from "../StatsPanel";
 import { mockMarketApi } from "../testing/api";
-import { ENTRY_EXIT, KEY_LEVELS, makeAnalysis } from "../testing/fixtures";
+import { ENTRY_EXIT, KEY_LEVELS, makeAnalysis, US_MARKET } from "../testing/fixtures";
+import { EG_FALLBACK, type Market } from "@/shared/markets";
+import { EG_WORDING, openAllExplanations, renderedText } from "@/test-utils/text";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
@@ -29,6 +31,7 @@ describe("StatsPanel", () => {
         crossovers={d.crossovers}
         pe={d.pe}
         currency="EGP"
+        market={EG_FALLBACK}
       />
     );
     expect(screen.getByText("Golden Cross Active (12d ago)")).toBeTruthy();
@@ -47,10 +50,57 @@ describe("StatsPanel", () => {
   it("says loss-making instead of a P/E", async () => {
     mockMarketApi();
     await renderWithProviders(
-      <StatsPanel stats={d.stats} pe={{ ...d.pe!, pe_ratio: null, loss_making: true }} currency="EGP" />
+      <StatsPanel stats={d.stats} pe={{ ...d.pe!, pe_ratio: null, loss_making: true }} currency="EGP" market={EG_FALLBACK} />
     );
     expect(screen.getByText("Loss-making")).toBeTruthy();
     expect(screen.queryByText(/as of 2026/)).toBeNull();
+  });
+});
+
+describe("StatsPanel copy per market", () => {
+  async function renderFor(market: Market) {
+    mockMarketApi();
+    await renderWithProviders(
+      <StatsPanel
+        stats={d.stats}
+        beta={1.12}
+        pe={{ ...d.pe!, pe_ratio: 9.1, dividend_yield: 3.2 }}
+        currency={market.currency}
+        market={market}
+      />
+    );
+    expect(await openAllExplanations()).toBeGreaterThanOrEqual(3);
+  }
+
+  it("keeps the EG beta, P/E and dividend explanations word for word", async () => {
+    await renderFor(EG_FALLBACK);
+    // The same scan the US test relies on, proven to see the opened explanations.
+    expect(renderedText()).toMatch(EG_WORDING);
+    expect(screen.getByText("Beta vs EGX30")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Measures how much this stock moves relative to the EGX30 index. Beta > 1 = more volatile than market. Beta < 1 = less volatile. Beta = 1 = moves with the market. A negative beta means it tends to move in the OPPOSITE direction to the index — its size still tells you how big those moves are."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Price-to-Earnings: how many EGP investors pay for every 1 EGP of annual profit. Judge it against the EGX median of about 12, not against global markets — under 8 is genuinely cheap here, over 25 is expensive. Below 3 is a warning, not a bargain: it usually means one-off earnings or a collapsed share price."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Annual dividends as a percentage of the current share price. The EGX median is about 3%. Read a healthy yield as evidence the company generates real cash, not as income — even 8% loses to the ~19% policy rate. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed."
+      )
+    ).toBeTruthy();
+  });
+
+  it("names the US benchmark and currency, with no EGX median or Egyptian rate", async () => {
+    await renderFor(US_MARKET);
+    expect(screen.getByText("Beta vs S&P 500")).toBeTruthy();
+    expect(screen.getByText(/relative to the S&P 500 index/)).toBeTruthy();
+    expect(screen.getByText(/how many USD investors pay for every 1 USD of annual profit\. Below 3 is a warning/)).toBeTruthy();
+    expect(screen.getByText(/^Annual dividends as a percentage of the current share price\. Read a healthy yield/)).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
   });
 });
 

@@ -1,11 +1,15 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { marketPrefRoutes, mockPortfolioApi } from "@/features/portfolio/testing/api";
 import { renderWithProviders } from "@/test-utils/render";
+import { EG_WORDING, openAllExplanations, renderedText } from "@/test-utils/text";
 import { autoConfirm } from "@/features/portfolio/testing/alerts";
 import { TWO_LOT_ORDER, dividend, order, summary } from "@/features/portfolio/testing/fixtures";
 import type { Dividend, SaleOrder, SalesSummary } from "@/shared/types";
 import { RealizedSection } from "../RealizedSection";
 
-async function renderSection(over: { orders?: SaleOrder[]; dividends?: Dividend[]; summary?: SalesSummary } = {}) {
+async function renderSection(
+  over: { orders?: SaleOrder[]; dividends?: Dividend[]; summary?: SalesSummary; riskFreeRatePct?: number; currency?: string } = {},
+) {
   const onDeleteSale = jest.fn();
   const onDeleteDividend = jest.fn();
   await renderWithProviders(
@@ -13,8 +17,8 @@ async function renderSection(over: { orders?: SaleOrder[]; dividends?: Dividend[
       summary={over.summary ?? summary({ total_realized_pnl: 1700, total_winnings: 2900, total_dividends: 1200, dividend_count: 1 })}
       orders={over.orders ?? [order(), TWO_LOT_ORDER]}
       dividends={over.dividends ?? [dividend()]}
-      riskFreeRatePct={19}
-      currency="EGP"
+      riskFreeRatePct={over.riskFreeRatePct ?? 19}
+      currency={over.currency ?? "EGP"}
       onDeleteSale={onDeleteSale}
       onDeleteDividend={onDeleteDividend}
     />,
@@ -81,5 +85,38 @@ describe("RealizedSection", () => {
     await fireEvent.press(screen.getByText("Realized Winnings"));
     await fireEvent.press(screen.getByText("By stock"));
     expect(screen.getByText("100 shares · 1 sale")).toBeTruthy();
+  });
+});
+
+describe("RealizedSection versus cash, per market", () => {
+  it("keeps the EG T-bill explanation word for word", async () => {
+    mockPortfolioApi({ extra: marketPrefRoutes("EG") });
+    await renderSection();
+    await fireEvent.press(screen.getByText("Realized Winnings"));
+    await fireEvent.press(screen.getByText("1 of 1"));
+    expect(
+      screen.getByText(
+        "Egypt's T-bill rate is about 19% — the highest risk-free rate of any major market. A gain that took years to earn can still be worth less than leaving the money in T-bills over the same period. Trades held under 30 days are excluded, because annualizing a few days of return produces nonsense."
+      )
+    ).toBeTruthy();
+  });
+
+  it("grades US trades against the US 3-month T-bill, with nothing Egyptian", async () => {
+    mockPortfolioApi({ extra: marketPrefRoutes("US") });
+    // US holdings: the fixture's Egyptian company names are data, not copy.
+    await renderSection({
+      riskFreeRatePct: 4.12,
+      currency: "USD",
+      orders: [order({ symbol: "AAPL", name: "Apple Inc." })],
+      dividends: [dividend({ symbol: "KO", name: "Coca-Cola Company" })],
+    });
+    await fireEvent.press(screen.getByText("Realized Winnings"));
+    await openAllExplanations();
+    expect(
+      await screen.findByText(
+        "Trades are graded against the US 3-month T-bill (~4.1%). A gain that took years to earn can still be worth less than leaving the money in T-bills over the same period. Trades held under 30 days are excluded, because annualizing a few days of return produces nonsense."
+      )
+    ).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
   });
 });

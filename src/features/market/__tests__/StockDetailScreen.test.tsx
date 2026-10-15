@@ -1,9 +1,10 @@
 import { fireEvent, screen, userEvent, waitFor } from "@testing-library/react-native";
-import { getApiMarket } from "@/shared/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getApiMarket, setApiMarket } from "@/shared/api";
 import { renderWithProviders } from "@/test-utils/render";
 import type { ChartInterval } from "../logic/stockDetail";
 import { StockDetailScreen, WatchStarButton } from "../StockDetailScreen";
-import { fail, mockMarketApi, requestsTo, type Route } from "../testing/api";
+import { fail, marketPrefRoutes, mockMarketApi, requestsTo, type Route } from "../testing/api";
 import { lastChartProps } from "../testing/chartsMock";
 import { makeAnalysis } from "../testing/fixtures";
 
@@ -18,7 +19,12 @@ jest.mock("expo-router", () => {
 });
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(async () => {
+  jest.clearAllMocks();
+  // A market choice made by one test must not leak into the next.
+  await AsyncStorage.clear();
+  setApiMarket("EG");
+});
 
 async function renderStock(routes: Record<string, Route> = {}, initialInterval: ChartInterval = "Daily") {
   const fetchMock = mockMarketApi(routes);
@@ -133,12 +139,35 @@ it("a deep link into the other market fetches that market without switching the 
   expect(getApiMarket()).toBe("EG");
   // The self-fetching cards and the P/E banner read the linked market too.
   await waitFor(() => expect(requestsTo(fetchMock, "/risk")).toHaveLength(1));
-  await waitFor(() => expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(1));
   await waitFor(() => expect(requestsTo(fetchMock, "/pe")).toHaveLength(1));
-  for (const path of ["/risk", "/dividend_history", "/pe"]) {
+  for (const path of ["/risk", "/pe"]) {
     expect(requestsTo(fetchMock, path)[0].searchParams.getAll("market")).toEqual(["US"]);
   }
   expect(requestsTo(fetchMock, "/risk")[0].searchParams.get("symbol")).toBe("COMI");
+  // Dividend history is EG-only until sub-project 4: a US stock page never asks.
+  expect(screen.queryByText("Dividend History")).toBeNull();
+  expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(0);
+});
+
+it("shows the dividend history card on an EG stock", async () => {
+  const fetchMock = await renderStock();
+  expect(await screen.findByText("Dividend History")).toBeTruthy();
+  expect(requestsTo(fetchMock, "/dividend_history")[0].searchParams.getAll("market")).toEqual(["EG"]);
+});
+
+it("has no dividend history card when the app is on US", async () => {
+  const fetchMock = mockMarketApi(marketPrefRoutes("US"));
+  await renderWithProviders(<StockDetailScreen symbol="AAPL" initialInterval="Daily" />);
+  await waitFor(() =>
+    expect(analysisCalls(fetchMock).some((u) => u.searchParams.get("market") === "US")).toBe(true)
+  );
+  await screen.findByText("Technical Condition");
+  await waitFor(() => expect(requestsTo(fetchMock, "/risk").some((u) => u.searchParams.get("market") === "US")).toBe(true));
+  expect(screen.queryByText("Dividend History")).toBeNull();
+  expect(requestsTo(fetchMock, "/dividend_history").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  // Key Statistics explains beta against the US benchmark.
+  await fireEvent.press(screen.getByText("Beta"));
+  expect(screen.getByText("Beta vs S&P 500")).toBeTruthy();
 });
 
 it("hides the watch star on another market's stock (the watchlist is this market's)", async () => {

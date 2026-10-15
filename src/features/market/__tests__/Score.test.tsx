@@ -5,6 +5,7 @@ import { ScoreBreakdown } from "../ScoreBreakdown";
 import { ScoreWeightsSheet } from "../ScoreWeightsSheet";
 import { marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
 import { makeAnalysis } from "../testing/fixtures";
+import { EG_WORDING, renderedText } from "@/test-utils/text";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 jest.mock("@/charts", () => jest.requireActual("@/features/market/testing/chartsMock"));
@@ -87,6 +88,35 @@ describe("ScoreWeightsSheet", () => {
     expect(screen.queryByText("Divergence")).toBeNull();
     await fireEvent.press(screen.getByText("Show advanced categories"));
     expect(screen.getByText("Divergence")).toBeTruthy();
+  });
+});
+
+describe("ScoreWeightsSheet copy per market", () => {
+  it("keeps the EG quality, risk-adjusted and relative-strength descriptions word for word", async () => {
+    mockMarketApi(marketPrefRoutes("EG"));
+    await renderWithProviders(<ScoreWeightsSheet open onClose={jest.fn()} />);
+    await fireEvent.press(screen.getByText("Show advanced categories"));
+    expect(
+      screen.getByText(
+        "Trend consistency, multi-timeframe alignment, distance from the 52-week high, plus valuation: P/E and dividend yield versus the EGX median."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Annualized return vs the Egyptian T-bill, volatility, and ATR context.")).toBeTruthy();
+    expect(screen.getByText("Performance vs EGX30 over 30 days (leaders vs laggards).")).toBeTruthy();
+  });
+
+  it("names the US benchmark and drops the EGX median on US", async () => {
+    mockMarketApi(marketPrefRoutes("US"));
+    await renderWithProviders(<ScoreWeightsSheet open onClose={jest.fn()} />);
+    await fireEvent.press(screen.getByText("Show advanced categories"));
+    expect(await screen.findByText("Performance vs S&P 500 over 30 days (leaders vs laggards).")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Trend consistency, multi-timeframe alignment, distance from the 52-week high, plus valuation: P/E and dividend yield."
+      )
+    ).toBeTruthy();
+    expect(screen.getByText("Annualized return vs the US 3-month T-bill, volatility, and ATR context.")).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
   });
 });
 

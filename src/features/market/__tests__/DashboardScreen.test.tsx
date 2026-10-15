@@ -3,8 +3,11 @@ import { Pressable } from "react-native";
 import { router } from "expo-router";
 import { routes } from "@/lib/links";
 import { useMarket } from "@/providers/market";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setApiMarket } from "@/shared/api";
 import { EG_FALLBACK } from "@/shared/markets";
 import { renderWithProviders } from "@/test-utils/render";
+import { EG_WORDING, renderedText } from "@/test-utils/text";
 import { DashboardScreen } from "../DashboardScreen";
 import { mockMarketApi, requestsTo, type Route } from "../testing/api";
 import { DEFAULT_WEIGHTS, FALLBACK_WEIGHT_PRESETS } from "@/shared/constants";
@@ -192,6 +195,12 @@ describe("market switch", () => {
 });
 
 describe("per market", () => {
+  // A previous test's market choice survives in AsyncStorage and the API module.
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    setApiMarket("EG");
+  });
+
   /** A user whose saved market preference is `code`, with EG and US enabled. */
   function marketRoutes(code: "EG" | "US"): Record<string, Route> {
     return {
@@ -248,14 +257,59 @@ describe("per market", () => {
     expect(await screen.findByTestId("stockcard-AAPL")).toBeTruthy();
   });
 
-  it("hides the market-condition card when the market has no calibrated band", async () => {
+  it("never asks for the market-condition reading on US, and shows no skeleton for it", async () => {
     const fetchMock = mockMarketApi(marketRoutes("US"));
     await renderWithProviders(<DashboardScreen />);
     await screen.findByTestId("stockcard-AAPL");
-    await waitFor(() =>
-      expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(true)
-    );
-    await waitFor(() => expect(screen.queryByTestId("regime-skeleton")).toBeNull());
+    expect(screen.queryByTestId("regime-skeleton")).toBeNull();
     expect(screen.queryByText("Market Condition")).toBeNull();
+    expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  });
+
+  it("offers no dividend calendar on US, and its filter explanation names no Egyptian rate", async () => {
+    mockMarketApi(marketRoutes("US"));
+    await renderWithProviders(<DashboardScreen />);
+    await screen.findByTestId("stockcard-AAPL");
+    expect(screen.queryByLabelText("Dividend calendar")).toBeNull();
+    expect(screen.getByLabelText("Compare stocks")).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("Filter: All sectors"));
+    expect(
+      screen.getByText(
+        "Shows only stocks that currently pay a cash dividend (a yield above zero, from the fundamentals feed). A dividend is evidence a company generates real cash. Pair it with the 'Recently paid' sort to see who paid most recently."
+      )
+    ).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
+  });
+
+  it("keeps the EG dividend filter explanation word for word", async () => {
+    mockMarketApi(marketRoutes("EG"));
+    await renderWithProviders(<DashboardScreen />);
+    await screen.findByTestId("stockcard-COMI");
+    expect(screen.getByLabelText("Dividend calendar")).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText("Filter: All sectors"));
+    expect(
+      screen.getByText(
+        "Shows only stocks that currently pay a cash dividend (a yield above zero, from the fundamentals feed). A dividend is evidence a company generates real cash — but with the policy rate near 19%, no EGX yield competes as income on its own. Pair it with the 'Recently paid' sort to see who paid most recently."
+      )
+    ).toBeTruthy();
+  });
+
+  it("never lists a universe stock from another tab under More US stocks", async () => {
+    const NDX_ONLY = { symbol: "MRVL", name: "Marvell Technology", sector: "Electronic Technology", index: "NDX", indices: ["NDX"], exchange: "NASDAQ" };
+    mockMarketApi({
+      ...marketRoutes("US"),
+      "/tickers": (url: URL) => (url.searchParams.get("market") === "US" ? [...US_TICKERS, NDX_ONLY] : TICKERS),
+      "/tickers/search": [
+        { symbol: "MRVL", name: "Marvell Technology", sector: "Electronic Technology", exchange: "NASDAQ", kind: "stock" },
+        { symbol: "MARA", name: "MARA Holdings", sector: "Finance", exchange: "NASDAQ", kind: "stock" },
+      ],
+    });
+    await renderWithProviders(<DashboardScreen />);
+    await screen.findByTestId("stockcard-AAPL");
+    expect(tab("S&P 500")).toBeSelected();
+    await fireEvent.changeText(screen.getByTestId("dashboard-search"), "mar");
+    const more = await screen.findByTestId("remote-search-results");
+    expect(within(more).getByText("MARA")).toBeTruthy();
+    expect(within(more).queryByText("MRVL")).toBeNull();
   });
 });

@@ -1,14 +1,17 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import * as marketProvider from "@/providers/market";
+import { EG_FALLBACK } from "@/shared/markets";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { renderWithProviders } from "@/test-utils/render";
 import { MarketRegimeCard } from "../MarketRegimeCard";
 import { fail, mockMarketApi } from "../testing/api";
-import { REGIME } from "../testing/fixtures";
+import { REGIME, US_MARKET } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
 beforeEach(() => jest.clearAllMocks());
+afterEach(() => jest.restoreAllMocks());
 
 it("shows the reading, its history and breadth", async () => {
   mockMarketApi();
@@ -42,4 +45,18 @@ it("renders nothing when the reading fails", async () => {
   await renderWithProviders(<MarketRegimeCard />);
   await waitFor(() => expect(screen.queryByTestId("regime-skeleton")).toBeNull());
   expect(screen.queryByText("Market Condition")).toBeNull();
+});
+
+it("on US renders nothing from the first frame and never asks for a reading", async () => {
+  const fetchMock = mockMarketApi();
+  jest.spyOn(marketProvider, "useMarket").mockReturnValue({
+    market: US_MARKET,
+    markets: [EG_FALLBACK, US_MARKET],
+    setMarket: jest.fn(),
+    loading: false,
+  });
+  await render(<MarketRegimeCard />);
+  expect(screen.toJSON()).toBeNull();
+  await new Promise((r) => setTimeout(r, 0));
+  expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/market_regime"))).toBe(false);
 });

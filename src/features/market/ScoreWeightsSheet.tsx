@@ -1,21 +1,35 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { normalizeWeights, useScoreWeights } from "@/providers/scoreWeights";
+import type { Market } from "@/shared/markets";
 import type { ScoreWeights } from "@/shared/types";
 import { AppText, Button, IconButton, Pill, Sheet } from "@/ui";
 import { pct } from "./logic/format";
 import { rawTotal, stepWeight, WEIGHT_MAX, WEIGHT_MIN } from "./logic/weights";
 
-const CATEGORY_META: Record<keyof ScoreWeights, { label: string; description: string }> = {
-  trend: { label: "Trend", description: "Moving averages, golden/death crosses, and ADX trend strength." },
-  momentum: { label: "Momentum", description: "RSI, MACD histogram direction, and Stochastic." },
-  volume: { label: "Volume", description: "OBV vs price, Money Flow Index (MFI), volume-price confirmation, and whether the stock is liquid enough to actually trade." },
-  volatility: { label: "Volatility", description: "Bollinger Band position and squeeze detection." },
-  divergence: { label: "Divergence", description: "RSI and MACD divergences — reversal signals." },
-  quality: { label: "Quality", description: "Trend consistency, multi-timeframe alignment, distance from the 52-week high, plus valuation: P/E and dividend yield versus the EGX median." },
-  risk_adjusted: { label: "Risk-Adjusted", description: "Annualized return vs the Egyptian T-bill, volatility, and ATR context." },
-  relative_strength: { label: "Rel. Strength", description: "Performance vs EGX30 over 30 days (leaders vs laggards)." },
-};
+type CategoryMeta = Record<keyof ScoreWeights, { label: string; description: string }>;
+
+/** The category blurbs; EG keeps its median and T-bill wording, other markets name their own benchmark. */
+export function categoryMeta(market: Market): CategoryMeta {
+  const eg = market.code === "EG";
+  return {
+    trend: { label: "Trend", description: "Moving averages, golden/death crosses, and ADX trend strength." },
+    momentum: { label: "Momentum", description: "RSI, MACD histogram direction, and Stochastic." },
+    volume: { label: "Volume", description: "OBV vs price, Money Flow Index (MFI), volume-price confirmation, and whether the stock is liquid enough to actually trade." },
+    volatility: { label: "Volatility", description: "Bollinger Band position and squeeze detection." },
+    divergence: { label: "Divergence", description: "RSI and MACD divergences — reversal signals." },
+    quality: {
+      label: "Quality",
+      description: `Trend consistency, multi-timeframe alignment, distance from the 52-week high, plus valuation: P/E and dividend yield${eg ? " versus the EGX median" : ""}.`,
+    },
+    risk_adjusted: {
+      label: "Risk-Adjusted",
+      description: `Annualized return vs the ${eg ? "Egyptian T-bill" : `${market.short_name} 3-month T-bill`}, volatility, and ATR context.`,
+    },
+    relative_strength: { label: "Rel. Strength", description: `Performance vs ${market.benchmark_label} over 30 days (leaders vs laggards).` },
+  };
+}
 
 const CORE_CATS: (keyof ScoreWeights)[] = ["trend", "momentum", "volume", "volatility"];
 const ADVANCED_CATS: (keyof ScoreWeights)[] = ["divergence", "quality", "risk_adjusted", "relative_strength"];
@@ -29,17 +43,16 @@ const PRESET_LABELS: Record<string, string> = {
 };
 
 function WeightStepper({
-  cat,
+  meta,
   raw,
   normalized,
   onChange,
 }: {
-  cat: keyof ScoreWeights;
+  meta: CategoryMeta[keyof ScoreWeights];
   raw: number;
   normalized: number;
   onChange: (v: number) => void;
 }) {
-  const meta = CATEGORY_META[cat];
   return (
     <View className="gap-1.5">
       <View className="flex-row items-start justify-between gap-3">
@@ -85,6 +98,8 @@ export function ScoreWeightsSheet({
   onSaved?: () => void;
 }) {
   const { draft, presets, saving, updateDraftField, applyPreset, resetDraft, save } = useScoreWeights();
+  const { market } = useMarket();
+  const meta = useMemo(() => categoryMeta(market), [market]);
   const [localError, setLocalError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const normalized = useMemo(() => normalizeWeights(draft), [draft]);
@@ -109,7 +124,7 @@ export function ScoreWeightsSheet({
   const stepper = (cat: keyof ScoreWeights) => (
     <WeightStepper
       key={cat}
-      cat={cat}
+      meta={meta[cat]}
       raw={draft[cat] ?? 0}
       normalized={normalized[cat] ?? 0}
       onChange={(v) => updateDraftField(cat, v)}

@@ -49,7 +49,7 @@ export function parseMoney(text: string): Parsed<number> {
   }
   if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return { ok: false, error: "Enter a number, e.g. 27.697" };
   const decimals = (s.split(".")[1] ?? "").replace(/0+$/, "").length;
-  if (decimals > MONEY_DECIMALS) return { ok: false, error: "EGX prices go to 3 decimals at most" };
+  if (decimals > MONEY_DECIMALS) return { ok: false, error: "Prices go to 3 decimals at most" };
   const value = Number(s);
   if (!(value > 0)) return { ok: false, error: "Must be more than 0" };
   return { ok: true, value };

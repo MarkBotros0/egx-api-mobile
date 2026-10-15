@@ -81,9 +81,18 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
   );
 }
 
+/**
+ * EG only: outside EG the bands are not calibrated yet (sub-project 3), and no
+ * reading beats an uncalibrated one. Decided before any fetch, so a US
+ * dashboard shows no skeleton that then collapses to nothing.
+ */
 export function MarketRegimeCard() {
   const { market } = useMarket();
-  const { data, error, loading } = useKeyedFetch(`market-regime:${market.code}`, fetchMarketRegime);
+  return market.code === "EG" ? <RegimeReading /> : null;
+}
+
+function RegimeReading() {
+  const { data, error, loading } = useKeyedFetch("market-regime:EG", fetchMarketRegime);
 
   if (error) return null;
   if (loading || !data) {
@@ -94,10 +103,6 @@ export function MarketRegimeCard() {
       </View>
     );
   }
-
-  // Outside EG the bands are not calibrated yet (the backend sends band null):
-  // no reading beats an uncalibrated one.
-  if (market.code !== "EG" && data.band == null) return null;
 
   const tone = (data.band && TONE[data.band]) || NEUTRAL;
   const pos = regimePosition(data.mean_score);

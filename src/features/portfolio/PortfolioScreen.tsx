@@ -232,7 +232,13 @@ export function PortfolioScreen() {
               (data.sales.sales.length > 0 || (data.sales.dividends ?? []).length > 0) &&
               realized}
             {a && a.signals.length > 0 && <AdvicePanel signals={a.signals} />}
-            {a?.portfolio_metrics.sharpe_ratio != null && <RiskDashboard metrics={a.portfolio_metrics} currency={currency} />}
+            {a?.portfolio_metrics.sharpe_ratio != null && (
+              <RiskDashboard
+                metrics={a.portfolio_metrics}
+                currency={currency}
+                riskFreeRatePct={data.sales?.risk_free_rate_pct ?? null}
+              />
+            )}
             {a?.correlation_matrix && a.correlation_matrix.symbols.length >= 2 && (
               <CorrelationHeatmap data={a.correlation_matrix} />
             )}

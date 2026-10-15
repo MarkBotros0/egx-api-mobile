@@ -9,7 +9,7 @@ describe("parseMoney", () => {
   });
 
   it("rejects a fourth significant decimal but ignores trailing zeros", () => {
-    expect(parseMoney("27.6971")).toEqual({ ok: false, error: "EGX prices go to 3 decimals at most" });
+    expect(parseMoney("27.6971")).toEqual({ ok: false, error: "Prices go to 3 decimals at most" });
     expect(parseMoney("27.6970")).toEqual({ ok: true, value: 27.697 });
   });
 

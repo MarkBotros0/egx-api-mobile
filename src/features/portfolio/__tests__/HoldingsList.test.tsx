@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { marketPrefRoutes, mockPortfolioApi } from "@/features/portfolio/testing/api";
 import { renderWithProviders } from "@/test-utils/render";
 import { TWO_LOT_HOLDINGS, holding } from "@/features/portfolio/testing/fixtures";
 import { autoCancel, autoConfirm } from "@/features/portfolio/testing/alerts";
@@ -102,5 +103,27 @@ describe("HoldingsList", () => {
     await fireEvent.press(screen.getByText("COMI"));
     expect(screen.getByText("50.00 – 52.00")).toBeTruthy();
     expect(screen.getByText("What does this mean? →")).toBeTruthy();
+  });
+});
+
+describe("PositionCard on an uncalibrated market", () => {
+  it("tags the holding's score PRELIM on US, in the header and the expanded detail", async () => {
+    mockPortfolioApi({ extra: marketPrefRoutes("US") });
+    await renderWithProviders(
+      <HoldingsList holdings={[holding()]} currency="USD" onEdit={jest.fn()} onDelete={jest.fn()} onSell={jest.fn()} onAddDividend={jest.fn()} />,
+    );
+    expect(await screen.findAllByText("PRELIM")).toHaveLength(1);
+    await fireEvent.press(screen.getByText("COMI"));
+    expect(screen.getAllByText("PRELIM")).toHaveLength(2);
+  });
+
+  it("carries no tag on EG", async () => {
+    mockPortfolioApi({ extra: marketPrefRoutes("EG") });
+    await renderWithProviders(
+      <HoldingsList holdings={[holding()]} currency="EGP" onEdit={jest.fn()} onDelete={jest.fn()} onSell={jest.fn()} onAddDividend={jest.fn()} />,
+    );
+    await fireEvent.press(screen.getByText("COMI"));
+    expect(screen.getByText("Score")).toBeTruthy();
+    expect(screen.queryByText("PRELIM")).toBeNull();
   });
 });

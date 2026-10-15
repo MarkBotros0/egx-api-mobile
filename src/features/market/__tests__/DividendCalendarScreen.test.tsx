@@ -1,14 +1,21 @@
 import { fireEvent, screen, userEvent, waitFor, within } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { stockHref } from "@/lib/links";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setApiMarket } from "@/shared/api";
 import { renderWithProviders } from "@/test-utils/render";
+import { EG_WORDING, renderedText } from "@/test-utils/text";
 import { DividendCalendarScreen } from "../DividendCalendarScreen";
-import { fail, mockMarketApi, requestsTo } from "../testing/api";
+import { fail, marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
 import { CALENDAR } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(async () => {
+  jest.clearAllMocks();
+  await AsyncStorage.clear();
+  setApiMarket("EG");
+});
 
 const monthHeader = () => within(screen.getByTestId("calendar-month"));
 
@@ -73,4 +80,24 @@ it("says when the calendar did not load", async () => {
   await renderWithProviders(<DividendCalendarScreen />);
   expect(await screen.findByText("The dividend calendar didn't load.")).toBeTruthy();
   expect(screen.getByText("calendar down")).toBeTruthy();
+});
+
+it("keeps the EG banner word for word", async () => {
+  await renderCalendar();
+  expect(
+    screen.getByText(
+      "These are the most recent coupons on record — their ex-dates (own the share before it to get the coupon). The EGX publishes no forward calendar, so future dates aren't shown; most companies pay once, around April–May."
+    )
+  ).toBeTruthy();
+});
+
+it("a deep link on US shows the empty state and never asks for a US calendar", async () => {
+  const fetchMock = mockMarketApi({ ...marketPrefRoutes("US"), "/dividend_calendar": CALENDAR });
+  await renderWithProviders(<DividendCalendarScreen />);
+  await waitFor(() => expect(screen.queryByTestId("calendar-month")).toBeNull());
+  expect(await screen.findByText("No dividends on record yet.")).toBeTruthy();
+  // Settled on US: the EG calendar (if it mounted before the preference landed) is gone.
+  await waitFor(() => expect(screen.queryByText(/with a dividend on record/)).toBeNull());
+  expect(requestsTo(fetchMock, "/dividend_calendar").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  expect(renderedText()).not.toMatch(EG_WORDING);
 });

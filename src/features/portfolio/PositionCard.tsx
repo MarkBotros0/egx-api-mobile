@@ -6,6 +6,7 @@ import type { Position } from "@/shared/positions";
 import { formatMoney, formatPrice } from "@/shared/money";
 import type { HoldingAnalysis } from "@/shared/types";
 import { AppText, Button, Card } from "@/ui";
+import { PreliminaryTag } from "@/features/market/PreliminaryTag";
 import { LotList } from "./LotList";
 import { ZoneBadge, ZoneDetail } from "./ZoneBadge";
 import { fmtExDate, pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
@@ -74,7 +75,10 @@ export function PositionCard({ position: h, currency, expanded, onToggle, onEdit
         className="min-h-[44px] flex-row items-center gap-3"
       >
         {h.composite_score != null && (
-          <CompositeGauge score={h.composite_score} signal={h.composite_signal ?? null} size="sm" />
+          <View className="items-center gap-0.5">
+            <CompositeGauge score={h.composite_score} signal={h.composite_signal ?? null} size="sm" />
+            <PreliminaryTag compact />
+          </View>
         )}
         <View className="min-w-0 flex-1">
           <View className="flex-row items-center gap-2">
@@ -112,6 +116,7 @@ export function PositionCard({ position: h, currency, expanded, onToggle, onEdit
                 <View className="mt-0.5 flex-row items-center gap-1.5">
                   <CompositeGauge score={h.composite_score} signal={h.composite_signal ?? null} size="sm" />
                   {mono(h.composite_signal ?? "--")}
+                  <PreliminaryTag compact />
                 </View>
               </Stat>
             )}

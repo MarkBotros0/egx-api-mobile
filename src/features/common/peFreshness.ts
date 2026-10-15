@@ -2,8 +2,11 @@ import type { PEFeedStatus } from "@/shared/api";
 
 export const PE_STALE_AFTER_HOURS = 48;
 
-/** The banner text once the P/E feed is 48h+ stale, else null (web PEFreshnessBanner). */
-export function peStalenessMessage(status: PEFeedStatus | null, nowMs: number): string | null {
+/**
+ * The banner text once the P/E feed is 48h+ stale, else null (web PEFreshnessBanner).
+ * `feedName` is the market's short name ("EGX", "US"), naming whose feed is late.
+ */
+export function peStalenessMessage(status: PEFeedStatus | null, nowMs: number, feedName: string): string | null {
   if (!status?.last_successful_fetch) return null;
   const last = Date.parse(status.last_successful_fetch);
   if (Number.isNaN(last)) return null;
@@ -14,5 +17,5 @@ export function peStalenessMessage(status: PEFeedStatus | null, nowMs: number): 
     status.last_attempt_status && status.last_attempt_status !== "ok"
       ? ` Last attempt: ${status.last_attempt_status}.`
       : "";
-  return `P/E data last updated ${days} day${days === 1 ? "" : "s"} ago — the EGX feed may be temporarily unavailable.${attempt}`;
+  return `P/E data last updated ${days} day${days === 1 ? "" : "s"} ago — the ${feedName} feed may be temporarily unavailable.${attempt}`;
 }

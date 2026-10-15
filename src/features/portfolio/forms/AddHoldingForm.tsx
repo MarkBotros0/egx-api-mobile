@@ -137,7 +137,7 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
           placeholder="Search by symbol or name..."
           autoCapitalize="characters"
           autoCorrect={false}
-          error={validation === "invalid" ? "Symbol not found on EGX — check and try again" : null}
+          error={validation === "invalid" ? `Symbol not found on ${market.short_name} — check and try again` : null}
         />
         {showList && !picked && suggestions.length > 0 && (
           <View className="mt-1 overflow-hidden rounded-lg border border-white/10 bg-charcoal">

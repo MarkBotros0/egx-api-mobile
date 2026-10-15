@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { renderWithProviders } from "@/test-utils/render";
+import { EG_WORDING, renderedText } from "@/test-utils/text";
 import { mockPortfolioApi } from "@/features/portfolio/testing/api";
 import { TICKERS } from "@/features/portfolio/testing/fixtures";
 import { todayIso } from "@/lib/dates";
@@ -84,7 +85,7 @@ describe("AddHoldingForm", () => {
     await fireEvent.changeText(screen.getByPlaceholderText("100"), "5.5");
     await fireEvent.changeText(screen.getByPlaceholderText("85.50"), "27.6971");
     expect(screen.getByText("Enter a whole number of shares")).toBeTruthy();
-    expect(screen.getByText("EGX prices go to 3 decimals at most")).toBeTruthy();
+    expect(screen.getByText("Prices go to 3 decimals at most")).toBeTruthy();
     await fireEvent.press(screen.getByText("Add to Portfolio"));
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -167,6 +168,54 @@ describe("AddHoldingForm", () => {
         jest.advanceTimersByTime(1000);
       });
       expect(searches(fetchMock)).toHaveLength(0);
+    });
+
+    it("names the US market when a symbol is not found there", async () => {
+      jest.useFakeTimers();
+      mockPortfolioApi({
+        extra: [
+          { path: "/markets", body: { markets: [EG_FALLBACK, US_MARKET], default: "EG" } },
+          { path: /\/settings\?section=market/, body: { market: "US" } },
+          { path: "/tickers/search", body: [] },
+          { method: "GET", path: /\/tickers\?validate=ZZZZ/, body: { symbol: "ZZZZ", valid: false, name: null } },
+        ],
+      });
+      await renderWithProviders(<AddHoldingForm tickers={TICKERS} onSubmit={jest.fn()} onCancel={jest.fn()} />);
+      await screen.findByText("Buy Price (USD) *");
+      await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "zzzz");
+      await act(async () => {
+        jest.advanceTimersByTime(600);
+      });
+      expect(await screen.findByText("Symbol not found on US — check and try again")).toBeTruthy();
+      expect(renderedText()).not.toMatch(EG_WORDING);
+    });
+
+    it("submits a dotted US symbol picked from the wider listing as-is", async () => {
+      jest.useFakeTimers();
+      const BRKB = { symbol: "BRK.B", name: "Berkshire Hathaway Inc. Class B", sector: "Finance", exchange: "NYSE", kind: "stock" };
+      mockPortfolioApi({
+        extra: [
+          { path: "/markets", body: { markets: [EG_FALLBACK, US_MARKET], default: "EG" } },
+          { path: /\/settings\?section=market/, body: { market: "US" } },
+          { path: "/tickers/search", body: [BRKB] },
+        ],
+      });
+      const onSubmit = jest.fn().mockResolvedValue(undefined);
+      await renderWithProviders(<AddHoldingForm tickers={TICKERS} onSubmit={onSubmit} onCancel={jest.fn()} />);
+      await screen.findByText("Buy Price (USD) *");
+      await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "berk");
+      await act(async () => {
+        jest.advanceTimersByTime(300);
+      });
+      await fireEvent.press(await screen.findByText("BRK.B"));
+      await fireEvent.changeText(screen.getByPlaceholderText("100"), "2");
+      await fireEvent.changeText(screen.getByPlaceholderText("85.50"), "471.25");
+      await fireEvent.press(screen.getByText("Add to Portfolio"));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ symbol: "BRK.B", name: "Berkshire Hathaway Inc. Class B", quantity: 2, buy_price: 471.25 }),
+        ),
+      );
     });
 
     it("never searches on EG", async () => {

@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
+import { useMarket } from "@/providers/market";
+import type { Market } from "@/shared/markets";
 import type { Dividend, SaleOrder, SalesSummary } from "@/shared/types";
 import { AppText, Button, Card, LearnTerm, Pill, SegmentedControl, confirm } from "@/ui";
 import { formatMoney, formatPrice } from "@/shared/money";
@@ -105,9 +107,19 @@ function OrderRow({ order: o, currency, onUndo }: { order: SaleOrder; currency: 
   );
 }
 
+/** The hurdle closed trades are graded against; "highest of any major market" is an EG fact. */
+export function versusCashExplanation(market: Market, riskFreeRatePct: number): string {
+  const rate =
+    market.code === "EG"
+      ? `Egypt's T-bill rate is about ${riskFreeRatePct.toFixed(0)}% — the highest risk-free rate of any major market.`
+      : `Trades are graded against the ${market.short_name} 3-month T-bill (~${riskFreeRatePct.toFixed(1)}%).`;
+  return `${rate} A gain that took years to earn can still be worth less than leaving the money in T-bills over the same period. Trades held under 30 days are excluded, because annualizing a few days of return produces nonsense.`;
+}
+
 export function RealizedSection({
   summary, orders, dividends, riskFreeRatePct, currency, onDeleteSale, onDeleteDividend,
 }: RealizedSectionProps) {
+  const { market } = useMarket();
   const money = (v: number) => formatMoney(v, currency, { digits: 0 });
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<RealizedTab>(initialRealizedTab(orders, dividends));
@@ -214,7 +226,7 @@ export function RealizedSection({
             <View className="mb-4 flex-row flex-wrap items-center">
               <LearnTerm
                 term="Versus risk-free cash"
-                explanation={`Egypt's T-bill rate is about ${riskFreeRatePct.toFixed(0)}% — the highest risk-free rate of any major market. A gain that took years to earn can still be worth less than leaving the money in T-bills over the same period. Trades held under 30 days are excluded, because annualizing a few days of return produces nonsense.`}
+                explanation={versusCashExplanation(market, riskFreeRatePct)}
               >
                 <AppText className="font-sans text-xs text-white/40">{`${summary.beat_t_bill_count} of ${summary.annualizable_count}`}</AppText>
               </LearnTerm>

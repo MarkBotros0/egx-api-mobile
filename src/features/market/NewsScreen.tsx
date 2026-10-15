@@ -52,7 +52,7 @@ export function NewsScreen() {
             <NewsList
               title="Market"
               items={data.market}
-              emptyNote={`No EGX30 news in the last ${data.coverage.window_days} days.`}
+              emptyNote={`No ${market.code === "EG" ? market.benchmark_label : "market"} news in the last ${data.coverage.window_days} days.`}
               now={now}
             />
           </>

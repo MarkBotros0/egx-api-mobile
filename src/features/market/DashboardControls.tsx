@@ -2,6 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Switch, View } from "react-native";
 
+import { useMarket } from "@/providers/market";
+import type { Market } from "@/shared/markets";
 import { COLORS } from "@/shared/theme";
 import { AppText, Sheet, type IoniconName } from "@/ui";
 import { IndexFilter, type IndexTab } from "./IndexFilter";
@@ -14,8 +16,11 @@ import {
   type SortKey,
 } from "./logic/dashboardFilters";
 
-const DIVIDEND_EXPLANATION =
-  "Shows only stocks that currently pay a cash dividend (a yield above zero, from the fundamentals feed). A dividend is evidence a company generates real cash — but with the policy rate near 19%, no EGX yield competes as income on its own. Pair it with the 'Recently paid' sort to see who paid most recently.";
+/** The policy-rate clause is an EG fact; other markets get the rest of the sentence. */
+export function dividendExplanation(market: Market): string {
+  const income = market.code === "EG" ? " — but with the policy rate near 19%, no EGX yield competes as income on its own" : "";
+  return `Shows only stocks that currently pay a cash dividend (a yield above zero, from the fundamentals feed). A dividend is evidence a company generates real cash${income}. Pair it with the 'Recently paid' sort to see who paid most recently.`;
+}
 
 const SCORE_EXPLANATION =
   "Turns on the 0-100 composite score on each card. The number tells you more than a Buy/Hold word does: 61 and 79 are very different setups. Scores are computed on DAILY bars, the timeframe every entry zone, stop-loss and portfolio alert is built on, and they match the gauge on the stock page exactly. You can switch to Weekly or Monthly for trend context; that resets to Daily next time you open the app.";
@@ -50,6 +55,7 @@ type Open = "filter" | "sort" | "score" | null;
  */
 export function DashboardControls(p: DashboardControlsProps) {
   const [open, setOpen] = useState<Open>(null);
+  const { market } = useMarket();
   const close = () => setOpen(null);
 
   const filterLabel =
@@ -102,7 +108,7 @@ export function DashboardControls(p: DashboardControlsProps) {
       {open === "filter" ? (
       <Sheet visible onClose={close} title="Filter">
         <SwitchRow label="Pays a dividend" value={p.dividendOnly} onToggle={p.onToggleDividend} />
-        <Note>{DIVIDEND_EXPLANATION}</Note>
+        <Note>{dividendExplanation(market)}</Note>
         <SectionLabel>Sector</SectionLabel>
         {p.sectors.map((s) => (
           <OptionRow
