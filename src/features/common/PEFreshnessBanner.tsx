@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { fetchPEFeedStatus } from "@/shared/api";
 import { AppText } from "@/ui";
 import { peStalenessMessage } from "./peFreshness";
@@ -7,6 +8,7 @@ import { peStalenessMessage } from "./peFreshness";
 /** Best-effort: a failed status fetch shows nothing and never blocks the page. */
 export function PEFreshnessBanner() {
   const [message, setMessage] = useState<string | null>(null);
+  const { market } = useMarket();
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +21,7 @@ export function PEFreshnessBanner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [market.code]);
 
   if (!message) return null;
   return (

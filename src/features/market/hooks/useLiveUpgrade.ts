@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { useMarket } from "@/providers/market";
 import { fetchCompositeBatch } from "@/shared/api";
 import { COMPOSITE_MAX_ATTEMPTS, COMPOSITE_RETRY_DELAY_MS } from "@/shared/constants";
 import {
@@ -34,6 +35,7 @@ interface LiveUpgradeOptions {
  */
 export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: string[]) => void } {
   const { setCards, interval, noFeed } = o;
+  const { market } = useMarket();
   const inFlightRef = useRef(new Set<string>());
   const attemptsRef = useRef(new Map<string, number>());
   const upgradedRef = useRef(new Set<string>());
@@ -44,14 +46,16 @@ export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: stri
 
   // Weights, interval and refresh change what a score MEANS: start a new run,
   // demote live → stale (never drop). Declared BEFORE the upgrade effect so it
-  // runs first in the same commit.
+  // runs first in the same commit. A new market also starts a new run, so the
+  // attempt / in-flight / upgraded bookkeeping is per market and an old run's
+  // chunks are dropped.
   useEffect(() => {
     runIdRef.current += 1;
     inFlightRef.current = new Set();
     attemptsRef.current = new Map();
     upgradedRef.current = new Set();
     setCards(demoteLive);
-  }, [o.weightsVersion, o.refreshKey, interval, setCards]);
+  }, [o.weightsVersion, o.refreshKey, interval, setCards, market.code]);
 
   // Unmount cancels a pending retry timer and any in-flight batch.
   useEffect(
@@ -126,7 +130,7 @@ export function useLiveUpgrade(o: LiveUpgradeOptions): { upgrade: (symbols: stri
     // `upgrade` and `o.symbols` are read through `symbolsKey`/`interval`;
     // listing them would re-run this on every arriving chunk.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbolsKey, o.weightsVersion, o.refreshKey, o.enabled, interval, o.snapshotLoaded]);
+  }, [symbolsKey, o.weightsVersion, o.refreshKey, o.enabled, interval, o.snapshotLoaded, market.code]);
 
   return { upgrade };
 }

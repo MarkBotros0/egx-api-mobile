@@ -3,6 +3,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useAuth } from "@/auth/AuthProvider";
 import { addToWatchlist, fetchWatchlist, removeFromWatchlist } from "@/shared/api";
 
+import { useMarket } from "./market";
+
 interface WatchlistCtx {
   symbols: string[];
   loading: boolean;
@@ -17,6 +19,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const [symbols, setSymbols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, user } = useAuth();
+  const { market } = useMarket();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,7 +41,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, market.code]);
 
   // Optimistic, and rolled back if the API refuses — same as the web.
   const add = useCallback((sym: string) => {

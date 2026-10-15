@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
+import { useMarket } from "@/providers/market";
 import { fetchRisk, type RiskResponse, type RiskRow } from "@/shared/api";
 import { RISK_BAND_BLURB, RISK_BAND_COLOR, RISK_BAND_ORDER } from "@/shared/riskBands";
 import { COLORS } from "@/shared/theme";
@@ -110,7 +111,8 @@ function Ungraded({ row }: { row: RiskRow }) {
 }
 
 export function RiskGradeCard({ symbol }: { symbol: string }) {
-  const { data: res, error, loading } = useKeyedFetch(`risk:${symbol}`, () => fetchRisk(symbol));
+  const { market } = useMarket();
+  const { data: res, error, loading } = useKeyedFetch(`risk:${market.code}:${symbol}`, () => fetchRisk(symbol));
   const now = useNow(60_000);
 
   // A 404 means "not measured yet" — normal while the snapshot walks the

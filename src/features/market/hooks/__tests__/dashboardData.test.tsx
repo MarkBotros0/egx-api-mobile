@@ -1,6 +1,8 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { Pressable, Text, View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { COMPOSITE_RETRY_DELAY_MS } from "@/shared/constants";
+import { EG_FALLBACK } from "@/shared/markets";
 import type { DashboardResponse } from "@/shared/api";
 import { renderWithProviders } from "@/test-utils/render";
 import type { CompositeInterval } from "../../logic/dashboardFilters";
@@ -131,4 +133,39 @@ it("asks for the selected interval", async () => {
   await renderWithProviders(<Harness symbols={["COMI"]} interval="Weekly" />);
   await waitFor(() => expect(requestsTo(fetchMock, "/analysis").length).toBeGreaterThan(0));
   expect(requestsTo(fetchMock, "/analysis")[0].searchParams.get("interval")).toBe("Weekly");
+});
+
+describe("market switch", () => {
+  const US = { ...EG_FALLBACK, code: "US" as const, currency: "USD" };
+
+  function MarketHarness() {
+    const { setMarket } = useMarket();
+    return (
+      <View>
+        <Harness symbols={["COMI", "AAPL"]} />
+        <Pressable testID="to-us" onPress={() => setMarket("US")} />
+      </View>
+    );
+  }
+
+  it("starts the cards over for the new market and never keeps the old market's", async () => {
+    const fetchMock = mockMarketApi({
+      "/markets": { markets: [EG_FALLBACK, US], default: "EG" },
+      "/dashboard": (url: URL) =>
+        url.searchParams.get("market") === "US"
+          ? makeDashboard([makeDashboardRow("AAPL", { score: 60, price: 230 })])
+          : DASHBOARD,
+    });
+    await renderWithProviders(<MarketHarness />);
+    await screen.findByTestId("card-COMI");
+    await fireEvent.press(screen.getByTestId("to-us"));
+    expect((await screen.findByTestId("card-AAPL")).props.children).toMatch(/^(stale|live):/);
+    expect(screen.queryByTestId("card-COMI")).toBeNull();
+    const dash = requestsTo(fetchMock, "/dashboard");
+    expect(dash.map((u) => u.searchParams.get("market"))).toEqual(["EG", "US"]);
+    // The live upgrade after the switch asks in US only.
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, "/analysis").some((u) => u.searchParams.get("market") === "US")).toBe(true)
+    );
+  });
 });

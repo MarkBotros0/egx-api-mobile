@@ -7,14 +7,16 @@ import { EG_FALLBACK } from "@/shared/markets";
 
 import { MARKET_STORAGE_KEY, MarketProvider, useMarket } from "../market";
 
+let mockAuth = { isAuthenticated: true, user: { id: "u1" } };
 jest.mock("@/auth/AuthProvider", () => ({
-  useAuth: () => ({ isAuthenticated: true, user: { id: "u1" } }),
+  useAuth: () => mockAuth,
 }));
 
 const US = { ...EG_FALLBACK, code: "US" as const, currency: "USD", name: "United States" };
 const wrapper = ({ children }: { children: React.ReactNode }) => <MarketProvider>{children}</MarketProvider>;
 
 beforeEach(async () => {
+  mockAuth = { isAuthenticated: true, user: { id: "u1" } };
   await AsyncStorage.clear();
   jest.restoreAllMocks();
   api.setApiMarket("EG");
@@ -78,4 +80,33 @@ it("outside a provider returns the EG fallback", async () => {
   expect(result.current.market).toEqual(EG_FALLBACK);
   expect(result.current.markets).toEqual([EG_FALLBACK]);
   expect(result.current.loading).toBe(false);
+});
+
+it("ignores a market that is not enabled", async () => {
+  jest.spyOn(api, "fetchMarkets").mockResolvedValue({ markets: [EG_FALLBACK], default: "EG" });
+  jest.spyOn(api, "fetchMarketPref").mockResolvedValue({ market: "EG" });
+  const put = jest.spyOn(api, "putMarketPref").mockResolvedValue({ market: "US" });
+  const { result } = await renderHook(() => useMarket(), { wrapper });
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  await act(async () => result.current.setMarket("US"));
+  expect(result.current.market.code).toBe("EG");
+  expect(api.getApiMarket()).toBe("EG");
+  expect(put).not.toHaveBeenCalled();
+});
+
+it("is loading again while a newly signed-in user's preference loads", async () => {
+  jest.spyOn(api, "fetchMarkets").mockResolvedValue({ markets: [EG_FALLBACK, US], default: "EG" });
+  let resolvePref: (v: { market: "EG" | "US" }) => void = () => {};
+  jest
+    .spyOn(api, "fetchMarketPref")
+    .mockResolvedValueOnce({ market: "EG" })
+    .mockImplementationOnce(() => new Promise((r) => { resolvePref = r; }));
+  const { result, rerender } = await renderHook(() => useMarket(), { wrapper });
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  mockAuth = { isAuthenticated: true, user: { id: "u2" } };
+  await rerender({});
+  await waitFor(() => expect(result.current.loading).toBe(true));
+  await act(async () => resolvePref({ market: "US" }));
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.market.code).toBe("US");
 });

@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
+import { useMarket } from "@/providers/market";
 import { fetchMarketRegime, type MarketBreadth } from "@/shared/api";
 import { AppText, LearnTerm } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
@@ -81,7 +82,8 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
 }
 
 export function MarketRegimeCard() {
-  const { data, error, loading } = useKeyedFetch("market-regime", fetchMarketRegime);
+  const { market } = useMarket();
+  const { data, error, loading } = useKeyedFetch(`market-regime:${market.code}`, fetchMarketRegime);
 
   if (error) return null;
   if (loading || !data) {

@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
+import { useMarket } from "@/providers/market";
 import { fetchDividendHistory } from "@/shared/api";
 import { AppText, Button, LearnTerm } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
@@ -43,7 +44,8 @@ function Empty({ note }: { note: string }) {
  * the stock page. No gain/loss colour: an amount carries no direction.
  */
 export function DividendHistoryCard({ symbol }: { symbol: string }) {
-  const { data, error, loading } = useKeyedFetch(`divhist:${symbol}`, () => fetchDividendHistory(symbol));
+  const { market } = useMarket();
+  const { data, error, loading } = useKeyedFetch(`divhist:${market.code}:${symbol}`, () => fetchDividendHistory(symbol));
   const [shownCount, setShownCount] = useState(PAGE);
 
   if (loading) {

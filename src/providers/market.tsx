@@ -40,6 +40,10 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    // A sign-in or account switch re-runs this: hide the changer until the
+    // new user's preference has loaded.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on sign-in / account switch, before awaiting
+    setLoading(true);
     (async () => {
       const stored = await AsyncStorage.getItem(MARKET_STORAGE_KEY).catch(() => null);
       if (!cancelled && (stored === "EG" || stored === "US")) {
@@ -67,13 +71,13 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
 
   const setMarket = useCallback(
     (next: MarketCode) => {
-      if (next === code) return;
+      if (next === code || !markets.some((m) => m.code === next)) return;
       apply(next);
       putMarketPref(next).catch(() => {
         // The device keeps the choice; the next successful boot syncs it.
       });
     },
-    [apply, code]
+    [apply, code, markets]
   );
 
   const value = useMemo<MarketCtx>(

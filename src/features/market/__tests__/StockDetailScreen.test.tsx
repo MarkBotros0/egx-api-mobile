@@ -1,4 +1,5 @@
 import { fireEvent, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { getApiMarket } from "@/shared/api";
 import { renderWithProviders } from "@/test-utils/render";
 import type { ChartInterval } from "../logic/stockDetail";
 import { StockDetailScreen, WatchStarButton } from "../StockDetailScreen";
@@ -111,4 +112,22 @@ it("keeps the analysis on screen when a refresh fails", async () => {
   await userEvent.pullToRefresh(screen.getByTestId("stock-scroll"));
   expect(await screen.findByText("Couldn't refresh — showing the last loaded data")).toBeTruthy();
   expect(screen.getByText("Technical Condition")).toBeTruthy();
+});
+
+it("a deep link into the other market fetches that market without switching the app", async () => {
+  const fetchMock = mockMarketApi({});
+  await renderWithProviders(<StockDetailScreen symbol="COMI" initialInterval="Daily" market="US" />);
+  await screen.findByText("Technical Condition");
+  const [first] = analysisCalls(fetchMock);
+  expect(first.searchParams.getAll("market")).toEqual(["US"]);
+  expect(first.searchParams.get("symbol")).toBe("COMI");
+  expect(getApiMarket()).toBe("EG");
+  // Cards that cannot be pinned to the other market stay off rather than show this market's data.
+  expect(requestsTo(fetchMock, "/risk")).toHaveLength(0);
+  expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(0);
+});
+
+it("without a deep-linked market, fetches in the app's market", async () => {
+  const fetchMock = await renderStock();
+  expect(analysisCalls(fetchMock)[0].searchParams.getAll("market")).toEqual(["EG"]);
 });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useMarket } from "@/providers/market";
 import {
   addHolding as apiAddHolding,
   deleteDividend as apiDeleteDividend,
@@ -47,6 +48,22 @@ export function usePortfolioData(weightsVersion: number): PortfolioData {
   const [sales, setSales] = useState<SalesResponse | null>(null);
   const [salesLoaded, setSalesLoaded] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
+  const { market } = useMarket();
+
+  // Holdings, sales and analysis are per market: another market starts blank
+  // (the load effect below then fetches it) rather than showing the old one.
+  const [dataMarket, setDataMarket] = useState(market.code);
+  if (dataMarket !== market.code) {
+    setDataMarket(market.code);
+    setPortfolio(null);
+    setPortfolioLoading(true);
+    setAnalysis(null);
+    setAnalyzing(false);
+    setError(null);
+    setSales(null);
+    setSalesLoaded(false);
+    setSalesError(null);
+  }
 
   // Each loader numbers its requests; only the newest one may write state, so a
   // slow earlier response can never overwrite a newer one (or a mutation's reset).
@@ -112,11 +129,14 @@ export function usePortfolioData(weightsVersion: number): PortfolioData {
     }
   }, []);
 
+  // Mount, and every market change. An analysis still in flight for the old
+  // market is invalidated; the loaders number their own requests.
   useEffect(() => {
+    analysisSeq.current += 1;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount fetch: the loader raises its loading flag before awaiting
     void loadPortfolio();
     void loadSales();
-  }, [loadPortfolio, loadSales]);
+  }, [loadPortfolio, loadSales, market.code]);
 
   // Analyse whenever the analysis has been cleared (first load, or after a
   // mutation) and there is something to analyse.

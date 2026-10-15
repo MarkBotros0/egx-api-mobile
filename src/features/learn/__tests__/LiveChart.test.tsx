@@ -50,7 +50,7 @@ describe("LiveChart", () => {
     );
     await waitFor(() => expect(screen.getAllByText("Live · COMI · daily")).toHaveLength(2));
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith("COMI", "Daily", 180);
+    expect(fetchMock).toHaveBeenCalledWith("COMI&market=EG", "Daily", 180);
   });
 
   it("degrades silently: on failure the diagram stays and no error is shown", async () => {

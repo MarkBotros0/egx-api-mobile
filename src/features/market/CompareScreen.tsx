@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { CompareChart } from "@/charts";
+import { useMarket } from "@/providers/market";
 import { useTickers } from "@/providers/tickers";
 import { fetchComparison } from "@/shared/api";
 import { MAX_COMPARE_SYMBOLS } from "@/shared/constants";
@@ -22,6 +23,7 @@ import { RefreshableScroll } from "./RefreshableScroll";
 /** Port of web `compare/page.tsx`, mobile branch (stat cards, not the table). */
 export function CompareScreen() {
   const { tickers } = useTickers();
+  const { market } = useMarket();
   const [initial] = useState(() => defaultCompareRange(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
   const [input, setInput] = useState("");
@@ -30,6 +32,21 @@ export function CompareScreen() {
   const [data, setData] = useState<CompareResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Another market's symbols and series mean nothing here: start over.
+  const [shownMarket, setShownMarket] = useState(market.code);
+  if (shownMarket !== market.code) {
+    setShownMarket(market.code);
+    setSelected([]);
+    setData(null);
+    setError(null);
+    setLoading(false);
+  }
+  // A comparison still in flight when the market changes must not land.
+  const marketRef = useRef(market.code);
+  useEffect(() => {
+    marketRef.current = market.code;
+  }, [market.code]);
 
   const suggestions = useMemo(() => compareSuggestions(tickers, input, selected), [tickers, input, selected]);
   const rangeError = compareRangeError(start, end);
@@ -45,10 +62,18 @@ export function CompareScreen() {
     if (!ready || loading) return;
     setLoading(true);
     setError(null);
+    const code = market.code;
+    const current = () => marketRef.current === code;
     fetchComparison(selected, "Daily", start, end)
-      .then(setData)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Request failed"))
-      .finally(() => setLoading(false));
+      .then((d) => {
+        if (current()) setData(d);
+      })
+      .catch((e: unknown) => {
+        if (current()) setError(e instanceof Error ? e.message : "Request failed");
+      })
+      .finally(() => {
+        if (current()) setLoading(false);
+      });
   };
 
   const applyPreset = (months: number) => {

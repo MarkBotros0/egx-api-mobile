@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { IndicatorPanel, indicatorRows, PriceChart, priceRows, VolumeChart, volumeRows } from "@/charts";
+import { useMarket } from "@/providers/market";
 import { useScoreWeights } from "@/providers/scoreWeights";
 import { useWatchlist } from "@/providers/watchlist";
 import { fetchAnalysis } from "@/shared/api";
 import { SR_LEVELS_DISPLAYED } from "@/shared/constants";
+import type { MarketCode } from "@/shared/markets";
 import { Stack } from "expo-router";
 
 import { AppText, Button, ChartSkeleton, IconButton, Screen } from "@/ui";
@@ -33,6 +35,20 @@ import { StatsPanel } from "./StatsPanel";
 export interface StockDetailScreenProps {
   symbol: string;
   initialInterval: ChartInterval;
+  /**
+   * A deep link's `?market=`: this page's data comes from that market without
+   * switching the app's. Omitted, the page follows the app's market.
+   */
+  market?: MarketCode;
+}
+
+/**
+ * `fetchAnalysis` takes no market option, but it puts the symbol into the URL
+ * unencoded and the shared client leaves an explicit `market=` alone — so the
+ * pinned market rides along with the symbol.
+ */
+function analysisSymbol(symbol: string, pinned: MarketCode | null): string {
+  return pinned ? `${symbol}&market=${pinned}` : symbol;
 }
 
 /**
@@ -41,15 +57,19 @@ export interface StockDetailScreenProps {
  * collapsible indicators, then the self-fetching risk / forecast / dividend
  * cards. Re-fetches when interval, history or score weights change.
  */
-export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreenProps) {
+export function StockDetailScreen({ symbol, initialInterval, market: linkedMarket }: StockDetailScreenProps) {
   const { version: weightsVersion } = useScoreWeights();
+  const { market } = useMarket();
+  // Pinned only when the link names the OTHER market; otherwise follow the app.
+  const pinned = linkedMarket && linkedMarket !== market.code ? linkedMarket : null;
+  const dataMarket = pinned ?? market.code;
   const [interval, setChartInterval] = useState<ChartInterval>(initialInterval);
   const [bars, setBars] = useState<BarCount>(DEFAULT_BARS);
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAYS);
   const [showIndicators, setShowIndicators] = useState(false);
 
-  const analysis = useKeyedFetch(`${symbol}|${interval}|${bars}|${weightsVersion}`, () =>
-    fetchAnalysis(symbol, interval, bars)
+  const analysis = useKeyedFetch(`${dataMarket}|${symbol}|${interval}|${bars}|${weightsVersion}`, () =>
+    fetchAnalysis(analysisSymbol(symbol, pinned), interval, bars)
   );
   const data = analysis.data;
   const priceData = useMemo(() => (data ? priceRows(data) : []), [data]);
@@ -113,7 +133,8 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
           </View>
         ) : data ? (
           <>
-            <PEFreshnessBanner />
+            {/* These fetch in the app's market only: off while the page is pinned to the other one. */}
+            {!pinned && <PEFreshnessBanner />}
             <StatsPanel
               stats={data.stats}
               latestRsi={latestNonNull(data.indicators.rsi)}
@@ -156,9 +177,9 @@ export function StockDetailScreen({ symbol, initialInterval }: StockDetailScreen
             </Pressable>
             {showIndicators && <IndicatorPanel data={indicatorData} />}
 
-            <RiskGradeCard symbol={symbol} />
+            {!pinned && <RiskGradeCard symbol={symbol} />}
             <ForecastCard forecast={data.forecast} symbol={symbol} />
-            <DividendHistoryCard symbol={symbol} />
+            {!pinned && <DividendHistoryCard symbol={symbol} />}
           </>
         ) : null}
       </RefreshableScroll>

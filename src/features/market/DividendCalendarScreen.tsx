@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { stockHref } from "@/lib/links";
+import { useMarket } from "@/providers/market";
 import { fetchDividendCalendar } from "@/shared/api";
 import { AppText, IconButton, Pill, PillRow, Screen, TableSkeleton } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
@@ -29,7 +30,8 @@ const CELL_WIDTH = "14.2857%"; // 7 columns
  * says so. Nothing is gain/loss coloured.
  */
 export function DividendCalendarScreen() {
-  const cal = useKeyedFetch("dividend-calendar", fetchDividendCalendar);
+  const { market } = useMarket();
+  const cal = useKeyedFetch(`dividend-calendar:${market.code}`, fetchDividendCalendar);
   const data = cal.data;
   const index = useMemo(() => indexCalendar(data?.stocks ?? []), [data]);
   const [picked, setPicked] = useState<MonthView | null>(null);

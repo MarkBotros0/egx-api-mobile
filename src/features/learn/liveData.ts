@@ -12,7 +12,10 @@ let inflight: Promise<AnalysisResponse> | null = null;
 
 export function loadLiveAnalysis(): Promise<AnalysisResponse> {
   if (!inflight) {
-    inflight = fetchAnalysis(LIVE_SYMBOL, "Daily", LIVE_BARS).catch((err: unknown) => {
+    // LIVE_SYMBOL is an EGX stock, so this is always EG, whichever market the
+    // app shows. fetchAnalysis takes no market option, but it puts the symbol
+    // into the URL unencoded and an explicit `market=` there wins.
+    inflight = fetchAnalysis(`${LIVE_SYMBOL}&market=EG`, "Daily", LIVE_BARS).catch((err: unknown) => {
       inflight = null;
       throw err;
     });

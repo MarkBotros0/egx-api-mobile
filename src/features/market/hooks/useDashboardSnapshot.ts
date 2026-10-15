@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useMarket } from "@/providers/market";
 import { fetchDashboard } from "@/shared/api";
 import { cardsFromSnapshot, mergeSnapshot, type CardMap } from "../logic/cards";
 
@@ -27,6 +28,17 @@ export function useDashboardSnapshot(weightsVersion: number): DashboardSnapshot 
   const [snapshotLoaded, setSnapshotLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const { market } = useMarket();
+
+  // The cards are a per-market cache: another market starts from empty, so no
+  // card from the old one survives a merge into the new snapshot.
+  const [cardsMarket, setCardsMarket] = useState(market.code);
+  if (cardsMarket !== market.code) {
+    setCardsMarket(market.code);
+    setCards({});
+    setNoFeed(new Set<string>());
+    setSnapshotLoaded(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +61,7 @@ export function useDashboardSnapshot(weightsVersion: number): DashboardSnapshot 
     return () => {
       cancelled = true;
     };
-  }, [weightsVersion, refreshKey]);
+  }, [weightsVersion, refreshKey, market.code]);
 
   const refresh = useCallback(() => {
     setRefreshing(true);

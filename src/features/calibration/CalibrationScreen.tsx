@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { AppText, CardSkeleton, ErrorState, Screen } from "@/ui";
+import { useMarket } from "@/providers/market";
 import { fetchCalibration, type CalibrationResponse } from "@/shared/api";
 import { learnHref } from "@/lib/links";
 
@@ -17,6 +18,7 @@ export function CalibrationScreen() {
   const [data, setData] = useState<CalibrationResponse | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { market } = useMarket();
 
   useEffect(() => {
     let alive = true;
@@ -30,7 +32,7 @@ export function CalibrationScreen() {
     return () => {
       alive = false;
     };
-  }, [attempt]);
+  }, [attempt, market.code]);
 
   if (error) {
     return (

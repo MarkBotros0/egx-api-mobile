@@ -8,6 +8,7 @@ import React, {
 import { fetchTickers } from "@/shared/api";
 import type { Ticker } from "@/shared/types";
 import { useAuth } from "@/auth/AuthProvider";
+import { useMarket } from "./market";
 
 interface TickersCtx {
   tickers: Ticker[];
@@ -20,6 +21,7 @@ export function TickersProvider({ children }: { children: React.ReactNode }) {
   const [tickers, setTickers] = useState<Ticker[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useAuth();
+  const { market } = useMarket();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -41,7 +43,7 @@ export function TickersProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, market.code]);
 
   const value = useMemo<TickersCtx>(
     () => ({ tickers, loading }),

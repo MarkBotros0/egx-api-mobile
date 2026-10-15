@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useMarket } from "@/providers/market";
 import { fetchNews } from "@/shared/api";
 import { AppText, CardSkeleton, Screen } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
@@ -11,7 +12,8 @@ import { useTabBarClearance } from "@/features/shell/useTabBarClearance";
 /** Port of web `news/page.tsx`; pull-to-refresh re-requests the feed. */
 export function NewsScreen() {
   const clearance = useTabBarClearance();
-  const news = useKeyedFetch("news", fetchNews);
+  const { market } = useMarket();
+  const news = useKeyedFetch(`news:${market.code}`, fetchNews);
   const now = new Date(useNow(60_000));
   const data = news.data;
 

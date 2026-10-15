@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { act, waitFor } from "@testing-library/react-native";
+import { useMarket, type MarketCtx } from "@/providers/market";
+import { EG_FALLBACK } from "@/shared/markets";
 import { renderWithProviders } from "@/test-utils/render";
 import { mockPortfolioApi, sent, type FetchMock } from "@/features/portfolio/testing/api";
 import { TWO_LOT_ROWS, analysisResponse, portfolio } from "@/features/portfolio/testing/fixtures";
@@ -207,5 +209,35 @@ describe("usePortfolioData", () => {
     });
     expect(api.error).toBeNull();
     expect(api.portfolio).not.toBeNull();
+  });
+});
+
+describe("usePortfolioData across markets", () => {
+  let market: MarketCtx;
+  function MarketProbe() {
+    const m = useMarket();
+    useEffect(() => {
+      market = m;
+    });
+    return <Probe version={0} />;
+  }
+
+  it("reloads holdings, sales and analysis for the new market", async () => {
+    const US = { ...EG_FALLBACK, code: "US" as const, currency: "USD" };
+    const fetchMock = mockPortfolioApi({
+      extra: [{ method: "GET", path: "/markets", body: { markets: [EG_FALLBACK, US], default: "EG" } }],
+    });
+    await renderWithProviders(<MarketProbe />);
+    await waitFor(() => expect(api.analysis).not.toBeNull());
+    await waitFor(() => expect(market.loading).toBe(false));
+    await act(async () => market.setMarket("US"));
+    const inUs = (path: string) =>
+      fetchMock.mock.calls
+        .map(([input]) => new URL(String(input), "http://localhost"))
+        .filter((u) => u.pathname.endsWith(path) && u.searchParams.get("market") === "US");
+    await waitFor(() => expect(inUs("/portfolio_analysis")).toHaveLength(1));
+    expect(inUs("/portfolio")).toHaveLength(1);
+    expect(inUs("/sales")).toHaveLength(1);
+    await waitFor(() => expect(api.analysis).not.toBeNull());
   });
 });
