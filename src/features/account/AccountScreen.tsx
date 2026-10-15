@@ -3,6 +3,7 @@ import { View } from "react-native";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ManageUsersButton } from "@/features/admin/ManageUsersButton";
+import { MarketRow } from "@/features/shell/MarketSheet";
 import { errorMessage } from "@/lib/errors";
 import { displayName } from "@/shared/auth";
 import { AppText, Button, Screen, TextField } from "@/ui";
@@ -35,6 +36,7 @@ export function AccountScreen() {
           <AppText className="font-sans-semibold text-lg text-white">{displayName(user)}</AppText>
           <AppText className="mt-1 text-sm text-white/50">{user.email}</AppText>
           <View className="mt-4 gap-3">
+            <MarketRow />
             <ManageUsersButton />
             <Button variant="secondary" label="Log out" onPress={() => void logout()} />
           </View>

@@ -72,7 +72,9 @@ Long-running commands (Metro, long test runs, EAS builds) go in tmux with output
     which collapsed cards to zero height on a cold start), 3 from 700pt, 1 under 340pt.
   - The pill tab bar FLOATS over content (absolute, reports its height); tab screens
     pad their scroll content with `useTabBarClearance()`.
-  - The tab header carries only the alerts bell and the account button; Compare and
+  - The tab header carries only the market chip (`MarketChip`, flag + currency; hidden
+    with one enabled market or while the preference loads), the alerts bell and the
+    account button; the Account screen has the matching `MarketRow`. Compare and
     Dividends are labelled buttons under the dashboard title (no bare icons).
   - Tab headers show the `BrandTitle` wordmark; a stack screen's top bar carries its
     title (and actions, e.g. the stock page's watch star) — never repeat it in the body.

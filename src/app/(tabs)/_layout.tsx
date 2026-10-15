@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { AccountHeaderButton } from "@/features/account/AccountHeaderButton";
 import { AlertsHeaderButton } from "@/features/alerts/AlertsHeaderButton";
 import { BrandTitle } from "@/features/shell/BrandTitle";
+import { MarketChip } from "@/features/shell/MarketChip";
 import { PillTabBar } from "@/features/shell/PillTabBar";
 import { COLORS } from "@/shared/theme";
 import type { IoniconName } from "@/ui";
@@ -31,6 +32,7 @@ export default function TabsLayout() {
         headerTitleAlign: "left",
         headerRight: () => (
           <View className="flex-row items-center gap-1 pr-2">
+            <MarketChip />
             <AlertsHeaderButton />
             <AccountHeaderButton />
           </View>

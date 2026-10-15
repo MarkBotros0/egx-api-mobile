@@ -3,7 +3,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AccountScreen } from "@/features/account/AccountScreen";
+import { EG_FALLBACK, type Market } from "@/shared/markets";
 import { fetchCalls, mockFetch } from "@/test-utils/fetch";
+import { TestSafeArea } from "@/test-utils/safeArea";
+
+const US: Market = { ...EG_FALLBACK, code: "US", currency: "USD", name: "United States", flag: "🇺🇸" };
+// jest.mock factories may only reference `mock`-prefixed variables.
+const mockMarket = { markets: [] as Market[] };
+jest.mock("@/providers/market", () => ({
+  useMarket: () => ({ market: mockMarket.markets[0], markets: mockMarket.markets, setMarket: jest.fn(), loading: false }),
+}));
 
 const USER = { id: "1", email: "mark@example.com", name: "Mark", role: "user" };
 
@@ -12,9 +21,11 @@ const renderScreen = async () => {
   await SecureStore.setItemAsync("egx.auth.user", JSON.stringify(USER));
   mockFetch("GET", "/auth/me", USER);
   return render(
-    <AuthProvider>
-      <AccountScreen />
-    </AuthProvider>
+    <TestSafeArea>
+      <AuthProvider>
+        <AccountScreen />
+      </AuthProvider>
+    </TestSafeArea>
   );
 };
 
@@ -22,6 +33,10 @@ const confirm = (text: string) => fireEvent.changeText(screen.getByLabelText("Ty
 const deleteCalls = () => fetchCalls().filter((c) => c.method === "DELETE");
 
 describe("AccountScreen", () => {
+  beforeEach(() => {
+    mockMarket.markets = [EG_FALLBACK];
+  });
+
   it("shows the display name and email", async () => {
     await renderScreen();
     expect(await screen.findByText("Mark")).toBeTruthy();
@@ -67,5 +82,18 @@ describe("AccountScreen", () => {
     await screen.findByText("Mark");
     await fireEvent.press(screen.getByRole("button", { name: "Log out" }));
     await waitFor(() => expect(screen.queryByText("mark@example.com")).toBeNull());
+  });
+
+  it("hides the market row while only one market is enabled", async () => {
+    await renderScreen();
+    await screen.findByText("Mark");
+    expect(screen.queryByLabelText(/^Market:/)).toBeNull();
+  });
+
+  it("shows the market row when several markets are enabled", async () => {
+    mockMarket.markets = [EG_FALLBACK, US];
+    await renderScreen();
+    await screen.findByText("Mark");
+    expect(screen.getByLabelText("Market: Egypt. Change market")).toBeTruthy();
   });
 });
