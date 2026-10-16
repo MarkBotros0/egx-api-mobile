@@ -193,8 +193,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
               adjective={dataAdjective}
               market={dataMarket}
             />
-            {/* EG only until US dividend history ships (sub-project 4). */}
-            {dataMarket === "EG" && <DividendHistoryCard symbol={symbol} market={dataMarket} />}
+            <DividendHistoryCard symbol={symbol} market={dataMarket} />
           </>
         ) : null}
       </RefreshableScroll>

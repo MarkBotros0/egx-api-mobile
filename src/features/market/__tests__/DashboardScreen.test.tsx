@@ -291,11 +291,11 @@ describe("per market", () => {
     expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(true);
   });
 
-  it("offers no dividend calendar on US, and its filter explanation names no Egyptian rate", async () => {
+  it("offers the dividend calendar on US, and its filter explanation names no Egyptian rate", async () => {
     mockMarketApi(marketRoutes("US"));
     await renderWithProviders(<DashboardScreen />);
     await screen.findByTestId("stockcard-AAPL");
-    expect(screen.queryByLabelText("Dividend calendar")).toBeNull();
+    expect(screen.getByLabelText("Dividend calendar")).toBeTruthy();
     expect(screen.getByLabelText("Compare stocks")).toBeTruthy();
     await fireEvent.press(screen.getByLabelText("Filter: All sectors"));
     expect(

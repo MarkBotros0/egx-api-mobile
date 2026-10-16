@@ -145,9 +145,9 @@ it("a deep link into the other market fetches that market without switching the 
     expect(requestsTo(fetchMock, path)[0].searchParams.getAll("market")).toEqual(["US"]);
   }
   expect(requestsTo(fetchMock, "/risk")[0].searchParams.get("symbol")).toBe("COMI");
-  // Dividend history is EG-only until sub-project 4: a US stock page never asks.
-  expect(screen.queryByText("Dividend History")).toBeNull();
-  expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(0);
+  // Dividend history reads the linked market's store too.
+  await waitFor(() => expect(requestsTo(fetchMock, "/dividend_history")).toHaveLength(1));
+  expect(requestsTo(fetchMock, "/dividend_history")[0].searchParams.getAll("market")).toEqual(["US"]);
 });
 
 it("shows the dividend history card on an EG stock", async () => {
@@ -156,7 +156,7 @@ it("shows the dividend history card on an EG stock", async () => {
   expect(requestsTo(fetchMock, "/dividend_history")[0].searchParams.getAll("market")).toEqual(["EG"]);
 });
 
-it("has no dividend history card when the app is on US", async () => {
+it("shows the US dividend history with no Egyptian facts when the app is on US", async () => {
   const fetchMock = mockMarketApi(marketPrefRoutes("US"));
   await renderWithProviders(<StockDetailScreen symbol="AAPL" initialInterval="Daily" />);
   await waitFor(() =>
@@ -167,8 +167,13 @@ it("has no dividend history card when the app is on US", async () => {
   expect(requestsTo(fetchMock, "/risk").some((u) => u.searchParams.get("market") === "US")).toBe(false);
   expect(screen.queryByText("Risk grade")).toBeNull();
   expect(screen.queryByText(/thinly traded/)).toBeNull();
-  expect(screen.queryByText("Dividend History")).toBeNull();
-  expect(requestsTo(fetchMock, "/dividend_history").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  expect(await screen.findByText("Dividend History")).toBeTruthy();
+  await waitFor(() =>
+    expect(requestsTo(fetchMock, "/dividend_history").some((u) => u.searchParams.get("market") === "US")).toBe(true)
+  );
+  await fireEvent.press(screen.getByText("Dividend History"));
+  expect(screen.getByText(/Amounts are gross, as reported, before any tax/)).toBeTruthy();
+  expect(screen.queryByText(/withholding|EGX publishes/)).toBeNull();
   // Key Statistics explains beta against the US benchmark.
   await fireEvent.press(screen.getByText("Beta"));
   expect(screen.getByText("Beta vs S&P 500")).toBeTruthy();

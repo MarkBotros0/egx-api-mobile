@@ -91,13 +91,20 @@ it("keeps the EG banner word for word", async () => {
   ).toBeTruthy();
 });
 
-it("a deep link on US shows the empty state and never asks for a US calendar", async () => {
-  const fetchMock = mockMarketApi({ ...marketPrefRoutes("US"), "/dividend_calendar": CALENDAR });
+it("serves the US calendar, with US copy and no Egyptian facts", async () => {
+  const usCalendar = {
+    stocks: [{ symbol: "KO", name: "Coca-Cola Co", dividend_yield: 2.9, ex_date: "2026-09-12", amount: 0.51 }],
+    count: 1,
+    as_of: "2026-10-16",
+    status: "ok",
+    market: "US",
+    currency: "USD",
+  };
+  const fetchMock = mockMarketApi({ ...marketPrefRoutes("US"), "/dividend_calendar": usCalendar });
   await renderWithProviders(<DividendCalendarScreen />);
-  await waitFor(() => expect(screen.queryByTestId("calendar-month")).toBeNull());
-  expect(await screen.findByText("No dividends on record yet.")).toBeTruthy();
-  // Settled on US: the EG calendar (if it mounted before the preference landed) is gone.
-  await waitFor(() => expect(screen.queryByText(/with a dividend on record/)).toBeNull());
-  expect(requestsTo(fetchMock, "/dividend_calendar").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  expect(await screen.findByText("1 US stock with a dividend on record")).toBeTruthy();
+  expect(requestsTo(fetchMock, "/dividend_calendar").some((u) => u.searchParams.get("market") === "US")).toBe(true);
+  expect(screen.getByText(/Only dates already past are shown/)).toBeTruthy();
+  expect(screen.getByText("KO")).toBeTruthy();
   expect(renderedText()).not.toMatch(EG_WORDING);
 });

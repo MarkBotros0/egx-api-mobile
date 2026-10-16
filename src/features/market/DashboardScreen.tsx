@@ -237,10 +237,7 @@ export function DashboardScreen() {
             should not have to guess what ⇄ and a calendar glyph open. */}
         <View className="flex-row gap-2">
           <ToolButton icon="swap-horizontal" label="Compare" onPress={() => router.push(routes.compare)} />
-          {/* EG only until US dividends ship (sub-project 4). */}
-          {market.code === "EG" && (
-            <ToolButton icon="calendar-outline" label="Dividends" onPress={() => router.push(routes.dividends)} />
-          )}
+          <ToolButton icon="calendar-outline" label="Dividends" onPress={() => router.push(routes.dividends)} />
         </View>
         <TextField
           label="Search"

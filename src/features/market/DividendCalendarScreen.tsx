@@ -26,25 +26,15 @@ const CELL_WIDTH = "14.2857%"; // 7 columns
 /**
  * Port of web `dividends/page.tsx`: a month grid paged by ‹ › and a year pill
  * row (the web's two <select>s), the selected day's payers beneath. These are
- * LAST-PAID ex-dates — the EGX publishes no forward calendar, and the banner
- * says so. Nothing is gain/loss coloured.
+ * LAST-PAID ex-dates, and the banner says so. Per market: the backend serves
+ * each market's dividend_events. EG keeps its Egyptian copy word for word;
+ * another market's states no EGX fact. Nothing is gain/loss coloured.
  */
-export function DividendCalendarScreen() {
-  const { market } = useMarket();
-  // EG only until US dividends ship (sub-project 4); a deep link elsewhere
-  // gets the empty state and never asks the server.
-  return market.code === "EG" ? <EgDividendCalendar /> : <NoDividendCalendar />;
-}
-
-function NoDividendCalendar() {
-  return (
-    <Screen scroll={false}>
-      <View className="gap-4 px-4 py-4 pb-10">
-        <EmptyCalendar />
-      </View>
-    </Screen>
-  );
-}
+const BANNER = {
+  EG: "These are the most recent coupons on record — their ex-dates (own the share before it to get the coupon). The EGX publishes no forward calendar, so future dates aren't shown; most companies pay once, around April–May.",
+  other:
+    "These are the most recent coupons on record — their ex-dates (own the share before it to get the coupon). Only dates already past are shown; a future date would be a guess.",
+};
 
 function EmptyCalendar() {
   return (
@@ -54,7 +44,7 @@ function EmptyCalendar() {
   );
 }
 
-function EgDividendCalendar() {
+export function DividendCalendarScreen() {
   const { market } = useMarket();
   const cal = useKeyedFetch(`dividend-calendar:${market.code}`, fetchDividendCalendar);
   const data = cal.data;
@@ -191,12 +181,12 @@ function EgDividendCalendar() {
         )}
         {data && (
           <AppText className="text-xs text-white/40">
-            {`${data.count} EGX ${data.count === 1 ? "stock" : "stocks"} with a dividend on record`}
+            {`${data.count} ${market.short_name} ${data.count === 1 ? "stock" : "stocks"} with a dividend on record`}
           </AppText>
         )}
         <View className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
           <AppText className="text-[13px] leading-relaxed text-white/60">
-            These are the most recent coupons on record — their ex-dates (own the share before it to get the coupon). The EGX publishes no forward calendar, so future dates aren&apos;t shown; most companies pay once, around April–May.
+            {BANNER[market.code === "EG" ? "EG" : "other"]}
           </AppText>
         </View>
         {body}
