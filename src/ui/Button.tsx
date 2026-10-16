@@ -27,6 +27,9 @@ const ICON: Record<Variant, string> = {
   ghost: COLORS.accent,
 };
 
+// text-sm in font-sans-semibold.
+const LABEL_FONT = { fontFamily: "Outfit_600SemiBold", fontSize: 14, lineHeight: 20 } as const;
+
 interface Props {
   label: string;
   onPress: () => void;
@@ -53,7 +56,10 @@ export function Button({ label, onPress, variant = "primary", disabled, loading,
       ) : (
         <View className="flex-row items-center gap-2">
           {icon ? <Ionicons name={icon} size={18} color={ICON[variant]} /> : null}
-          <AppText className={`font-sans-semibold text-sm ${LABEL[variant]}`}>{label}</AppText>
+          {/* Font and size go in style, not className: inside this Pressable the
+              className text styles land after Android has measured the label
+              in the default font, so a long label wrapped and lost its last word. */}
+          <AppText style={LABEL_FONT} className={LABEL[variant]}>{label}</AppText>
         </View>
       )}
     </Pressable>

@@ -108,6 +108,7 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
       .map((r) => ({ symbol: r.symbol, name: r.name, sector: r.sector }));
     return [...local, ...extra];
   }, [local, remoteFound]);
+  const listOpen = showList && !picked && suggestions.length > 0;
   const result = buildHoldingPayload({ ticker: effective, quantityText, priceText, buyDate, initial: initialValues });
   const errors = result.ok ? null : result.errors;
   const canSubmit = result.ok && validation !== "validating" && validation !== "invalid" && !submitting;
@@ -137,9 +138,11 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
           placeholder="Search by symbol or name..."
           autoCapitalize="characters"
           autoCorrect={false}
-          error={validation === "invalid" ? `Symbol not found on ${market.short_name} — check and try again` : null}
+          // A company name typed into the box is not a symbol: while the
+          // list offers matches, it is a search, not a failed lookup.
+          error={validation === "invalid" && !listOpen ? `No ${market.short_name} symbol matches — check and try again` : null}
         />
-        {showList && !picked && suggestions.length > 0 && (
+        {listOpen && (
           <View className="mt-1 overflow-hidden rounded-lg border border-white/10 bg-charcoal">
             {suggestions.map((t) => (
               <Pressable

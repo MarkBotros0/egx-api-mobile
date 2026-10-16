@@ -72,9 +72,23 @@ describe("AddHoldingForm", () => {
     await act(async () => {
       jest.advanceTimersByTime(600);
     });
-    expect(await screen.findByText("Symbol not found on EGX — check and try again")).toBeTruthy();
+    expect(await screen.findByText("No EGX symbol matches — check and try again")).toBeTruthy();
     await fireEvent.press(screen.getByText("Add to Portfolio"));
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("treats a company name with matches as a search, not a failed symbol", async () => {
+    jest.useFakeTimers();
+    mockPortfolioApi({
+      extra: [{ method: "GET", path: /\/tickers\?validate=COMMERCIAL/, body: { symbol: "COMMERCIAL", valid: false, name: null } }],
+    });
+    await renderWithProviders(<AddHoldingForm tickers={TICKERS} onSubmit={jest.fn()} onCancel={jest.fn()} />);
+    await fireEvent.changeText(screen.getByPlaceholderText("Search by symbol or name..."), "commercial");
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
+    expect(screen.getByText("COMI")).toBeTruthy();
+    expect(screen.queryByText("No EGX symbol matches — check and try again")).toBeNull();
   });
 
   it("explains invalid quantity and price instead of submitting", async () => {
@@ -186,7 +200,7 @@ describe("AddHoldingForm", () => {
       await act(async () => {
         jest.advanceTimersByTime(600);
       });
-      expect(await screen.findByText("Symbol not found on US — check and try again")).toBeTruthy();
+      expect(await screen.findByText("No US symbol matches — check and try again")).toBeTruthy();
       expect(renderedText()).not.toMatch(EG_WORDING);
     });
 
