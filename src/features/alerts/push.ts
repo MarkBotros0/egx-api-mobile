@@ -13,7 +13,8 @@ import { Platform } from "react-native";
 
 export const ALERT_CHANNEL_ID = "score-alerts";
 
-export type AlertTap = { symbol: string };
+/** `market`: the stock's market, sent by the backend so a US alert opens the US stock. */
+export type AlertTap = { symbol: string; market?: string };
 
 export { isExpoGo } from "@/lib/runtime";
 
@@ -66,9 +67,9 @@ export function devicePlatform(): "ios" | "android" {
 
 export function parseTap(data: unknown): AlertTap | null {
   if (!data || typeof data !== "object") return null;
-  const d = data as { type?: unknown; symbol?: unknown };
+  const d = data as { type?: unknown; symbol?: unknown; market?: unknown };
   if (d.type !== "score_alert" || typeof d.symbol !== "string" || !d.symbol) return null;
-  return { symbol: d.symbol };
+  return typeof d.market === "string" && d.market ? { symbol: d.symbol, market: d.market } : { symbol: d.symbol };
 }
 
 /**

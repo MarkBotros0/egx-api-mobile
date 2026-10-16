@@ -10,8 +10,8 @@ import { routes, stockHref } from "@/lib/links";
 import { type AlertTap, configureNotifications, consumeColdStartTap, isExpoGo, onAlertTap } from "./push";
 import { syncRegistration } from "./registration";
 
-function go({ symbol }: AlertTap): void {
-  router.push(symbol === "*" ? routes.dashboard : stockHref(symbol));
+function go({ symbol, market }: AlertTap): void {
+  router.push(symbol === "*" ? routes.dashboard : stockHref(symbol, market));
 }
 
 export function NotificationRouter() {

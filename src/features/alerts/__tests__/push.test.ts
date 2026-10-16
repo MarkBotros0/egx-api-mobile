@@ -16,6 +16,10 @@ describe("push boundary", () => {
   it("parses only score-alert taps with a symbol", () => {
     expect(parseTap({ type: "score_alert", symbol: "COMI" })).toEqual({ symbol: "COMI" });
     expect(parseTap({ type: "score_alert", symbol: "*" })).toEqual({ symbol: "*" });
+    expect(parseTap({ type: "score_alert", symbol: "AAPL", session: "2026-10-16", market: "US" })).toEqual({
+      symbol: "AAPL",
+      market: "US",
+    });
     expect(parseTap({ type: "other", symbol: "COMI" })).toBeNull();
     expect(parseTap({ type: "score_alert" })).toBeNull();
     expect(parseTap(null)).toBeNull();

@@ -14,8 +14,10 @@ export const routes = {
   account: "/account",
 } as const;
 
-export function stockHref(symbol: string): Href {
-  return { pathname: "/stock/[symbol]", params: { symbol: symbol.toUpperCase() } };
+/** `market`: open the stock on that market (a `?market=` deep link; never switches the app's). */
+export function stockHref(symbol: string, market?: string): Href {
+  const params = market ? { symbol: symbol.toUpperCase(), market } : { symbol: symbol.toUpperCase() };
+  return { pathname: "/stock/[symbol]", params };
 }
 
 /**

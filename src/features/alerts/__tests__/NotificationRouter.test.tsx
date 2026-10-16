@@ -16,7 +16,7 @@ jest.mock("../push", () => ({
 jest.mock("../registration", () => ({ syncRegistration: jest.fn().mockResolvedValue(undefined) }));
 const P = push as jest.Mocked<typeof push>;
 
-let tap: ((t: { symbol: string }) => void) | undefined;
+let tap: ((t: { symbol: string; market?: string }) => void) | undefined;
 const unsubscribe = jest.fn();
 
 beforeEach(() => {
@@ -33,6 +33,12 @@ it("a tapped alert opens that stock", async () => {
   await render(<NotificationRouter />);
   tap?.({ symbol: "COMI" });
   expect(router.push).toHaveBeenCalledWith(stockHref("COMI"));
+});
+
+it("a US alert opens the stock on the US market", async () => {
+  await render(<NotificationRouter />);
+  tap?.({ symbol: "AAPL", market: "US" });
+  expect(router.push).toHaveBeenCalledWith({ pathname: "/stock/[symbol]", params: { symbol: "AAPL", market: "US" } });
 });
 
 it("the daily summary opens the dashboard", async () => {
