@@ -150,7 +150,7 @@ Push alerts when a stock's composite score moves by the user's threshold. Files 
 - `api.ts` — mobile-only API calls; uses `getApiConfig` (not `src/shared/api.ts`, which is generated from the web).
 - `registration.ts` — token registration. The Expo push token is kept in SecureStore under key `egx.push.token`, and is removed only after the server DELETE succeeds (a failed one is re-bound by the next `syncRegistration`). Logout waits at most 3 s for that DELETE (`boundedUnregister` in `AuthProvider`).
 - `AlertsScreen` (route `src/app/alerts.tsx` → `/alerts`), opened from the bell header button (`AlertsHeaderButton`).
-- `NotificationRouter` — mounted in `RootNavigator` while signed in; handles taps and foreground banners. `push.ts` remembers the last handled notification identifier so a remount (next login) never replays an old tap. `AlertsScreen` shows "Turn on for this phone" when the account has alerts on but this phone has no token (`deviceRegistered()`).
+- `NotificationRouter` — mounted in `RootNavigator` while signed in; handles taps and foreground banners. A tap opens `stockHref(symbol, market)` — the push `data.market` (alerts run per market since `feat/us-gaps`), so a US alert opens the US stock without switching the app's market. `push.ts` remembers the last handled notification identifier so a remount (next login) never replays an old tap. `AlertsScreen` shows "Turn on for this phone" when the account has alerts on but this phone has no token (`deviceRegistered()`).
 
 Copy rule: never use buy/sell/opportunity/risk/recommend. Alerts say what changed, and the screen states "A change in score is information, not advice."
 
