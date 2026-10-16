@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref, routes } from "@/lib/links";
+import type { MarketCode } from "@/shared/markets";
 import type { StockForecast } from "@/shared/types";
 import { AppText, LearnTerm } from "@/ui";
 import { OutcomeCone } from "./OutcomeCone";
@@ -26,12 +27,15 @@ export function ForecastCard({
   symbol,
   currency,
   adjective,
+  market,
 }: {
   forecast: StockForecast | null | undefined;
   symbol: string;
   currency: string;
   /** The stock's market, as copy ("Egyptian", "US"): MarketConfig.adjective. */
   adjective: string;
+  /** The stock's market, so "how often these ranges held" opens ITS record. */
+  market?: MarketCode;
 }) {
   if (!forecast || (!forecast.expected_move && !forecast.outcome_band)) return null;
   const { expected_move, outcome_band } = forecast;
@@ -66,7 +70,7 @@ export function ForecastCard({
       <AppText className="mt-3 text-[10px] leading-relaxed text-white/30">
         {`Fitted to how ${adjective} stocks have actually moved${outcome_band ? ` — ${outcome_band.calibration.n_observations.toLocaleString("en-US")} past checks, last fitted ${outcome_band.calibration.fitted_at}` : ""}. A range can still be wrong: news, a devaluation or a suspension can put the price outside it.`}
       </AppText>
-      <Pressable accessibilityRole="link" onPress={() => router.push(routes.calibration)} className="min-h-[44px] justify-center">
+      <Pressable accessibilityRole="link" onPress={() => router.push(market ? `${routes.calibration}?market=${market}` : routes.calibration)} className="min-h-[44px] justify-center">
         <AppText className="text-[11px] text-accent/60">See how often these ranges held →</AppText>
       </Pressable>
     </View>

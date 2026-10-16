@@ -687,8 +687,8 @@ export interface CalibrationResponse {
   what_failed: { claim: string; measured: string; outcome: string }[];
 }
 
-export async function fetchCalibration(): Promise<CalibrationResponse> {
-  return fetchJSON<CalibrationResponse>(`${base()}/calibration`);
+export async function fetchCalibration(opts?: MarketOpts): Promise<CalibrationResponse> {
+  return fetchJSON<CalibrationResponse>(`${base()}/calibration`, { market: opts?.market });
 }
 
 // ---- Per-stock risk grade ----

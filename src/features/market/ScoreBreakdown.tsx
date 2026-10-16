@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { scoreColor } from "@/charts";
+import { useMarket } from "@/providers/market";
+import type { Market } from "@/shared/markets";
 import type { CompositeScore } from "@/shared/types";
 import { AppText, IconButton } from "@/ui";
 import { pct } from "./logic/format";
@@ -23,10 +25,19 @@ const UNSCORED = "#4a4a5a";
 export function ScoreBreakdown({
   composite,
   onWeightsChanged,
+  market: scoreMarket,
 }: {
   composite: CompositeScore;
   onWeightsChanged?: () => void;
+  /** The market the score belongs to; omitted, the app's. */
+  market?: Market;
 }) {
+  const { market: appMarket } = useMarket();
+  const m = scoreMarket ?? appMarket;
+  // Each market's backtest (2007–2026 for both EG and US) found the same thing:
+  // higher scores did not precede better returns. A market without its own
+  // backtest is told the EGX evidence, never a claim nobody measured.
+  const tested = m.code === "EG" || !m.score_calibrated ? "the EGX" : `${m.short_name} stocks`;
   const [expanded, setExpanded] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -104,7 +115,7 @@ export function ScoreBreakdown({
       )}
 
       <AppText className="mt-4 text-[10px] leading-relaxed text-white/30">
-        This score describes a stock&apos;s current technical condition. It is not a forecast: tested across the EGX from 2007–2026, higher scores did not precede better returns than lower ones. Read the categories above for what is true today, and consider fundamentals, news and macro before trading.
+        This score describes a stock&apos;s current technical condition. It is not a forecast: tested across {tested} from 2007–2026, higher scores did not precede better returns than lower ones. Read the categories above for what is true today, and consider fundamentals, news and macro before trading.
       </AppText>
 
       <ScoreWeightsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onSaved={onWeightsChanged} />

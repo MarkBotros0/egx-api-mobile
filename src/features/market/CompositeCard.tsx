@@ -54,7 +54,7 @@ export function CompositeCard({
         )}
       </View>
 
-      <ScoreBreakdown composite={composite} />
+      <ScoreBreakdown composite={composite} market={market} />
 
       {callouts.length > 0 && (
         <View className="flex-row flex-wrap gap-2 border-t border-white/5 pt-4">

@@ -6,7 +6,7 @@ import { useScoreWeights } from "@/providers/scoreWeights";
 import { useWatchlist } from "@/providers/watchlist";
 import { fetchAnalysis } from "@/shared/api";
 import { SR_LEVELS_DISPLAYED } from "@/shared/constants";
-import type { MarketCode } from "@/shared/markets";
+import { withMarketDefaults, type MarketCode } from "@/shared/markets";
 import { Stack } from "expo-router";
 
 import { AppText, Button, ChartSkeleton, IconButton, Screen } from "@/ui";
@@ -56,6 +56,11 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
   const dataMarket = pinned ?? market.code;
   // The facts of the market this stock trades on (benchmark, currency).
   const dataMarketInfo = markets.find((m) => m.code === dataMarket) ?? market;
+  // Copy names the STOCK's market even before /api/markets has listed it: a
+  // deep-linked US stock on a cold start must not read "Egyptian".
+  const dataAdjective =
+    markets.find((m) => m.code === dataMarket)?.adjective ??
+    (dataMarket === market.code ? market.adjective : withMarketDefaults({ code: dataMarket }).adjective);
   const [interval, setChartInterval] = useState<ChartInterval>(initialInterval);
   const [bars, setBars] = useState<BarCount>(DEFAULT_BARS);
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAYS);
@@ -181,7 +186,13 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
             {showIndicators && <IndicatorPanel data={indicatorData} />}
 
             <RiskGradeCard symbol={symbol} market={dataMarket} />
-            <ForecastCard forecast={data.forecast} symbol={symbol} currency={currency} adjective={dataMarketInfo.adjective} />
+            <ForecastCard
+              forecast={data.forecast}
+              symbol={symbol}
+              currency={currency}
+              adjective={dataAdjective}
+              market={dataMarket}
+            />
             {/* EG only until US dividend history ships (sub-project 4). */}
             {dataMarket === "EG" && <DividendHistoryCard symbol={symbol} market={dataMarket} />}
           </>

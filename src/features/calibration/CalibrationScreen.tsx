@@ -12,13 +12,22 @@ import { router } from "expo-router";
 import { AppText, CardSkeleton, ErrorState, Screen } from "@/ui";
 import { useMarket } from "@/providers/market";
 import { fetchCalibration, type CalibrationResponse } from "@/shared/api";
+import { withMarketDefaults, type MarketCode } from "@/shared/markets";
 import { learnHref } from "@/lib/links";
 
-export function CalibrationScreen() {
+/**
+ * `market`: opened from a stock's forecast card, the STOCK's market (a
+ * deep-linked US stock while the app is on EG); omitted, the app's.
+ */
+export function CalibrationScreen({ market: linked }: { market?: MarketCode } = {}) {
   const [data, setData] = useState<CalibrationResponse | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const { market } = useMarket();
+  const { market: appMarket, markets } = useMarket();
+  const market =
+    !linked || linked === appMarket.code
+      ? appMarket
+      : (markets.find((m) => m.code === linked) ?? withMarketDefaults({ code: linked }));
   // Another market's calibration (or failure) is not this one's.
   const [shownMarket, setShownMarket] = useState(market.code);
   if (shownMarket !== market.code) {
@@ -29,7 +38,7 @@ export function CalibrationScreen() {
 
   useEffect(() => {
     let alive = true;
-    fetchCalibration()
+    fetchCalibration({ market: market.code })
       .then((d) => {
         if (alive) setData(d);
       })

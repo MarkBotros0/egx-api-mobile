@@ -182,6 +182,15 @@ describe("ForecastCard", () => {
     expect(router.push).toHaveBeenCalledWith(routes.calibration);
   });
 
+  it("opens the calibration record of the stock's own market", async () => {
+    mockMarketApi();
+    await renderWithProviders(
+      <ForecastCard forecast={FORECAST} symbol="AAPL" currency="USD" adjective="US" market="US" />
+    );
+    await fireEvent.press(screen.getByText("See how often these ranges held →"));
+    expect(router.push).toHaveBeenCalledWith(`${routes.calibration}?market=US`);
+  });
+
   it("renders nothing without a forecast", async () => {
     mockMarketApi();
     await renderWithProviders(<ForecastCard forecast={null} symbol="COMI" currency="EGP" adjective="Egyptian" />);

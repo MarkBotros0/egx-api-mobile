@@ -23,6 +23,9 @@ export interface Market {
   adjective: string;
   /** False while the market's composite score is not calibrated (US: preliminary). */
   score_calibrated: boolean;
+  /** False when the market's own measurement hides the Market Condition card
+   *  (wrong-signed or not fitted): skip the fetch. Absent (old backend) = shown. */
+  regime_shown?: boolean;
   /** Index filters the market offers on the dashboard. */
   indices: MarketIndex[];
   flag: string;
@@ -67,7 +70,7 @@ export function withMarketDefaults(m: Partial<Market> & { code: MarketCode }): M
   return {
     ...(m as Market),
     short_name: m.short_name ?? m.code,
-    adjective: m.adjective ?? (m.code === "EG" ? "Egyptian" : m.short_name ?? m.code),
+    adjective: m.adjective || (m.code === "EG" ? "Egyptian" : m.short_name || m.code),
     score_calibrated: m.score_calibrated ?? m.code === "EG",
     indices: m.indices ?? [],
   };

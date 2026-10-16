@@ -4,7 +4,8 @@ import { CompositeCard } from "../CompositeCard";
 import { ScoreBreakdown } from "../ScoreBreakdown";
 import { ScoreWeightsSheet } from "../ScoreWeightsSheet";
 import { marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
-import { makeAnalysis } from "../testing/fixtures";
+import { makeAnalysis, US_MARKET } from "../testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
 import { EG_WORDING, renderedText } from "@/test-utils/text";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
@@ -15,6 +16,21 @@ const composite = makeAnalysis().composite_score;
 beforeEach(() => jest.clearAllMocks());
 
 describe("ScoreBreakdown", () => {
+  it("states the backtest of the score's own market", async () => {
+    mockMarketApi();
+    await renderWithProviders(
+      <ScoreBreakdown composite={composite} market={{ ...US_MARKET, score_calibrated: true }} />
+    );
+    expect(screen.getByText(/tested across US stocks from 2007–2026/)).toBeTruthy();
+    expect(screen.queryByText(/EGX/)).toBeNull();
+  });
+
+  it("keeps the EGX evidence on EG", async () => {
+    mockMarketApi();
+    await renderWithProviders(<ScoreBreakdown composite={composite} market={EG_FALLBACK} />);
+    expect(screen.getByText(/tested across the EGX from 2007–2026/)).toBeTruthy();
+  });
+
   it("lists categories with the weight each actually carried", async () => {
     mockMarketApi();
     await renderWithProviders(<ScoreBreakdown composite={composite} />);

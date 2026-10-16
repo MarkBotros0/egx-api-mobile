@@ -79,3 +79,11 @@ it("names the market and its universe", async () => {
   expect(screen.getByText("Universe: current S&P 500 / NASDAQ-100 / Dow 30 members, 2006–2026")).toBeTruthy();
   jest.restoreAllMocks();
 });
+
+it("reads the linked market's record, not the app's", async () => {
+  fetchMock.mockResolvedValue(DATA);
+  await renderScreen(<CalibrationScreen market="US" />);
+  await waitFor(() => expect(screen.getByText("Checking our work")).toBeTruthy());
+  expect(fetchMock).toHaveBeenCalledWith({ market: "US" });
+  expect(screen.getByText(/real US market history/)).toBeTruthy();
+});

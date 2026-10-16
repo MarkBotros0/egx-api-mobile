@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { renderWithProviders } from "@/test-utils/render";
 import { MarketRegimeCard } from "../MarketRegimeCard";
-import { fail, mockMarketApi } from "../testing/api";
+import { fail, mockMarketApi, requestsTo } from "../testing/api";
 import { REGIME, US_MARKET } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
@@ -76,4 +76,18 @@ it("renders nothing when the market's own measurement hides the reading", async 
   await renderWithProviders(<MarketRegimeCard />);
   await waitFor(() => expect(screen.queryByTestId("regime-skeleton")).toBeNull());
   expect(screen.queryByText("Market Condition")).toBeNull();
+});
+
+it("skips the fetch and the skeleton when the market says the reading is hidden", async () => {
+  const fetchMock = mockMarketApi();
+  jest.spyOn(marketProvider, "useMarket").mockReturnValue({
+    market: { ...US_MARKET, regime_shown: false },
+    markets: [EG_FALLBACK, US_MARKET],
+    setMarket: jest.fn(),
+    loading: false,
+  });
+  await renderWithProviders(<MarketRegimeCard />);
+  expect(screen.queryByTestId("regime-skeleton")).toBeNull();
+  await new Promise((r) => setTimeout(r, 0));
+  expect(requestsTo(fetchMock, "/market_regime")).toEqual([]);
 });

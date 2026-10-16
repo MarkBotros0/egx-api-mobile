@@ -72,9 +72,7 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
         // Stated, never coloured: more oversold shares measured WORSE forward returns.
         <AppText className="mt-2 text-[10px] leading-relaxed text-white/40">
           {`${breadth.pct_oversold}% are oversold (RSI under 30). On EGX history that has leaned the wrong way — periods with more oversold shares were followed by weaker returns, not a bounce`}
-          {ev
-            ? ` (rank correlation ${ev.strongest_rho.toFixed(2)}, t ${ev.strongest_t.toFixed(2)}${ev.significant_at_project_bar === false ? ", still too weak to act on" : ""})`
-            : ""}
+          {` (rank correlation ${ev.strongest_rho.toFixed(2)}, t ${ev.strongest_t.toFixed(2)}${ev.significant_at_project_bar === false ? ", still too weak to act on" : ""})`}
           .
         </AppText>
       )}
@@ -89,6 +87,9 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
  */
 export function MarketRegimeCard() {
   const { market } = useMarket();
+  // Known from /api/markets before any fetch, so a market whose own
+  // measurement hides the card shows no skeleton that then collapses.
+  if (market.regime_shown === false) return null;
   return <RegimeReading market={market} />;
 }
 
