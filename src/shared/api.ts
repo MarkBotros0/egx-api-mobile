@@ -605,6 +605,10 @@ export interface MarketRegime {
   stale?: boolean;
   observed_at?: string;
   n_symbols_now?: number;
+  /** True when the market's own measurement ran the wrong way (rho ≤ 0): render nothing. */
+  hidden?: boolean;
+  /** The constituents the reading averages ("EGX30 and EGX70", "S&P 500"). */
+  universe_label?: string;
   /**
    * Market breadth, from the nightly risk snapshot rather than the score cache.
    *

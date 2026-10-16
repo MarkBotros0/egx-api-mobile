@@ -27,3 +27,20 @@ describe("withMarketDefaults", () => {
     expect(us.indices).toEqual([{ id: "SPX", label: "S&P 500" }]);
   });
 });
+
+describe("adjective and risk blurbs", () => {
+  test("an old backend without adjective gets one", () => {
+    expect(withMarketDefaults({ ...EG_FALLBACK, adjective: undefined as any }).adjective).toBe("Egyptian");
+    expect(
+      withMarketDefaults({ ...EG_FALLBACK, code: "US", short_name: "US", adjective: undefined as any }).adjective
+    ).toBe("US");
+  });
+
+  test("risk blurbs name the market, and EG's are unchanged", () => {
+    const { riskBandBlurbs, RISK_BAND_BLURB } = require("@/shared/riskBands");
+    expect(RISK_BAND_BLURB.calm).toBe("moves least of the tradeable EGX names");
+    expect(RISK_BAND_BLURB.average).toBe("moves about as much as the typical EGX stock");
+    expect(riskBandBlurbs("US").calm).toBe("moves least of the tradeable US names");
+    expect(riskBandBlurbs("US").wild).toBe("moves most of the tradeable US names");
+  });
+});

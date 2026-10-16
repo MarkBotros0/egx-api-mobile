@@ -23,6 +23,7 @@ export const US_MARKET: Market = {
   code: "US",
   name: "United States",
   short_name: "US",
+  adjective: "US",
   score_calibrated: false,
   indices: [
     { id: "SPX", label: "S&P 500" },

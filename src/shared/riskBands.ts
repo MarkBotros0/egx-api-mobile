@@ -42,10 +42,16 @@ export const RISK_BAND_LABEL: Record<string, string> = {
   wild: "Wild",
 };
 
-export const RISK_BAND_BLURB: Record<string, string> = {
-  calm: "moves least of the tradeable EGX names",
-  steady: "moves less than most",
-  average: "moves about as much as the typical EGX stock",
-  jumpy: "moves more than most",
-  wild: "moves most of the tradeable EGX names",
-};
+/** The band blurbs for a market, named by its short name ("EGX", "US"). */
+export function riskBandBlurbs(shortName: string): Record<string, string> {
+  return {
+    calm: `moves least of the tradeable ${shortName} names`,
+    steady: "moves less than most",
+    average: `moves about as much as the typical ${shortName} stock`,
+    jumpy: "moves more than most",
+    wild: `moves most of the tradeable ${shortName} names`,
+  };
+}
+
+/** EG's blurbs — the web is EG-only and reads this constant. */
+export const RISK_BAND_BLURB: Record<string, string> = riskBandBlurbs("EGX");

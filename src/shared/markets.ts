@@ -19,6 +19,8 @@ export interface Market {
   name: string;
   /** Short label for chips and badges ("EGX", "US"). */
   short_name: string;
+  /** Copy adjective ("Egyptian", "US"): "fitted to how US stocks moved". */
+  adjective: string;
   /** False while the market's composite score is not calibrated (US: preliminary). */
   score_calibrated: boolean;
   /** Index filters the market offers on the dashboard. */
@@ -41,6 +43,7 @@ export const EG_FALLBACK: Market = {
   code: "EG",
   name: "Egypt",
   short_name: "EGX",
+  adjective: "Egyptian",
   score_calibrated: true,
   indices: [
     { id: "EGX30", label: "EGX30" },
@@ -64,6 +67,7 @@ export function withMarketDefaults(m: Partial<Market> & { code: MarketCode }): M
   return {
     ...(m as Market),
     short_name: m.short_name ?? m.code,
+    adjective: m.adjective ?? (m.code === "EG" ? "Egyptian" : m.short_name ?? m.code),
     score_calibrated: m.score_calibrated ?? m.code === "EG",
     indices: m.indices ?? [],
   };
