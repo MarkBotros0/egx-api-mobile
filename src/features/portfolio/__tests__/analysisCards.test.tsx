@@ -96,6 +96,29 @@ describe("MacroCard", () => {
     expect(screen.getByText(/rose 8.25× in pounds and 0.94× in dollars/)).toBeTruthy();
   });
 
+  it("shows a US reading: the S&P 500 and the T-bill, display only, nothing Egyptian", async () => {
+    await renderWithProviders(
+      <MacroCard
+        data={{
+          market: "US",
+          currency: "USD",
+          egx30: null,
+          usd_egp: null,
+          benchmark: { value: 7744.06, direction: "stable", monthly_change_pct: 1.22, label: "S&P 500" },
+          interest_rate: { value: 4.21, direction: "stable", label: "3-month T-bill" },
+          scoring: false,
+        }}
+      />
+    );
+    expect(screen.getByText("S&P 500")).toBeTruthy();
+    expect(screen.getByText("7,744")).toBeTruthy();
+    expect(screen.getByText("+1.2% this month")).toBeTruthy();
+    expect(screen.getByText("3-month T-bill")).toBeTruthy();
+    expect(screen.getByText("4.21")).toBeTruthy();
+    expect(screen.getByText(/do not change any score/)).toBeTruthy();
+    expect(renderedText()).not.toMatch(EG_WORDING);
+  });
+
   it("collapses to one line when every source failed", async () => {
     const none = { value: null, direction: null };
     await renderWithProviders(<MacroCard data={{ egx30: none, usd_egp: none, interest_rate: none }} />);

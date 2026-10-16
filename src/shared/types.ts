@@ -538,6 +538,8 @@ export interface MacroIndicator {
   direction: string | null;
   trend?: string | null;
   monthly_change_pct?: number | null;
+  /** Display name, sent on a non-EG market's reading ("S&P 500", "3-month T-bill"). */
+  label?: string;
 }
 
 /**
@@ -552,12 +554,20 @@ export interface CurrencyContext {
   note: string;
 }
 
+/**
+ * EG: the EGX30, USD/EGP and CBE rate, which also modulate EG scores.
+ * Another market (US): `egx30`/`usd_egp` are null and `benchmark` +
+ * `interest_rate` carry a DISPLAY-ONLY reading (`scoring: false`) — US scores
+ * take no macro modulation, because their calibration ran without it.
+ */
 export interface MacroData {
   market?: MarketCode;
   currency?: string;
-  egx30: MacroIndicator;
-  usd_egp: MacroIndicator;
-  interest_rate: MacroIndicator;
+  egx30: MacroIndicator | null;
+  usd_egp: MacroIndicator | null;
+  interest_rate: MacroIndicator | null;
+  benchmark?: MacroIndicator | null;
+  scoring?: boolean;
   currency_context?: CurrencyContext;
 }
 

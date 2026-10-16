@@ -27,7 +27,43 @@ function Indicator({
   );
 }
 
+function monthDetail(month: number | null | undefined): string | undefined {
+  return month != null ? `${month > 0 ? "+" : ""}${month.toFixed(1)}% this month` : undefined;
+}
+
+/**
+ * Another market's card (US): its benchmark and risk-free rate, DISPLAY ONLY.
+ * US scores take no macro modulation (their calibration ran without it), and
+ * the card says so rather than implying the reading moves a score.
+ */
+function BenchmarkMacroCard({ data }: { data: MacroData }) {
+  const bench = data.benchmark;
+  const rate = data.interest_rate;
+  if (!bench?.value && !rate?.value) {
+    return (
+      <Card>
+        <AppText className="text-center font-sans text-xs text-white/30">Macro data unavailable</AppText>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <AppText variant="title" className="mb-4 font-sans-semibold text-lg text-white">
+        Macro Context
+      </AppText>
+      <View className="gap-3">
+        <Indicator label={rate?.label ?? "Risk-free rate"} value={rate?.value ?? null} suffix="%" direction={rate?.direction ?? null} neutral />
+        <Indicator label={bench?.label ?? "Index"} value={bench?.value ?? null} direction={bench?.direction ?? null} detail={monthDetail(bench?.monthly_change_pct)} />
+      </View>
+      <AppText className="mt-3 border-t border-white/5 pt-3 font-sans text-[10px] leading-relaxed text-white/30">
+        Shown for context only: these readings do not change any score.
+      </AppText>
+    </Card>
+  );
+}
+
 export function MacroCard({ data }: { data: MacroData }) {
+  if (data.benchmark !== undefined) return <BenchmarkMacroCard data={data} />;
   if (!data.egx30?.value && !data.usd_egp?.value && !data.interest_rate?.value) {
     return (
       <Card>

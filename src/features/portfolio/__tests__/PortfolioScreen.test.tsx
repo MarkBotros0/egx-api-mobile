@@ -64,6 +64,31 @@ describe("PortfolioScreen", () => {
     expect(screen.queryByText("Macro Context")).toBeNull();
   });
 
+  it("shows the US display-only macro reading on US", async () => {
+    mockPortfolioApi({
+      analysis: analysisResponse({
+        market: "US",
+        currency: "USD",
+        macro: {
+          market: "US", currency: "USD", egx30: null, usd_egp: null, scoring: false,
+          benchmark: { value: 7744.06, direction: "up", monthly_change_pct: 2.5, label: "S&P 500" },
+          interest_rate: { value: 4.21, direction: "stable", label: "3-month T-bill" },
+        },
+      }),
+    });
+    mockFetch("GET", "/markets", { markets: [EG_FALLBACK, US_MARKET], default: "EG" });
+    mockFetchHandler("GET", "/settings", (url) =>
+      new URL(url).searchParams.get("section") === "market"
+        ? { status: 200, body: { market: "US" } }
+        : { status: 200, body: { weights: {}, raw: {}, presets: {} } }
+    );
+    await renderWithProviders(<PortfolioScreen />);
+    expect(await screen.findByText("3-month T-bill")).toBeTruthy();
+    expect(screen.getByText("Macro Context")).toBeTruthy();
+    expect(screen.getByText("S&P 500")).toBeTruthy();
+    expect(screen.queryByText("CBE Interest Rate")).toBeNull();
+  });
+
   it("does not show realized winnings above skeletons: the page appears in one piece", async () => {
     mockPortfolioApi();
     let release: (r: { status: number; body: unknown }) => void = () => {};
