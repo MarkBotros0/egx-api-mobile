@@ -19,6 +19,20 @@ export const useSegments = () => [] as string[];
 export const usePathname = () => "/";
 export const useFocusEffect = () => undefined;
 
+/** A screen's navigation: `tabPress` listeners can be fired with `fireTabPress`. */
+const tabPressListeners = new Set<() => void>();
+export const navigation = {
+  isFocused: jest.fn(() => true),
+  addListener: jest.fn((event: string, cb: () => void) => {
+    if (event === "tabPress") tabPressListeners.add(cb);
+    return () => tabPressListeners.delete(cb);
+  }),
+};
+export const useNavigation = () => navigation;
+export function fireTabPress() {
+  for (const cb of [...tabPressListeners]) cb();
+}
+
 export function Link({ children }: { children?: ReactNode }) {
   return <>{children}</>;
 }

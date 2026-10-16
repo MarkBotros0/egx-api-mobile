@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, useWindowDimensions, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -7,6 +7,7 @@ import { useMarket } from "@/providers/market";
 import { useScoreWeights } from "@/providers/scoreWeights";
 import { useTickers } from "@/providers/tickers";
 import { useWatchlist } from "@/providers/watchlist";
+import { useScrollToTopOnTabPress } from "@/features/shell/useScrollToTopOnTabPress";
 import { CARDS_PER_PAGE } from "@/shared/constants";
 import { isMarketOpen } from "@/shared/markets";
 import { COLORS } from "@/shared/theme";
@@ -109,6 +110,10 @@ export function DashboardScreen() {
   );
   const sorted = useMemo(() => sortTickers(payers, snap.cards, sort), [payers, snap.cards, sort]);
   const { visible, hasMore, remaining } = pageSlice(sorted, page, CARDS_PER_PAGE);
+
+  // Tapping Dashboard while already on it scrolls back to the top.
+  const listRef = useRef<FlatList<Ticker>>(null);
+  useScrollToTopOnTabPress(listRef);
 
   const { upgrade } = useLiveUpgrade({
     symbols: upgradeQueue(visible, watchlistSymbols, tickers),
@@ -252,6 +257,7 @@ export function DashboardScreen() {
       </View>
 
       <FlatList
+        ref={listRef}
         key={`cols-${columns}`}
         testID="dashboard-list"
         data={loading ? [] : visible}
