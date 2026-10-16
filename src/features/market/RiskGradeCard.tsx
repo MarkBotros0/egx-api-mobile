@@ -4,7 +4,7 @@ import { learnHref } from "@/lib/links";
 import { useMarket } from "@/providers/market";
 import { fetchRisk, type RiskResponse, type RiskRow } from "@/shared/api";
 import type { MarketCode } from "@/shared/markets";
-import { RISK_BAND_BLURB, RISK_BAND_COLOR, RISK_BAND_ORDER } from "@/shared/riskBands";
+import { RISK_BAND_COLOR, RISK_BAND_ORDER, riskBandBlurbs } from "@/shared/riskBands";
 import { COLORS } from "@/shared/theme";
 import { AppText, LearnTerm } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
@@ -27,7 +27,19 @@ function Tile({ label, value, note }: { label: string; value: string; note: stri
   );
 }
 
-function Graded({ row, res, band, now }: { row: RiskRow; res: RiskResponse; band: NonNullable<RiskRow["band"]>; now: number }) {
+function Graded({
+  row,
+  res,
+  band,
+  now,
+  shortName,
+}: {
+  row: RiskRow;
+  res: RiskResponse;
+  band: NonNullable<RiskRow["band"]>;
+  now: number;
+  shortName: string;
+}) {
   const color = RISK_BAND_COLOR[band] ?? COLORS.accent;
   const label = row.band_label ?? band;
   const hist = row.historical;
@@ -41,7 +53,7 @@ function Graded({ row, res, band, now }: { row: RiskRow; res: RiskResponse; band
           </AppText>
         </View>
         <View className="flex-1">
-          <AppText className="text-[11px] leading-tight text-white/50">{RISK_BAND_BLURB[band]}</AppText>
+          <AppText className="text-[11px] leading-tight text-white/50">{riskBandBlurbs(shortName)[band]}</AppText>
           {res.n_ranked ? (
             <AppText className="text-[11px] leading-tight text-white/30">
               {`${Math.round(row.pct_rank ?? 0)}th percentile of ${res.n_ranked} tradeable stocks`}
@@ -88,7 +100,7 @@ function Graded({ row, res, band, now }: { row: RiskRow; res: RiskResponse; band
       </View>
 
       <AppText className="mt-2 text-[10px] leading-relaxed text-white/30">
-        {`${res.calibration ? `Measured on ${res.calibration.n_observations.toLocaleString("en-US")} past checks across ${res.calibration.n_symbols} EGX stocks. ` : ""}These are past outcomes for stocks that moved like this one — not a promise about this one, and nothing here says whether the price goes up or down.`}
+        {`${res.calibration ? `Measured on ${res.calibration.n_observations.toLocaleString("en-US")} past checks across ${res.calibration.n_symbols} ${shortName} stocks. ` : ""}These are past outcomes for stocks that moved like this one — not a promise about this one, and nothing here says whether the price goes up or down.`}
       </AppText>
     </>
   );
@@ -115,22 +127,23 @@ function Ungraded({ row }: { row: RiskRow }) {
  * `market`: a deep link's market, read without switching the app's; omitted,
  * the app's.
  *
- * Renders NOTHING on a market whose risk grade is not calibrated (US): it has
- * no liquidity floors, so no stock is tradeable and every one would read "too
- * thinly traded", against copy written for the EGX. Decided from the market's
- * `score_calibrated` before any fetch, the way MarketRegimeCard is hidden; a
+ * Renders nothing on a market whose score is not calibrated
+ * (`score_calibrated === false`, future markets): it has no fitted liquidity
+ * floors, so no stock is tradeable and every one would read "too thinly
+ * traded". Decided from the market's `score_calibrated` before any fetch; a
  * market the app's list does not describe yet falls through to the response's
- * null `liquidity_floor`.
+ * null `liquidity_floor`. Copy names the STOCK's market (`short_name`), so a
+ * deep-linked US stock reads "US stocks" while the app is on EG.
  */
 export function RiskGradeCard({ symbol, market: linked }: { symbol: string; market?: MarketCode }) {
   const { market, markets } = useMarket();
   const dataMarket = linked ?? market.code;
   const info = dataMarket === market.code ? market : markets.find((m) => m.code === dataMarket);
   if (info?.score_calibrated === false) return null;
-  return <RiskGrade symbol={symbol} market={dataMarket} />;
+  return <RiskGrade symbol={symbol} market={dataMarket} shortName={info?.short_name ?? dataMarket} />;
 }
 
-function RiskGrade({ symbol, market: dataMarket }: { symbol: string; market: MarketCode }) {
+function RiskGrade({ symbol, market: dataMarket, shortName }: { symbol: string; market: MarketCode; shortName: string }) {
   const { data: res, error, loading } = useKeyedFetch(`risk:${dataMarket}:${symbol}`, () =>
     fetchRisk(symbol, { market: dataMarket })
   );
@@ -161,7 +174,7 @@ function RiskGrade({ symbol, market: dataMarket }: { symbol: string; market: Mar
         <View className="flex-1">
           <LearnTerm
             term="Risk grade"
-            explanation="Where this stock sits against every tradeable EGX stock on how much it moves. Built from the last 63 days of price swings, which historically predicted the next six months' swings and drawdowns well. It says nothing about direction."
+            explanation={`Where this stock sits against every tradeable ${shortName} stock on how much it moves. Built from the last 63 days of price swings, which historically predicted the next six months' swings and drawdowns well. It says nothing about direction.`}
           >
             Risk grade
           </LearnTerm>
@@ -171,7 +184,7 @@ function RiskGrade({ symbol, market: dataMarket }: { symbol: string; market: Mar
           <AppText className="text-[11px] text-accent/70">Learn →</AppText>
         </Pressable>
       </View>
-      {row.band ? <Graded row={row} res={res} band={row.band} now={now} /> : <Ungraded row={row} />}
+      {row.band ? <Graded row={row} res={res} band={row.band} now={now} shortName={shortName} /> : <Ungraded row={row} />}
     </View>
   );
 }

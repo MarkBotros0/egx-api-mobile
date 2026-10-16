@@ -77,8 +77,9 @@ export function CalibrationScreen() {
         <AppText className="mt-2 text-sm leading-[22px] text-white/60">
           {"When this app says a range holds 9 times in 10, did it? Every number below was measured on "}
           <AppText className="font-mono text-sm text-white/80">{forecast.n_observations.toLocaleString()}</AppText>
-          {" past checks against real Egyptian market history, and every one of them is re-runnable."}
+          {` past checks against real ${market.adjective} market history, and every one of them is re-runnable.`}
         </AppText>
+        <AppText className="mt-1 text-[10px] leading-[16px] text-white/35">{`Universe: ${forecast.universe}`}</AppText>
 
         <View className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-5">
           <AppText className="font-sans-semibold text-sm text-white">Ranges: what we promised vs what happened</AppText>

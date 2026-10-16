@@ -4,6 +4,8 @@ import { fetchCalibration, type CalibrationResponse } from "@/shared/api";
 import { learnHref } from "@/lib/links";
 import { renderScreen } from "@/test-utils/renderScreen";
 import { CalibrationScreen } from "../CalibrationScreen";
+import * as marketProvider from "@/providers/market";
+import { EG_FALLBACK } from "@/shared/markets";
 
 jest.mock("@/shared/api", () => ({ fetchCalibration: jest.fn() }));
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
@@ -58,4 +60,22 @@ describe("CalibrationScreen", () => {
     await waitFor(() => expect(screen.getByText("Checking our work")).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+});
+
+it("names the market and its universe", async () => {
+  jest.spyOn(marketProvider, "useMarket").mockReturnValue({
+    market: { ...EG_FALLBACK, code: "US", short_name: "US", adjective: "US" },
+    markets: [EG_FALLBACK],
+    setMarket: jest.fn(),
+    loading: false,
+  } as any);
+  fetchMock.mockResolvedValue({
+    ...DATA,
+    forecast: { ...DATA.forecast, universe: "current S&P 500 / NASDAQ-100 / Dow 30 members, 2006–2026" },
+  });
+  await renderScreen(<CalibrationScreen />);
+  await waitFor(() => expect(screen.getByText("Checking our work")).toBeTruthy());
+  expect(screen.getByText(/real US market history/)).toBeTruthy();
+  expect(screen.getByText("Universe: current S&P 500 / NASDAQ-100 / Dow 30 members, 2006–2026")).toBeTruthy();
+  jest.restoreAllMocks();
 });

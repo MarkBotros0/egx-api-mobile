@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
 import { useMarket } from "@/providers/market";
 import { fetchMarketRegime, type MarketBreadth } from "@/shared/api";
+import type { Market } from "@/shared/markets";
 import { AppText, LearnTerm } from "@/ui";
 import { useKeyedFetch } from "./hooks/useKeyedFetch";
 import { pct } from "./logic/format";
@@ -22,8 +23,8 @@ const TONE: Record<string, { ring: string; text: string; bar: string }> = {
 const NEUTRAL = { ring: "border-white/10", text: "text-white/50", bar: "bg-white/20" };
 const BREADTH_FILL = { gain: "bg-gain", loss: "bg-loss", neutral: "bg-white/30" } as const;
 
-const REGIME_EXPLANATION =
-  "The average composite score across EGX30 and EGX70 constituents — a reading of how broadly healthy the market is right now, NOT a call on any single stock. Its link to the market's next three months was measured and is weak enough that it does not pass a significance test, so read it as context about today, not as a forecast.";
+const regimeExplanation = (universe: string) =>
+  `The average composite score across ${universe} constituents — a reading of how broadly healthy the market is right now, NOT a call on any single stock. Its link to the market's next three months was measured and is weak enough that it does not pass a significance test, so read it as context about today, not as a forecast.`;
 
 const BREADTH_EXPLANATION =
   "How many shares are participating, rather than how the index looks. Measured from last night's risk snapshot, so it stays current even when nothing else has been refreshed. Its link to the next three months is weak and does not clear this app's evidence bar — read it as a description of today, not a forecast.";
@@ -67,7 +68,7 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
           <AppText className="text-[10px] text-white/30">{`avg RSI ${breadth.mean_rsi}`}</AppText>
         )}
       </View>
-      {breadth.pct_oversold != null && breadth.pct_oversold > 0 && (
+      {ev && breadth.pct_oversold != null && breadth.pct_oversold > 0 && (
         // Stated, never coloured: more oversold shares measured WORSE forward returns.
         <AppText className="mt-2 text-[10px] leading-relaxed text-white/40">
           {`${breadth.pct_oversold}% are oversold (RSI under 30). On EGX history that has leaned the wrong way — periods with more oversold shares were followed by weaker returns, not a bounce`}
@@ -82,19 +83,19 @@ function BreadthStrip({ breadth }: { breadth: MarketBreadth }) {
 }
 
 /**
- * EG only: outside EG the bands are not calibrated yet (sub-project 3), and no
- * reading beats an uncalibrated one. Decided before any fetch, so a US
- * dashboard shows no skeleton that then collapses to nothing.
+ * Any market. Hidden when the market's own measurement ran the wrong way
+ * (`hidden: true`): a card claiming broad strength that preceded weaker
+ * markets would mislead. Labels come from the response and the market.
  */
 export function MarketRegimeCard() {
   const { market } = useMarket();
-  return market.code === "EG" ? <RegimeReading /> : null;
+  return <RegimeReading market={market} />;
 }
 
-function RegimeReading() {
-  const { data, error, loading } = useKeyedFetch("market-regime:EG", fetchMarketRegime);
+function RegimeReading({ market }: { market: Market }) {
+  const { data, error, loading } = useKeyedFetch(`market-regime:${market.code}`, fetchMarketRegime);
 
-  if (error) return null;
+  if (error || data?.hidden) return null;
   if (loading || !data) {
     return (
       <View testID="regime-skeleton" className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
@@ -112,7 +113,7 @@ function RegimeReading() {
     <View className={`rounded-xl border bg-white/[0.02] p-4 ${tone.ring}`}>
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <LearnTerm term="Market Condition" explanation={REGIME_EXPLANATION}>
+          <LearnTerm term="Market Condition" explanation={regimeExplanation(data.universe_label ?? "EGX30 and EGX70")}>
             Market Condition
           </LearnTerm>
           <AppText className={`mt-1 font-sans-semibold text-lg ${tone.text}`}>{data.label}</AppText>
@@ -146,7 +147,7 @@ function RegimeReading() {
 
       {data.band && split && (
         <AppText className="mt-2 text-[10px] leading-relaxed text-white/35">
-          {`Historically, from this level the EGX30's next ${data.horizon_days} trading days had a median of ${data.hist_median_3m_pct != null && data.hist_median_3m_pct > 0 ? "+" : ""}${data.hist_median_3m_pct}% and were positive ${split.positive}% of the time — and negative or flat the other ${split.other}%${data.observations ? ` (${data.observations} readings)` : ""}.`}
+          {`Historically, from this level the ${market.benchmark_label}'s next ${data.horizon_days} trading days had a median of ${data.hist_median_3m_pct != null && data.hist_median_3m_pct > 0 ? "+" : ""}${data.hist_median_3m_pct}% and were positive ${split.positive}% of the time — and negative or flat the other ${split.other}%${data.observations ? ` (${data.observations} readings)` : ""}.`}
           {data.association_rho != null
             ? ` The link behind this is weak: rank correlation +${data.association_rho.toFixed(2)}${data.association_t != null ? `, t ${data.association_t.toFixed(2)}` : ""} across ${data.association_n} overlapping readings${data.association_significant === false ? ", which does not clear the usual significance bar" : ""}. Treat it as context, never a prediction.`
             : ""}

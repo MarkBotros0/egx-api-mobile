@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 import * as marketProvider from "@/providers/market";
 import { EG_FALLBACK } from "@/shared/markets";
 import { router } from "expo-router";
@@ -47,16 +47,33 @@ it("renders nothing when the reading fails", async () => {
   expect(screen.queryByText("Market Condition")).toBeNull();
 });
 
-it("on US renders nothing from the first frame and never asks for a reading", async () => {
-  const fetchMock = mockMarketApi();
+const asUS = () =>
   jest.spyOn(marketProvider, "useMarket").mockReturnValue({
     market: US_MARKET,
     markets: [EG_FALLBACK, US_MARKET],
     setMarket: jest.fn(),
     loading: false,
   });
-  await render(<MarketRegimeCard />);
-  expect(screen.toJSON()).toBeNull();
-  await new Promise((r) => setTimeout(r, 0));
-  expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/market_regime"))).toBe(false);
+
+it("on US shows the US reading with US labels and no EGX history", async () => {
+  mockMarketApi({
+    "/market_regime": {
+      ...REGIME,
+      universe_label: "S&P 500",
+      breadth: { ...REGIME.breadth!, evidence: undefined },
+    },
+  });
+  asUS();
+  await renderWithProviders(<MarketRegimeCard />);
+  expect(await screen.findByText("Mixed")).toBeTruthy();
+  expect(screen.getByText(/the S&P 500's next 63 trading days/)).toBeTruthy();
+  expect(screen.queryByText(/EGX/)).toBeNull();
+});
+
+it("renders nothing when the market's own measurement hides the reading", async () => {
+  mockMarketApi({ "/market_regime": { market: "US", band: null, hidden: true, n_symbols: 0 } });
+  asUS();
+  await renderWithProviders(<MarketRegimeCard />);
+  await waitFor(() => expect(screen.queryByTestId("regime-skeleton")).toBeNull());
+  expect(screen.queryByText("Market Condition")).toBeNull();
 });

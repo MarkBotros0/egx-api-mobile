@@ -215,7 +215,11 @@ describe("per market", () => {
           ? makeDashboard(US_TICKERS.map((t) => makeDashboardRow(t.symbol)))
           : makeDashboard([makeDashboardRow("COMI", { score: 72, price: 82.5 })]),
       "/market_regime": (url: URL) =>
-        url.searchParams.get("market") === "US" ? { ...REGIME, band: null, label: "No reading" } : REGIME,
+        // What the backend sends for US: a reading on the US bundle, labelled by
+        // its own universe, with no EGX-measured breadth evidence.
+        url.searchParams.get("market") === "US"
+          ? { ...REGIME, market: "US", universe_label: "S&P 500", breadth: { ...REGIME.breadth!, evidence: undefined } }
+          : REGIME,
     };
   }
 
@@ -278,13 +282,13 @@ describe("per market", () => {
     expect(screen.getByTestId("dashboard-search").props.value).toBe("");
   });
 
-  it("never asks for the market-condition reading on US, and shows no skeleton for it", async () => {
+  it("asks for the US market-condition reading and labels it with the US benchmark", async () => {
     const fetchMock = mockMarketApi(marketRoutes("US"));
     await renderWithProviders(<DashboardScreen />);
     await screen.findByTestId("stockcard-AAPL");
-    expect(screen.queryByTestId("regime-skeleton")).toBeNull();
-    expect(screen.queryByText("Market Condition")).toBeNull();
-    expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+    expect(await screen.findByText("Market Condition")).toBeTruthy();
+    expect(screen.getByText(/the S&P 500's next 63 trading days/)).toBeTruthy();
+    expect(requestsTo(fetchMock, "/market_regime").some((u) => u.searchParams.get("market") === "US")).toBe(true);
   });
 
   it("offers no dividend calendar on US, and its filter explanation names no Egyptian rate", async () => {

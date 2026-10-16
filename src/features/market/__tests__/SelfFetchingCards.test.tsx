@@ -14,6 +14,18 @@ jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/exp
 beforeEach(() => jest.clearAllMocks());
 
 describe("RiskGradeCard", () => {
+  it("names the stock's own market in a calibrated US grade", async () => {
+    const US_CAL = { ...US_MARKET, score_calibrated: true };
+    mockMarketApi({
+      "/markets": { markets: [EG_FALLBACK, US_CAL], default: "EG" },
+      "/risk": { ...RISK, liquidity_floor: 20_000_000, data: [{ ...RISK.data[0], symbol: "AAPL" }] },
+    });
+    await renderWithProviders(<RiskGradeCard symbol="AAPL" market="US" />);
+    expect(await screen.findByText("moves least of the tradeable US names")).toBeTruthy();
+    expect(screen.getByText(/across 140 US stocks/)).toBeTruthy();
+    expect(screen.queryByText(/EGX/)).toBeNull();
+  });
+
   it("grades how much the stock moves, never which way", async () => {
     mockMarketApi({ "/risk": RISK });
     await renderWithProviders(<RiskGradeCard symbol="COMI" />);
@@ -131,9 +143,16 @@ describe("DividendHistoryCard", () => {
 });
 
 describe("ForecastCard", () => {
+  it("says which market the range was fitted to", async () => {
+    mockMarketApi();
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="AAPL" currency="USD" adjective="US" />);
+    expect(screen.getByText(/Fitted to how US stocks have actually moved/)).toBeTruthy();
+    expect(screen.queryByText(/Egyptian/)).toBeNull();
+  });
+
   it("shows typical moves with measured coverage and the outcome range", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" adjective="Egyptian" />);
     expect(screen.getByText("±1.8%")).toBeTruthy();
     expect(screen.getByText("79% land inside")).toBeTruthy();
     expect(screen.getByText("21% are bigger")).toBeTruthy();
@@ -146,7 +165,7 @@ describe("ForecastCard", () => {
 
   it("draws the cone once it knows its width", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" adjective="Egyptian" />);
     expect(screen.queryByTestId("cone-svg")).toBeNull();
     await fireEvent(screen.getByTestId("outcome-cone"), "layout", {
       nativeEvent: { layout: { x: 0, y: 0, width: 280, height: 160 } },
@@ -158,14 +177,14 @@ describe("ForecastCard", () => {
 
   it("links to the calibration record", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" />);
+    await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="COMI" currency="EGP" adjective="Egyptian" />);
     await fireEvent.press(screen.getByText("See how often these ranges held →"));
     expect(router.push).toHaveBeenCalledWith(routes.calibration);
   });
 
   it("renders nothing without a forecast", async () => {
     mockMarketApi();
-    await renderWithProviders(<ForecastCard forecast={null} symbol="COMI" currency="EGP" />);
+    await renderWithProviders(<ForecastCard forecast={null} symbol="COMI" currency="EGP" adjective="Egyptian" />);
     expect(screen.queryByText("Typical moves & outcome range")).toBeNull();
   });
 });

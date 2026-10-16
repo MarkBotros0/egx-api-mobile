@@ -181,7 +181,7 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
             {showIndicators && <IndicatorPanel data={indicatorData} />}
 
             <RiskGradeCard symbol={symbol} market={dataMarket} />
-            <ForecastCard forecast={data.forecast} symbol={symbol} currency={currency} />
+            <ForecastCard forecast={data.forecast} symbol={symbol} currency={currency} adjective={dataMarketInfo.adjective} />
             {/* EG only until US dividend history ships (sub-project 4). */}
             {dataMarket === "EG" && <DividendHistoryCard symbol={symbol} market={dataMarket} />}
           </>

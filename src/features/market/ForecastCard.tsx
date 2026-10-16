@@ -25,10 +25,13 @@ export function ForecastCard({
   forecast,
   symbol,
   currency,
+  adjective,
 }: {
   forecast: StockForecast | null | undefined;
   symbol: string;
   currency: string;
+  /** The stock's market, as copy ("Egyptian", "US"): MarketConfig.adjective. */
+  adjective: string;
 }) {
   if (!forecast || (!forecast.expected_move && !forecast.outcome_band)) return null;
   const { expected_move, outcome_band } = forecast;
@@ -39,7 +42,7 @@ export function ForecastCard({
         <View className="flex-1">
           <LearnTerm
             term="Outcome range"
-            explanation="How far this stock has typically travelled over a given stretch of time, fitted to the Egyptian market's own history. It says nothing about direction — the range is deliberately centred on today's price."
+            explanation={`How far this stock has typically travelled over a given stretch of time, fitted to the ${adjective} market's own history. It says nothing about direction — the range is deliberately centred on today's price.`}
           >
             Typical moves &amp; outcome range
           </LearnTerm>
@@ -61,7 +64,7 @@ export function ForecastCard({
       {outcome_band && <OutcomeCone data={outcome_band} symbol={symbol} currency={currency} />}
 
       <AppText className="mt-3 text-[10px] leading-relaxed text-white/30">
-        {`Fitted to how Egyptian stocks have actually moved${outcome_band ? ` — ${outcome_band.calibration.n_observations.toLocaleString("en-US")} past checks, last fitted ${outcome_band.calibration.fitted_at}` : ""}. A range can still be wrong: news, a devaluation or a suspension can put the price outside it.`}
+        {`Fitted to how ${adjective} stocks have actually moved${outcome_band ? ` — ${outcome_band.calibration.n_observations.toLocaleString("en-US")} past checks, last fitted ${outcome_band.calibration.fitted_at}` : ""}. A range can still be wrong: news, a devaluation or a suspension can put the price outside it.`}
       </AppText>
       <Pressable accessibilityRole="link" onPress={() => router.push(routes.calibration)} className="min-h-[44px] justify-center">
         <AppText className="text-[11px] text-accent/60">See how often these ranges held →</AppText>
