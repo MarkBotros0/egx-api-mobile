@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { CompositeGauge, scoreColor } from "@/charts";
+import type { Market } from "@/shared/markets";
 import type { CompositeScore } from "@/shared/types";
 import { AppText } from "@/ui";
 import type { Callout, CalloutTone, ChartInterval } from "./logic/stockDetail";
@@ -28,10 +29,13 @@ export function CompositeCard({
   composite,
   interval,
   callouts,
+  market,
 }: {
   composite: CompositeScore;
   interval: ChartInterval;
   callouts: Callout[];
+  /** The market the score belongs to; omitted, the app's. */
+  market?: Market;
 }) {
   return (
     <View className="gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -42,7 +46,7 @@ export function CompositeCard({
           <AppText className="font-mono-semibold text-base" style={{ color: scoreColor(composite.score) }}>
             {composite.signal}
           </AppText>
-          <PreliminaryTag />
+          <PreliminaryTag market={market} />
         </View>
         <AppText className="text-[10px] text-white/30">{`on ${interval.toLowerCase()} bars`}</AppText>
         {interval !== "Daily" && (

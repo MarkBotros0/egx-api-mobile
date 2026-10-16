@@ -1,12 +1,13 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { learnHref, routes } from "@/lib/links";
+import { EG_FALLBACK } from "@/shared/markets";
 import { renderWithProviders } from "@/test-utils/render";
 import { DividendHistoryCard } from "../DividendHistoryCard";
 import { ForecastCard } from "../ForecastCard";
 import { RiskGradeCard } from "../RiskGradeCard";
-import { fail, mockMarketApi } from "../testing/api";
-import { DIVIDEND_HISTORY, FORECAST, RISK } from "../testing/fixtures";
+import { fail, marketPrefRoutes, mockMarketApi, requestsTo } from "../testing/api";
+import { DIVIDEND_HISTORY, FORECAST, RISK, US_MARKET } from "../testing/fixtures";
 
 jest.mock("expo-router", () => jest.requireActual("@/features/market/testing/expoRouterMock"));
 
@@ -38,6 +39,53 @@ describe("RiskGradeCard", () => {
     await renderWithProviders(<RiskGradeCard symbol="TMGH" />);
     await waitFor(() => expect(screen.queryByTestId("risk-skeleton")).toBeNull());
     expect(screen.queryByText(/percentile/)).toBeNull();
+  });
+
+  // What /api/risk?market=US actually answers: US has no liquidity floors, so
+  // nothing is tradeable, every band is null and the floor is null.
+  const US_RISK = {
+    ...RISK,
+    n_ranked: 0,
+    liquidity_floor: null,
+    calibration: undefined,
+    data: [{ ...RISK.data[0], symbol: "AAPL", tradeable: false, band: null, band_label: null, pct_rank: null, quintile: null, historical: undefined }],
+  };
+
+  it("keeps grading EG stocks when the server names a floor", async () => {
+    mockMarketApi({ "/risk": { ...RISK, liquidity_floor: 1_000_000 } });
+    await renderWithProviders(<RiskGradeCard symbol="COMI" />);
+    expect(await screen.findByText("moves least of the tradeable EGX names")).toBeTruthy();
+  });
+
+  it("renders nothing for a deep link into an uncalibrated market", async () => {
+    const fetchMock = mockMarketApi({ "/markets": { markets: [EG_FALLBACK, US_MARKET], default: "EG" }, "/risk": US_RISK });
+    await renderWithProviders(<RiskGradeCard symbol="AAPL" market="US" />);
+    await waitFor(() => expect(requestsTo(fetchMock, "/markets").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByTestId("risk-skeleton")).toBeNull());
+    expect(screen.queryByText("Risk grade")).toBeNull();
+    expect(screen.queryByText(/thinly traded/)).toBeNull();
+    expect(screen.queryByText(/EGX/)).toBeNull();
+  });
+
+  it("renders nothing when the APP is on an uncalibrated market", async () => {
+    const fetchMock = mockMarketApi({ ...marketPrefRoutes("US"), "/risk": US_RISK });
+    await renderWithProviders(<RiskGradeCard symbol="AAPL" />);
+    await waitFor(() => expect(requestsTo(fetchMock, "/settings").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.queryByTestId("risk-skeleton")).toBeNull());
+    expect(requestsTo(fetchMock, "/risk").filter((u) => u.searchParams.get("market") === "US")).toHaveLength(0);
+    expect(screen.queryByText("Risk grade")).toBeNull();
+    expect(screen.queryByText(/thinly traded/)).toBeNull();
+  });
+
+  it("renders nothing when the server reports no floor, whatever the market list says", async () => {
+    // A deep link whose market the app's list has not described yet falls back
+    // to the app's (calibrated) market; the response's null floor still hides it.
+    mockMarketApi({ "/risk": US_RISK });
+    await renderWithProviders(<RiskGradeCard symbol="AAPL" />);
+    await waitFor(() => expect(screen.queryByTestId("risk-skeleton")).toBeNull());
+    expect(screen.queryByText("Risk grade")).toBeNull();
+    expect(screen.queryByText(/thinly traded/)).toBeNull();
+    expect(screen.queryByText(/EGX/)).toBeNull();
   });
 
   it("renders nothing for an unmeasured symbol (404)", async () => {

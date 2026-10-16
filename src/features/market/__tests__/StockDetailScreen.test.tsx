@@ -6,7 +6,8 @@ import type { ChartInterval } from "../logic/stockDetail";
 import { StockDetailScreen, WatchStarButton } from "../StockDetailScreen";
 import { fail, marketPrefRoutes, mockMarketApi, requestsTo, type Route } from "../testing/api";
 import { lastChartProps } from "../testing/chartsMock";
-import { makeAnalysis } from "../testing/fixtures";
+import { EG_FALLBACK } from "@/shared/markets";
+import { makeAnalysis, US_MARKET } from "../testing/fixtures";
 
 // The shared stub, but Stack.Screen renders the header's right side so the star can be asserted.
 jest.mock("expo-router", () => {
@@ -162,12 +163,34 @@ it("has no dividend history card when the app is on US", async () => {
     expect(analysisCalls(fetchMock).some((u) => u.searchParams.get("market") === "US")).toBe(true)
   );
   await screen.findByText("Technical Condition");
-  await waitFor(() => expect(requestsTo(fetchMock, "/risk").some((u) => u.searchParams.get("market") === "US")).toBe(true));
+  // US risk grades are not calibrated: the card is absent and never asks.
+  expect(requestsTo(fetchMock, "/risk").some((u) => u.searchParams.get("market") === "US")).toBe(false);
+  expect(screen.queryByText("Risk grade")).toBeNull();
+  expect(screen.queryByText(/thinly traded/)).toBeNull();
   expect(screen.queryByText("Dividend History")).toBeNull();
   expect(requestsTo(fetchMock, "/dividend_history").some((u) => u.searchParams.get("market") === "US")).toBe(false);
   // Key Statistics explains beta against the US benchmark.
   await fireEvent.press(screen.getByText("Beta"));
   expect(screen.getByText("Beta vs S&P 500")).toBeTruthy();
+});
+
+it("a US deep link from an EG app tags the score preliminary and shows no risk grade", async () => {
+  const fetchMock = mockMarketApi({ "/markets": { markets: [EG_FALLBACK, US_MARKET], default: "EG" } });
+  await renderWithProviders(<StockDetailScreen symbol="AAPL" initialInterval="Daily" market="US" />);
+  await screen.findByText("Technical Condition");
+  expect(getApiMarket()).toBe("EG");
+  expect(await screen.findByText("Preliminary")).toBeTruthy();
+  await waitFor(() => expect(requestsTo(fetchMock, "/pe")).toHaveLength(1));
+  expect(requestsTo(fetchMock, "/risk")).toHaveLength(0);
+  expect(screen.queryByText("Risk grade")).toBeNull();
+  expect(screen.queryByText(/thinly traded/)).toBeNull();
+});
+
+it("an EG stock in an EG app carries no preliminary tag", async () => {
+  mockMarketApi({ "/markets": { markets: [EG_FALLBACK, US_MARKET], default: "EG" } });
+  await renderWithProviders(<StockDetailScreen symbol="COMI" initialInterval="Daily" />);
+  await screen.findByText("Technical Condition");
+  expect(screen.queryByText("Preliminary")).toBeNull();
 });
 
 it("hides the watch star on another market's stock (the watchlist is this market's)", async () => {

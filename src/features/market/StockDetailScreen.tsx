@@ -145,7 +145,12 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
               market={dataMarketInfo}
             />
             {data.composite_score && (
-              <CompositeCard composite={data.composite_score} interval={interval} callouts={compositeCallouts(data)} />
+              <CompositeCard
+                composite={data.composite_score}
+                interval={interval}
+                callouts={compositeCallouts(data)}
+                market={dataMarketInfo}
+              />
             )}
             <KeyLevelsCard keyLevels={data.key_levels} currency={currency} />
             <EntryExitCard entryExit={data.entry_exit} currency={currency} />

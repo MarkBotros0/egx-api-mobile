@@ -33,3 +33,15 @@ it("reads PRELIM in its compact form", async () => {
   expect(screen.getByText("PRELIM")).toBeTruthy();
   expect(screen.queryByText("Preliminary")).toBeNull();
 });
+
+it("follows the SCORE's market over the app's (a cross-market deep link)", async () => {
+  onMarket(EG_FALLBACK);
+  await render(<PreliminaryTag market={US_MARKET} />, { wrapper: TestSafeArea });
+  expect(screen.getByText("Preliminary")).toBeTruthy();
+});
+
+it("hides on a calibrated score's market even while the app is on US", async () => {
+  onMarket(US_MARKET);
+  await render(<PreliminaryTag market={EG_FALLBACK} />);
+  expect(screen.toJSON()).toBeNull();
+});

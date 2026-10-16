@@ -111,10 +111,26 @@ function Ungraded({ row }: { row: RiskRow }) {
   );
 }
 
-/** `market`: a deep link's market, read without switching the app's; omitted, the app's. */
+/**
+ * `market`: a deep link's market, read without switching the app's; omitted,
+ * the app's.
+ *
+ * Renders NOTHING on a market whose risk grade is not calibrated (US): it has
+ * no liquidity floors, so no stock is tradeable and every one would read "too
+ * thinly traded", against copy written for the EGX. Decided from the market's
+ * `score_calibrated` before any fetch, the way MarketRegimeCard is hidden; a
+ * market the app's list does not describe yet falls through to the response's
+ * null `liquidity_floor`.
+ */
 export function RiskGradeCard({ symbol, market: linked }: { symbol: string; market?: MarketCode }) {
-  const { market } = useMarket();
+  const { market, markets } = useMarket();
   const dataMarket = linked ?? market.code;
+  const info = dataMarket === market.code ? market : markets.find((m) => m.code === dataMarket);
+  if (info?.score_calibrated === false) return null;
+  return <RiskGrade symbol={symbol} market={dataMarket} />;
+}
+
+function RiskGrade({ symbol, market: dataMarket }: { symbol: string; market: MarketCode }) {
   const { data: res, error, loading } = useKeyedFetch(`risk:${dataMarket}:${symbol}`, () =>
     fetchRisk(symbol, { market: dataMarket })
   );
@@ -131,6 +147,9 @@ export function RiskGradeCard({ symbol, market: linked }: { symbol: string; mark
       </View>
     );
   }
+  // Guard for a market list that has not named the stock's market yet: the
+  // server reports a null floor for a market it cannot grade.
+  if (res.liquidity_floor === null) return null;
   // Match on symbol, never position: an unfiltered response is sorted by rank.
   const wanted = symbol.trim().toUpperCase();
   const row = res.data?.find((r) => r.symbol === wanted);

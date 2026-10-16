@@ -731,7 +731,9 @@ export interface RiskResponse {
   /** The STALEST row, not the freshest — a snapshot is only as current as that. */
   oldest_measurement?: string | null;
   newest_measurement?: string | null;
-  liquidity_floor?: number;
+  /** The market's turnover floor, in its currency. Null: the market has no
+   *  calibrated floors (US), so nothing is tradeable and nothing is graded. */
+  liquidity_floor?: number | null;
   calibration?: {
     fitted_at: string;
     n_observations: number;

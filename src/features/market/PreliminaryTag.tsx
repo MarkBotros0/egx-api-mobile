@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable } from "react-native";
 import { useMarket } from "@/providers/market";
+import type { Market } from "@/shared/markets";
 import { AppText, Sheet } from "@/ui";
 
 const EXPLANATION =
@@ -9,9 +10,12 @@ const EXPLANATION =
 /**
  * Marks a score whose bands were not fitted on this market. Renders nothing on
  * a calibrated market; tapping it explains why the score is preliminary.
+ * `market`: the market the SCORE belongs to (a deep link can show another
+ * market's stock); omitted, the app's.
  */
-export function PreliminaryTag({ compact = false }: { compact?: boolean }) {
-  const { market } = useMarket();
+export function PreliminaryTag({ compact = false, market: scored }: { compact?: boolean; market?: Market }) {
+  const { market: appMarket } = useMarket();
+  const market = scored ?? appMarket;
   const [open, setOpen] = useState(false);
   if (market.score_calibrated) return null;
   return (
