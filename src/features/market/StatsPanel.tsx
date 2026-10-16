@@ -31,10 +31,12 @@ export function statExplanations(market: Market) {
   return {
     betaTerm: `Beta vs ${bench}`,
     beta: `Measures how much this stock moves relative to the ${bench} index. Beta > 1 = more volatile than market. Beta < 1 = less volatile. Beta = 1 = moves with the market. A negative beta means it tends to move in the OPPOSITE direction to the index — its size still tells you how big those moves are.`,
-    pe: `Price-to-Earnings: how many ${cur} investors pay for every 1 ${cur} of annual profit.${eg ? " Judge it against the EGX median of about 12, not against global markets — under 8 is genuinely cheap here, over 25 is expensive." : ""} Below 3 is a warning, not a bargain: it usually means one-off earnings or a collapsed share price.`,
+    // "Below 3 … one-off earnings or a collapsed price" was measured on EGX
+    // names only; another market gets the definition alone.
+    pe: `Price-to-Earnings: how many ${cur} investors pay for every 1 ${cur} of annual profit.${eg ? " Judge it against the EGX median of about 12, not against global markets — under 8 is genuinely cheap here, over 25 is expensive. Below 3 is a warning, not a bargain: it usually means one-off earnings or a collapsed share price." : ""}`,
     dividendYield: eg
       ? `Annual dividends as a percentage of the current share price. The EGX median is about 3%. Read a healthy yield as evidence the company generates real cash, not as income — even 8% loses to the ~${T_BILL_RATE_PCT}% policy rate. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed.`
-      : "Annual dividends as a percentage of the current share price. Read a healthy yield as evidence the company generates real cash. Above 15% is a red flag: usually a one-off special dividend or a share price that has collapsed.",
+      : "Annual dividends as a percentage of the current share price. Read a healthy yield as evidence the company generates real cash.",
   };
 }
 
@@ -158,7 +160,7 @@ export function StatsPanel({
         <StatRow
           label="P/E Ratio"
           value={formatPE(pe)}
-          valueClass={peClass(pe.pe_ratio)}
+          valueClass={peClass(pe.pe_ratio, market.code)}
           tooltip={{ term: "P/E Ratio", explanation: copy.pe }}
         />
       )}
@@ -166,7 +168,7 @@ export function StatsPanel({
         <StatRow
           label="Dividend Yield"
           value={`${pe.dividend_yield.toFixed(2)}%`}
-          valueClass={dividendYieldClass(pe.dividend_yield)}
+          valueClass={dividendYieldClass(pe.dividend_yield, market.code)}
           tooltip={{ term: "Dividend Yield", explanation: copy.dividendYield }}
         />
       )}

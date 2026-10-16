@@ -68,7 +68,7 @@ export function ForecastCard({
       {outcome_band && <OutcomeCone data={outcome_band} symbol={symbol} currency={currency} />}
 
       <AppText className="mt-3 text-[10px] leading-relaxed text-white/30">
-        {`Fitted to how ${adjective} stocks have actually moved${outcome_band ? ` — ${outcome_band.calibration.n_observations.toLocaleString("en-US")} past checks, last fitted ${outcome_band.calibration.fitted_at}` : ""}. A range can still be wrong: news, a devaluation or a suspension can put the price outside it.`}
+        {`Fitted to how ${adjective} stocks have actually moved${outcome_band ? ` — ${outcome_band.calibration.n_observations.toLocaleString("en-US")} past checks, last fitted ${outcome_band.calibration.fitted_at}` : ""}. A range can still be wrong: ${adjective === "Egyptian" ? "news, a devaluation or a suspension" : "news or a trading halt"} can put the price outside it.`}
       </AppText>
       <Pressable accessibilityRole="link" onPress={() => router.push(market ? `${routes.calibration}?market=${market}` : routes.calibration)} className="min-h-[44px] justify-center">
         <AppText className="text-[11px] text-accent/60">See how often these ranges held →</AppText>

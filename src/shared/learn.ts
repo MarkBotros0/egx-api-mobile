@@ -47,6 +47,26 @@ export const LEVEL_LABEL: Record<Level, string> = {
 /** Per-device reading progress lives under this key (localStorage / AsyncStorage). */
 export const LEARN_PROGRESS_KEY = "egx.learn.progress";
 
+/**
+ * Learn content is written for the Egyptian market. These concepts (and the
+ * "risk-management" module) state Egyptian facts — the ~19% policy rate, EGX
+ * medians, EGP examples, NILEX tiers — so another market's screens must not
+ * link to them: a US reader would be taught EGX numbers as if they were US
+ * ones. Kept honest by a test in egx-api-mobile that scans the curriculum.
+ */
+export const EG_ONLY_LEARN_CONCEPTS: ReadonlySet<string> = new Set([
+  "atr", "beta", "composite_score", "dividend_dates", "dividend_yield",
+  "liquidity", "max_drawdown", "pe_ratio", "relative_strength",
+  "risk-management", "risk_adjusted_return", "score_limits", "sharpe_ratio",
+  "sma", "stop_loss", "market_condition",
+]);
+
+/** Whether a Learn link to `id` may be shown to a reader on `marketCode`. */
+export function learnLinkFits(id: string | null | undefined, marketCode: string): boolean {
+  if (!id) return false;
+  return marketCode === "EG" || !EG_ONLY_LEARN_CONCEPTS.has(id);
+}
+
 /** Stable key for progress tracking — ids are preferred, titles are the fallback. */
 export const conceptKey = (c: Concept): string =>
   c.id ?? c.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

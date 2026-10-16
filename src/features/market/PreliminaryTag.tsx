@@ -4,8 +4,9 @@ import { useMarket } from "@/providers/market";
 import type { Market } from "@/shared/markets";
 import { AppText, Sheet } from "@/ui";
 
-const EXPLANATION =
-  "US scores use bands calibrated on the Egyptian market. They will be recalibrated for US stocks.";
+// No claim about another market's evidence: only that this one is not fitted.
+const explanation = (shortName: string) =>
+  `${shortName} scores have not been calibrated on ${shortName} stocks yet, so treat the bands as provisional.`;
 
 /**
  * Marks a score whose bands were not fitted on this market. Renders nothing on
@@ -34,7 +35,7 @@ export function PreliminaryTag({ compact = false, market: scored }: { compact?: 
       </Pressable>
       <Sheet visible={open} onClose={() => setOpen(false)}>
         <AppText className="mb-1 font-mono-semibold text-xs text-accent">Preliminary score</AppText>
-        <AppText className="leading-5 text-white/70">{EXPLANATION}</AppText>
+        <AppText className="leading-5 text-white/70">{explanation(market.short_name)}</AppText>
       </Sheet>
     </>
   );

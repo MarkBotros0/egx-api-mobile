@@ -92,13 +92,17 @@ export function ScoreWeightsSheet({
   open,
   onClose,
   onSaved,
+  market: scoreMarket,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved?: () => void;
+  /** The market of the score being explained (a deep link can differ from the app's). */
+  market?: Market;
 }) {
   const { draft, presets, saving, updateDraftField, applyPreset, resetDraft, save } = useScoreWeights();
-  const { market } = useMarket();
+  const { market: appMarket } = useMarket();
+  const market = scoreMarket ?? appMarket;
   const meta = useMemo(() => categoryMeta(market), [market]);
   const [localError, setLocalError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);

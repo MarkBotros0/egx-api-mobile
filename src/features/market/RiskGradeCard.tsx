@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { learnHref } from "@/lib/links";
+import { learnLinkFits } from "@/shared/learn";
 import { useMarket } from "@/providers/market";
 import { fetchRisk, type RiskResponse, type RiskRow } from "@/shared/api";
 import type { MarketCode } from "@/shared/markets";
@@ -180,9 +181,12 @@ function RiskGrade({ symbol, market: dataMarket, shortName }: { symbol: string; 
           </LearnTerm>
           <AppText className="mt-0.5 text-[11px] text-white/40">How much this moves — not which way.</AppText>
         </View>
-        <Pressable accessibilityRole="link" onPress={() => router.push(learnHref("risk-management"))} className="min-h-[44px] justify-center">
-          <AppText className="text-[11px] text-accent/70">Learn →</AppText>
-        </Pressable>
+        {/* The risk-management module is Egyptian (EGP, NILEX, the 19% rate). */}
+        {learnLinkFits("risk-management", dataMarket) ? (
+          <Pressable accessibilityRole="link" onPress={() => router.push(learnHref("risk-management"))} className="min-h-[44px] justify-center">
+            <AppText className="text-[11px] text-accent/70">Learn →</AppText>
+          </Pressable>
+        ) : null}
       </View>
       {row.band ? <Graded row={row} res={res} band={row.band} now={now} shortName={shortName} /> : <Ungraded row={row} />}
     </View>

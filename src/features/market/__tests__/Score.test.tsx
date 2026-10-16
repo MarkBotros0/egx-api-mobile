@@ -21,8 +21,17 @@ describe("ScoreBreakdown", () => {
     await renderWithProviders(
       <ScoreBreakdown composite={composite} market={{ ...US_MARKET, score_calibrated: true }} />
     );
-    expect(screen.getByText(/tested across US stocks from 2007–2026/)).toBeTruthy();
-    expect(screen.queryByText(/EGX/)).toBeNull();
+    expect(screen.getByText(/tested on US stocks, higher scores did not precede better returns/)).toBeTruthy();
+    expect(screen.queryByText(/EGX|2007/)).toBeNull();
+  });
+
+  it("an uncalibrated market is told no other market's evidence", async () => {
+    mockMarketApi();
+    await renderWithProviders(
+      <ScoreBreakdown composite={composite} market={{ ...US_MARKET, score_calibrated: false }} />
+    );
+    expect(screen.getByText(/it has not yet been tested on this market/)).toBeTruthy();
+    expect(screen.queryByText(/EGX|2007/)).toBeNull();
   });
 
   it("keeps the EGX evidence on EG", async () => {

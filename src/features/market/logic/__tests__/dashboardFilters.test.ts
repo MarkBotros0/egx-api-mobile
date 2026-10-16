@@ -34,7 +34,9 @@ describe("per-market index tabs", () => {
     expect(indexTabs(EG_FALLBACK)).toEqual(["EGX30", "EGX70", "EGX100", "NILEX", "All"]);
   });
   it("falls back to the EG tabs when the market lists no indices", () => {
-    expect(indexTabs({ ...US_MARKET, indices: [] })).toEqual(["EGX30", "EGX70", "EGX100", "NILEX", "All"]);
+    // The EGX tabs are EG's own; another market without a list gets "All".
+    expect(indexTabs({ ...US_MARKET, indices: [] })).toEqual(["All"]);
+    expect(indexTabs({ ...EG_FALLBACK, indices: [] })).toEqual(["EGX30", "EGX70", "EGX100", "NILEX", "All"]);
   });
   it("labels an index id, or echoes it", () => {
     expect(indexLabel(US_MARKET, "SPX")).toBe("S&P 500");

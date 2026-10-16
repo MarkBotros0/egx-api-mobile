@@ -55,3 +55,11 @@ describe("row copy", () => {
     );
   });
 });
+
+describe("tBillLine on another market", () => {
+  it("keeps one decimal of a ~4% T-bill rather than rounding it to a whole percent", () => {
+    const o = order({ annualized_return_pct: 4.5, beat_t_bill: true, t_bill_hurdle_pct: 4.21 });
+    expect(tBillLine(o, "US")).toBe("+4.5%/yr — beat the 4.2% T-bill");
+    expect(tBillLine(o)).toBe("+4.5%/yr — beat the 4% T-bill");
+  });
+});

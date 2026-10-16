@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useMarket } from "@/providers/market";
 import { fetchPEFeedStatus } from "@/shared/api";
-import type { MarketCode } from "@/shared/markets";
+import { fallbackMarket, type MarketCode } from "@/shared/markets";
 import { AppText } from "@/ui";
 import { peStalenessMessage } from "./peFreshness";
 
@@ -14,7 +14,7 @@ export function PEFreshnessBanner({ market: linked }: { market?: MarketCode } = 
   const [message, setMessage] = useState<string | null>(null);
   const { market, markets } = useMarket();
   const dataMarket = linked ?? market.code;
-  const feedName = (markets.find((m) => m.code === dataMarket) ?? market).short_name;
+  const feedName = (markets.find((m) => m.code === dataMarket) ?? fallbackMarket(dataMarket)).short_name;
   // Another market's staleness says nothing about this one.
   const [messageMarket, setMessageMarket] = useState(dataMarket);
   if (messageMarket !== dataMarket) {

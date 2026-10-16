@@ -26,6 +26,20 @@ describe("AdvicePanel", () => {
     expect(screen.getAllByText("Learn more →")).toHaveLength(3);
   });
 
+  it("offers no Learn link to an Egyptian lesson on another market", async () => {
+    const { mockMarketApi, marketPrefRoutes } = jest.requireActual("@/features/market/testing/api");
+    mockMarketApi(marketPrefRoutes("US"));
+    const signals = [
+      { type: "pe_overvalued", severity: "warning", symbol: "AAPL", message: "AAPL P/E is 40.0", explanation: "x", learn_concept: "pe_ratio" },
+      { type: "rsi_overbought", severity: "warning", symbol: "AAPL", message: "AAPL RSI is 75", explanation: "y", learn_concept: "rsi" },
+    ];
+    await renderWithProviders(<AdvicePanel signals={signals as never} />);
+    await new Promise((r) => setTimeout(r, 0));
+    await fireEvent.press(screen.getByText(/Signals/));
+    // rsi is market-neutral; pe_ratio teaches the EGX median.
+    expect(await screen.findAllByText("Learn more →")).toHaveLength(1);
+  });
+
   it("says so when there is nothing to show", async () => {
     await renderWithProviders(<AdvicePanel signals={[]} />);
     expect(screen.getByText("No signals or advice to show.")).toBeTruthy();

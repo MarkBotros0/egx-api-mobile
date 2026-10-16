@@ -153,8 +153,13 @@ export const PE_EXPENSIVE_MIN = 25;
 /**
  * Tailwind class for a trailing P/E, or undefined for the neutral middle.
  * One definition — StatsPanel and HoldingsTable both had their own copy.
+ *
+ * EG ONLY: every cut-off is an EGX fact (its median, its "implausibly low").
+ * Another market's P/E is left uncoloured (undefined) — painting a US stock
+ * at the US median loss-red as "expensive" would teach the EGX scale.
  */
-export function peColor(pe: number): string | undefined {
+export function peColor(pe: number, marketCode: string = "EG"): string | undefined {
+  if (marketCode !== "EG") return undefined;
   if (pe < PE_IMPLAUSIBLY_LOW) return "text-white/60";
   if (pe < PE_CHEAP_MAX) return "text-gain";
   if (pe < PE_MEDIAN_MAX) return undefined;
@@ -164,7 +169,7 @@ export function peColor(pe: number): string | undefined {
 
 /** EGX median dividend yield (%), for framing "is this a real payout?". */
 export const DY_EGX_MEDIAN = 3.1;
-/** At or above this, a yield is usually a special dividend or a collapsed price. */
+/** EG only: at or above this, an EGX yield is usually a special dividend or a collapsed price. */
 export const DY_SUSPICIOUS_MIN = 15;
 
 // === Stop-loss convention ===
@@ -197,7 +202,8 @@ export const T_BILL_RATE_PCT = 19;
 
 // === Risk dashboard thresholds ===
 
-/** Sharpe ≥ this is "good" given Egypt's ~19% risk-free rate. */
+/** Sharpe ≥ this is "good". Textbook cut-off: the ratio already subtracts each
+ *  market's own risk-free rate, so it applies on every market. */
 export const SHARPE_GOOD = 1;
 /** Sharpe between 0 and this is marginal. */
 export const SHARPE_OKAY = 0.5;

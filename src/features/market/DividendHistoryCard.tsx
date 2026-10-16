@@ -28,9 +28,12 @@ function Shell({ children, isEg }: { children: ReactNode; isEg: boolean }) {
         >
           Dividend History
         </LearnTerm>
-        <Pressable accessibilityRole="link" onPress={() => router.push(learnHref("dividend_dates"))} className="min-h-[44px] justify-center">
-          <AppText className="text-[11px] text-accent/70">Learn more →</AppText>
-        </Pressable>
+        {/* The dividend_dates lesson is Egyptian (EGX, COMI, EGP): EG only. */}
+        {isEg ? (
+          <Pressable accessibilityRole="link" onPress={() => router.push(learnHref("dividend_dates"))} className="min-h-[44px] justify-center">
+            <AppText className="text-[11px] text-accent/70">Learn more →</AppText>
+          </Pressable>
+        ) : null}
       </View>
       {children}
     </View>

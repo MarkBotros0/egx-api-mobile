@@ -14,6 +14,7 @@ import { useMarket } from "@/providers/market";
 import { fetchCalibration, type CalibrationResponse } from "@/shared/api";
 import { withMarketDefaults, type MarketCode } from "@/shared/markets";
 import { learnHref } from "@/lib/links";
+import { learnLinkFits } from "@/shared/learn";
 
 /**
  * `market`: opened from a stock's forecast card, the STOCK's market (a
@@ -165,13 +166,15 @@ export function CalibrationScreen({ market: linked }: { market?: MarketCode } = 
         <AppText className="mt-6 text-[10px] leading-[16px] text-white/25">
           {`Measured ${forecast.fitted_at} on ${forecast.universe}.`}
         </AppText>
-        <Pressable
-          onPress={() => router.push(learnHref("risk-management"))}
-          accessibilityRole="link"
-          className="min-h-[44px] justify-center"
-        >
-          <AppText className="text-[11px] text-accent/60">Learn how to read these →</AppText>
-        </Pressable>
+        {learnLinkFits("risk-management", market.code) ? (
+          <Pressable
+            onPress={() => router.push(learnHref("risk-management"))}
+            accessibilityRole="link"
+            className="min-h-[44px] justify-center"
+          >
+            <AppText className="text-[11px] text-accent/60">Learn how to read these →</AppText>
+          </Pressable>
+        ) : null}
       </View>
     </Screen>
   );

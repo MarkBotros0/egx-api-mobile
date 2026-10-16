@@ -65,6 +65,40 @@ export const EG_FALLBACK: Market = {
   holidays: [],
 };
 
+/**
+ * Mirrors the backend's US entry, for the same reason as EG_FALLBACK: a market
+ * the app already knows about (a stored US preference, a deep-linked US stock)
+ * must read as ITSELF before /api/markets answers — never as EG. No holidays
+ * here; the server sends the NYSE calendar.
+ */
+export const US_FALLBACK: Market = {
+  code: "US",
+  name: "United States",
+  short_name: "US",
+  adjective: "US",
+  score_calibrated: true,
+  regime_shown: false,
+  indices: [
+    { id: "SPX", label: "S&P 500" },
+    { id: "NDX", label: "NASDAQ-100" },
+    { id: "DJI", label: "Dow 30" },
+  ],
+  flag: "🇺🇸",
+  currency: "USD",
+  locale: "en-US",
+  timezone: "America/New_York",
+  trading_days: [0, 1, 2, 3, 4],
+  open: "09:30",
+  close: "16:00",
+  benchmark_label: "S&P 500",
+  holidays: [],
+};
+
+/** The built-in facts for `code`, for use until /api/markets lists it. */
+export function fallbackMarket(code: MarketCode | string | null | undefined): Market {
+  return code === "US" ? US_FALLBACK : EG_FALLBACK;
+}
+
 /** A fallback for older backends: fields missing from /api/markets take these defaults. */
 export function withMarketDefaults(m: Partial<Market> & { code: MarketCode }): Market {
   return {

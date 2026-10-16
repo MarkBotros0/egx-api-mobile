@@ -6,7 +6,7 @@ import { useScoreWeights } from "@/providers/scoreWeights";
 import { useWatchlist } from "@/providers/watchlist";
 import { fetchAnalysis } from "@/shared/api";
 import { SR_LEVELS_DISPLAYED } from "@/shared/constants";
-import { withMarketDefaults, type MarketCode } from "@/shared/markets";
+import { fallbackMarket, withMarketDefaults, type MarketCode } from "@/shared/markets";
 import { Stack } from "expo-router";
 
 import { AppText, Button, ChartSkeleton, IconButton, Screen } from "@/ui";
@@ -55,7 +55,10 @@ export function StockDetailScreen({ symbol, initialInterval, market: linkedMarke
   const pinned = linkedMarket && linkedMarket !== market.code ? linkedMarket : null;
   const dataMarket = pinned ?? market.code;
   // The facts of the market this stock trades on (benchmark, currency).
-  const dataMarketInfo = markets.find((m) => m.code === dataMarket) ?? market;
+  // Before /api/markets lists it, the stock's market reads as its own built-in
+  // facts — never the app's (EG copy on a deep-linked US stock).
+  const dataMarketInfo =
+    markets.find((m) => m.code === dataMarket) ?? (dataMarket === market.code ? market : fallbackMarket(dataMarket));
   // Copy names the STOCK's market even before /api/markets has listed it: a
   // deep-linked US stock on a cold start must not read "Egyptian".
   const dataAdjective =

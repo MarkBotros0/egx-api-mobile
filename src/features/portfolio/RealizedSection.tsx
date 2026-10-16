@@ -54,7 +54,8 @@ function SupportTile({ label, children }: { label: string; children: ReactNode }
 
 function OrderRow({ order: o, currency, onUndo }: { order: SaleOrder; currency: string; onUndo: (o: SaleOrder) => void }) {
   const [open, setOpen] = useState(false);
-  const line = tBillLine(o);
+  const { market } = useMarket();
+  const line = tBillLine(o, market.code);
   return (
     <View className="rounded-lg bg-white/5 p-3">
       <View className="flex-row items-start justify-between gap-3">

@@ -19,11 +19,13 @@ export function signedClass(v: number): string {
   return v >= 0 ? "text-gain" : "text-loss";
 }
 
-/** The shared EGX-median P/E bands (`peColor`), neutral in the middle. */
-export function peClass(pe: number): string {
-  return peColor(pe) ?? "text-white";
+/** The shared EGX-median P/E bands (`peColor`), neutral in the middle. EG only:
+ *  another market's P/E is uncoloured (the bands are EGX facts). */
+export function peClass(pe: number, marketCode: string = "EG"): string {
+  return peColor(pe, marketCode) ?? "text-white";
 }
 
-export function dividendYieldClass(dy: number): string {
-  return dy >= DY_SUSPICIOUS_MIN ? "text-loss" : "text-white";
+/** EG only: the 15% "suspicious yield" line is an EGX finding. */
+export function dividendYieldClass(dy: number, marketCode: string = "EG"): string {
+  return marketCode === "EG" && dy >= DY_SUSPICIOUS_MIN ? "text-loss" : "text-white";
 }

@@ -7,6 +7,7 @@ import { formatMoney, formatPrice } from "@/shared/money";
 import type { HoldingAnalysis } from "@/shared/types";
 import { AppText, Button, Card } from "@/ui";
 import { PreliminaryTag } from "@/features/market/PreliminaryTag";
+import { useMarket } from "@/providers/market";
 import { LotList } from "./LotList";
 import { ZoneBadge, ZoneDetail } from "./ZoneBadge";
 import { fmtExDate, pnlTone, signed, signedPct } from "@/features/portfolio/logic/format";
@@ -35,6 +36,7 @@ function Stat({ label, children }: { label: string; children: ReactNode }) {
 const mono = (text: string, tone = "text-white/70") => <AppText className={`font-mono text-xs ${tone}`}>{text}</AppText>;
 
 export function PositionCard({ position: h, currency, expanded, onToggle, onEdit, onRequestDelete, onSell, onAddDividend }: PositionCardProps) {
+  const { market } = useMarket();
   // A position whose price feed is down must stay sellable — recording a sale
   // or a dividend needs no price.
   if (h.error) {
@@ -143,7 +145,7 @@ export function PositionCard({ position: h, currency, expanded, onToggle, onEdit
             <Stat label="Volatility">{mono(h.volatility != null ? `${(h.volatility * 100).toFixed(2)}%` : "--")}</Stat>
             <Stat label="Volume Trend">{mono(h.volume_trend)}</Stat>
             {h.pe?.pe_ratio != null && (
-              <Stat label="P/E">{mono(h.pe.pe_ratio.toFixed(1), peColor(h.pe.pe_ratio) ?? "text-white/60")}</Stat>
+              <Stat label="P/E">{mono(h.pe.pe_ratio.toFixed(1), peColor(h.pe.pe_ratio, market.code) ?? "text-white/60")}</Stat>
             )}
             {h.target_price != null && (
               <Stat label="To Target">

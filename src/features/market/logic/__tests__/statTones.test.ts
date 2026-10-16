@@ -27,3 +27,15 @@ it("colours a signed figure by its sign", () => {
   expect(signedClass(0)).toBe("text-gain");
   expect(signedClass(-0.01)).toBe("text-loss");
 });
+
+it("colours P/E and yield on the EGX scale on EG only — another market is uncoloured", () => {
+  expect(peClass(5)).toBe("text-gain");
+  expect(peClass(30)).toBe("text-loss");
+  expect(dividendYieldClass(20)).toBe("text-loss");
+  // A US stock at the US median (~24) is not "expensive", and 5 is not "cheap":
+  // those cut-offs are the EGX median's.
+  expect(peClass(30, "US")).toBe("text-white");
+  expect(peClass(5, "US")).toBe("text-white");
+  expect(peClass(2, "US")).toBe("text-white");
+  expect(dividendYieldClass(20, "US")).toBe("text-white");
+});

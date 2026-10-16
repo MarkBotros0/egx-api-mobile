@@ -253,7 +253,8 @@ export function AlertsScreen() {
           <AppText className="text-xs text-white/40">
             Points are on the 0–100 score. Alerts arrive while the market is
             open, at most once per stock and direction per day, and never
-            between 22:00 and 08:00.
+            between 22:00 and 08:00 in that market&apos;s own time (Cairo for
+            EGX stocks, New York for US stocks).
           </AppText>
         </View>
       </View>

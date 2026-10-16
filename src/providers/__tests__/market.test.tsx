@@ -110,3 +110,17 @@ it("is loading again while a newly signed-in user's preference loads", async () 
   await waitFor(() => expect(result.current.loading).toBe(false));
   expect(result.current.market.code).toBe("US");
 });
+
+it("before the market list answers, a stored US choice reads as US, never as EG", async () => {
+  await AsyncStorage.setItem(MARKET_STORAGE_KEY, "US");
+  let release: (v: unknown) => void = () => {};
+  jest.spyOn(api, "fetchMarkets").mockReturnValue(new Promise((r) => (release = r)) as never);
+  jest.spyOn(api, "fetchMarketPref").mockResolvedValue({ market: "US" });
+  const { result } = await renderHook(() => useMarket(), { wrapper });
+  await waitFor(() => expect(result.current.market.code).toBe("US"));
+  expect(result.current.market.currency).toBe("USD");
+  expect(result.current.market.benchmark_label).toBe("S&P 500");
+  await act(async () => release({ markets: [EG_FALLBACK], default: "EG" }));
+  // The list is authoritative: US not enabled -> EG.
+  await waitFor(() => expect(result.current.market.code).toBe("EG"));
+});

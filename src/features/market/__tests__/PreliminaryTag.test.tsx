@@ -7,7 +7,8 @@ import { US_MARKET } from "../testing/fixtures";
 
 jest.mock("@/providers/market", () => ({ useMarket: jest.fn() }));
 
-const EXPLANATION = "US scores use bands calibrated on the Egyptian market. They will be recalibrated for US stocks.";
+// No claim about another market's evidence, only that this one is not fitted.
+const EXPLANATION = "US scores have not been calibrated on US stocks yet, so treat the bands as provisional.";
 
 function onMarket(market: Market) {
   (useMarket as jest.Mock).mockReturnValue({ market, markets: [EG_FALLBACK, US_MARKET], setMarket: jest.fn(), loading: false });

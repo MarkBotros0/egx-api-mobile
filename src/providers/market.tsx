@@ -8,7 +8,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { useAuth } from "@/auth/AuthProvider";
 import { fetchMarketPref, fetchMarkets, putMarketPref, setApiMarket } from "@/shared/api";
-import { DEFAULT_MARKET, EG_FALLBACK, type Market, type MarketCode } from "@/shared/markets";
+import { DEFAULT_MARKET, EG_FALLBACK, fallbackMarket, type Market, type MarketCode } from "@/shared/markets";
 
 export const MARKET_STORAGE_KEY = "egx.market";
 
@@ -26,11 +26,19 @@ const Ctx = createContext<MarketCtx | null>(null);
 const pick = (markets: Market[], code: string | null | undefined): Market =>
   markets.find((m) => m.code === code) ?? markets.find((m) => m.code === DEFAULT_MARKET) ?? EG_FALLBACK;
 
+// BEFORE /api/markets has answered, a stored code (US on a cold start) reads
+// as ITS OWN built-in facts, never as EG: screens branch on market.code, and
+// EG copy over US data was the failure. Once the list is in, it is
+// authoritative — a code it does not list (US not enabled) falls back to EG.
+const pickBeforeList = (markets: Market[], code: string | null | undefined): Market =>
+  markets.find((m) => m.code === code) ?? (code ? fallbackMarket(code) : pick(markets, code));
+
 export function MarketProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const [markets, setMarkets] = useState<Market[]>([EG_FALLBACK]);
   const [code, setCode] = useState<MarketCode>(DEFAULT_MARKET);
   const [loading, setLoading] = useState(true);
+  const [listed, setListed] = useState(false);
 
   const apply = useCallback((next: MarketCode) => {
     setApiMarket(next);
@@ -61,6 +69,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       const enabled = list?.markets?.length ? list.markets : [EG_FALLBACK];
       setMarkets(enabled);
+      setListed(true);
       apply(pick(enabled, pref?.market ?? stored).code);
       setLoading(false);
     })();
@@ -81,8 +90,8 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<MarketCtx>(
-    () => ({ market: pick(markets, code), markets, setMarket, loading }),
-    [markets, code, setMarket, loading]
+    () => ({ market: (listed ? pick : pickBeforeList)(markets, code), markets, setMarket, loading }),
+    [markets, code, setMarket, loading, listed]
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

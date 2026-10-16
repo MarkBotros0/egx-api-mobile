@@ -12,14 +12,17 @@ export function initialRealizedTab(orders: SaleOrder[], dividends: Dividend[]): 
   return orders.length ? "sales" : dividends.length ? "dividends" : "by_symbol";
 }
 
-export function tBillLine(order: SaleOrder): string | null {
+/** EG rounds the hurdle to a whole percent (it moves in 25bp+ steps around
+ *  ~20%); another market keeps one decimal (a ~4% T-bill rounded to "4%"
+ *  hides the 0.2 points a close trade turns on). */
+export function tBillLine(order: SaleOrder, marketCode: string = "EG"): string | null {
   if (order.annualized_return_pct === null) {
     return order.lots_count > 1 ? `Spans ${order.lots_count} purchases — see each below` : null;
   }
   const verdict = order.beat_t_bill ? "beat" : "lost to";
   const hurdle = order.t_bill_hurdle_pct;
   return `${signed(order.annualized_return_pct, 1)}%/yr — ${verdict} the ${
-    hurdle !== null ? hurdle.toFixed(0) : "—"
+    hurdle !== null ? hurdle.toFixed(marketCode === "EG" ? 0 : 1) : "—"
   }% T-bill`;
 }
 

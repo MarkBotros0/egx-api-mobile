@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { learnHref } from "@/lib/links";
+import { useMarket } from "@/providers/market";
+import { learnLinkFits } from "@/shared/learn";
 import type { Signal } from "@/shared/types";
 import { AppText, Card, Pill } from "@/ui";
 import { SEVERITY_META, severityCounts, tierOf } from "./logic/signals";
@@ -14,6 +16,7 @@ import { SEVERITY_META, severityCounts, tierOf } from "./logic/signals";
  */
 export function AdvicePanel({ signals }: { signals: Signal[] }) {
   const [open, setOpen] = useState(false);
+  const { market } = useMarket();
 
   if (!signals.length) {
     return (
@@ -60,7 +63,8 @@ export function AdvicePanel({ signals }: { signals: Signal[] }) {
                   <View className="flex-1">
                     <AppText className="font-sans text-sm text-white/90">{signal.message}</AppText>
                     <AppText className="mt-2 font-sans text-xs leading-relaxed text-white/40">{signal.explanation}</AppText>
-                    {signal.learn_concept ? (
+                    {/* Learn content is Egyptian: no link to an EG-only concept off EG. */}
+                    {signal.learn_concept && learnLinkFits(signal.learn_concept, market.code) ? (
                       <Pressable
                         accessibilityRole="link"
                         onPress={() => router.push(learnHref(signal.learn_concept))}

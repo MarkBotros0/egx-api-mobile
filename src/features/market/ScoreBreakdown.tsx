@@ -34,10 +34,15 @@ export function ScoreBreakdown({
 }) {
   const { market: appMarket } = useMarket();
   const m = scoreMarket ?? appMarket;
-  // Each market's backtest (2007–2026 for both EG and US) found the same thing:
-  // higher scores did not precede better returns. A market without its own
-  // backtest is told the EGX evidence, never a claim nobody measured.
-  const tested = m.code === "EG" || !m.score_calibrated ? "the EGX" : `${m.short_name} stocks`;
+  // EG: the 2007–2026 walk-forward backtest. A calibrated market states its
+  // OWN finding (US: IC -0.010, today's index members) without EG's dates; an
+  // uncalibrated one is told nothing — never the EGX evidence.
+  const evidence =
+    m.code === "EG"
+      ? " tested across the EGX from 2007–2026, higher scores did not precede better returns than lower ones."
+      : m.score_calibrated
+        ? ` tested on ${m.short_name} stocks, higher scores did not precede better returns than lower ones.`
+        : " it has not yet been tested on this market.";
   const [expanded, setExpanded] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -115,10 +120,10 @@ export function ScoreBreakdown({
       )}
 
       <AppText className="mt-4 text-[10px] leading-relaxed text-white/30">
-        This score describes a stock&apos;s current technical condition. It is not a forecast: tested across {tested} from 2007–2026, higher scores did not precede better returns than lower ones. Read the categories above for what is true today, and consider fundamentals, news and macro before trading.
+        This score describes a stock&apos;s current technical condition. It is not a forecast:{evidence} Read the categories above for what is true today, and consider fundamentals, news and macro before trading.
       </AppText>
 
-      <ScoreWeightsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onSaved={onWeightsChanged} />
+      <ScoreWeightsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} onSaved={onWeightsChanged} market={m} />
     </View>
   );
 }

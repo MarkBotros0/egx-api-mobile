@@ -8,7 +8,9 @@ export const ALL_INDICES = "All";
 
 /** The market's index tab ids, then "All". */
 export function indexTabs(market: Market): string[] {
-  return market.indices.length ? [...market.indices.map((i) => i.id), ALL_INDICES] : [...INDICES];
+  if (market.indices.length) return [...market.indices.map((i) => i.id), ALL_INDICES];
+  // The EGX tabs are EG's; another market with no list gets "All" only.
+  return market.code === "EG" ? [...INDICES] : [ALL_INDICES];
 }
 
 /** The tab's display label ("S&P 500" for "SPX"), or the id itself. */

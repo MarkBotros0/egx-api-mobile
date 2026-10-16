@@ -148,6 +148,9 @@ describe("ForecastCard", () => {
     await renderWithProviders(<ForecastCard forecast={FORECAST} symbol="AAPL" currency="USD" adjective="US" />);
     expect(screen.getByText(/Fitted to how US stocks have actually moved/)).toBeTruthy();
     expect(screen.queryByText(/Egyptian/)).toBeNull();
+    // A devaluation is an EGP risk, not a USD one.
+    expect(screen.getByText(/news or a trading halt can put the price outside it/)).toBeTruthy();
+    expect(screen.queryByText(/devaluation/)).toBeNull();
   });
 
   it("shows typical moves with measured coverage and the outcome range", async () => {

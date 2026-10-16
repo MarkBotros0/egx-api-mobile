@@ -98,8 +98,10 @@ describe("StatsPanel copy per market", () => {
     await renderFor(US_MARKET);
     expect(screen.getByText("Beta vs S&P 500")).toBeTruthy();
     expect(screen.getByText(/relative to the S&P 500 index/)).toBeTruthy();
-    expect(screen.getByText(/how many USD investors pay for every 1 USD of annual profit\. Below 3 is a warning/)).toBeTruthy();
-    expect(screen.getByText(/^Annual dividends as a percentage of the current share price\. Read a healthy yield/)).toBeTruthy();
+    // The EGX-measured "below 3" and "above 15%" warnings are EG-only.
+    expect(screen.getByText(/how many USD investors pay for every 1 USD of annual profit\.$/)).toBeTruthy();
+    expect(screen.getByText(/^Annual dividends as a percentage of the current share price\. Read a healthy yield as evidence the company generates real cash\.$/)).toBeTruthy();
+    expect(screen.queryByText(/Below 3|Above 15%/)).toBeNull();
     expect(renderedText()).not.toMatch(EG_WORDING);
   });
 });
