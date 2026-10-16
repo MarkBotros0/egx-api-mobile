@@ -2,16 +2,35 @@
  * Parsing for the three money fields (buy price, sell price, dividend amount)
  * and the two share fields (quantity, dividend shares).
  *
- * EGX quotes to THREE decimals (CIEB at 27.697), and the dividend amount is
- * whatever landed after 5-10% withholding, so it is rarely round. The web
- * shipped `step={0.01}` once and the browser rejected real prices; this is the
- * mobile equivalent of `step="any"` plus an explicit 3-decimal ceiling.
- *
- * EGX has no fractional shares, so share fields are integers — never
- * parseInt("5.7"), which would silently record 5.
+ * The rules are the MARKET's (`/api/markets` share_decimals / price_decimals):
+ * - EG: prices to THREE decimals (CIEB at 27.697) — the dividend amount is
+ *   whatever landed after withholding, so it is rarely round; the web shipped
+ *   `step={0.01}` once and the browser rejected real prices. Shares are whole:
+ *   the EGX has no fractional shares — never parseInt("5.7"), which would
+ *   silently record 5.
+ * - US: prices to four decimals (average costs on fractional buys, sub-$1
+ *   quotes) and fractional shares to six, as US brokers hold them.
  */
 
+import type { Market } from "@/shared/markets";
+
 export const MONEY_DECIMALS = 3;
+
+export interface InputRules {
+  shareDecimals: number;
+  priceDecimals: number;
+}
+
+/** EG's rules: the default, so every caller written before markets is unchanged. */
+export const EG_INPUT_RULES: InputRules = { shareDecimals: 0, priceDecimals: MONEY_DECIMALS };
+
+export function inputRules(market: Pick<Market, "code" | "share_decimals" | "price_decimals">): InputRules {
+  const us = market.code === "US";
+  return {
+    shareDecimals: market.share_decimals ?? (us ? 6 : 0),
+    priceDecimals: market.price_decimals ?? (us ? 4 : MONEY_DECIMALS),
+  };
+}
 
 /** `error: null` means "empty — say nothing yet". */
 export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string | null };
@@ -39,7 +58,7 @@ export function normalizeNumeric(text: string): string {
   return out;
 }
 
-export function parseMoney(text: string): Parsed<number> {
+export function parseMoney(text: string, priceDecimals: number = MONEY_DECIMALS): Parsed<number> {
   const s = normalizeNumeric(text);
   if (s === "") return { ok: false, error: null };
   // "1,200" is 1200 to one reader and 1.2 to another. Guessing wrong records a
@@ -47,17 +66,34 @@ export function parseMoney(text: string): Parsed<number> {
   if (s.includes(",") || s.includes(ARABIC_THOUSANDS_SEPARATOR)) {
     return { ok: false, error: "Use a dot for decimals and no thousands separators" };
   }
-  if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return { ok: false, error: "Enter a number, e.g. 27.697" };
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) {
+    return { ok: false, error: priceDecimals === MONEY_DECIMALS ? "Enter a number, e.g. 27.697" : "Enter a number, e.g. 187.25" };
+  }
   const decimals = (s.split(".")[1] ?? "").replace(/0+$/, "").length;
-  if (decimals > MONEY_DECIMALS) return { ok: false, error: "Prices go to 3 decimals at most" };
+  if (decimals > priceDecimals) return { ok: false, error: `Prices go to ${priceDecimals} decimals at most` };
   const value = Number(s);
   if (!(value > 0)) return { ok: false, error: "Must be more than 0" };
   return { ok: true, value };
 }
 
-export function parseShares(text: string, max?: number): Parsed<number> {
+export function parseShares(text: string, max?: number, shareDecimals: number = 0): Parsed<number> {
   const s = normalizeNumeric(text);
   if (s === "") return { ok: false, error: null };
+  if (shareDecimals > 0) {
+    if (s.includes(",") || s.includes(ARABIC_THOUSANDS_SEPARATOR)) {
+      return { ok: false, error: "Use a dot for decimals and no thousands separators" };
+    }
+    if (!/^(\d+\.?\d*|\.\d+)$/.test(s)) return { ok: false, error: "Enter a number of shares, e.g. 2.5" };
+    const decimals = (s.split(".")[1] ?? "").replace(/0+$/, "").length;
+    if (decimals > shareDecimals) return { ok: false, error: `Shares go to ${shareDecimals} decimals at most` };
+    const frac = Number(s);
+    if (!(frac > 0)) return { ok: false, error: "Must be more than 0" };
+    // Compared at six places: a held 0.3 is not "less than" 0.1 + 0.2.
+    if (max !== undefined && Math.round(frac * 1e6) > Math.round(max * 1e6)) {
+      return { ok: false, error: `Enter up to ${max} shares` };
+    }
+    return { ok: true, value: frac };
+  }
   if (!/^\d+$/.test(s)) return { ok: false, error: "Enter a whole number of shares" };
   const value = Number(s);
   if (max !== undefined && (value < 1 || value > max)) {

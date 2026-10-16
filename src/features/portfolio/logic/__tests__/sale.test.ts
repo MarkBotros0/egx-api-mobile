@@ -79,3 +79,22 @@ describe("sellDateError", () => {
     );
   });
 });
+
+describe("a fractional US position", () => {
+  const position = {
+    symbol: "AAPL",
+    lots: [
+      { id: "a", quantity: 0.1, buy_price: 200, buy_date: "2026-01-02" },
+      { id: "b", quantity: 0.2, buy_price: 210, buy_date: "2026-02-02" },
+    ],
+  };
+  const US_RULES = { shareDecimals: 6, priceDecimals: 4 };
+
+  it("sells out exactly, FIFO, without float residue", () => {
+    const p = previewSale(position as never, "0.3", "220", US_RULES);
+    expect(p.held).toBe(0.3);
+    expect(p.quantity).toEqual({ ok: true, value: 0.3 });
+    expect(p.parts.map((x) => [x.id, x.quantity])).toEqual([["a", 0.1], ["b", 0.2]]);
+    expect(p.pnl).toBeCloseTo(0.1 * 20 + 0.2 * 10, 9);
+  });
+});

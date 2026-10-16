@@ -37,6 +37,10 @@ export interface Market {
   open: string;   // "HH:MM" local
   close: string;  // "HH:MM" local, inclusive
   benchmark_label: string;
+  /** Decimal places a share count may carry: 0 = whole shares (EGX); US 6. Absent (old backend) = by code. */
+  share_decimals?: number;
+  /** Decimal places a price may be entered with: EGX 3, US 4. */
+  price_decimals?: number;
   holidays: { date: string; name: string }[];
 }
 
@@ -62,6 +66,8 @@ export const EG_FALLBACK: Market = {
   open: "10:00",
   close: "14:30",
   benchmark_label: "EGX30",
+  share_decimals: 0,
+  price_decimals: 3,
   holidays: [],
 };
 
@@ -91,6 +97,8 @@ export const US_FALLBACK: Market = {
   open: "09:30",
   close: "16:00",
   benchmark_label: "S&P 500",
+  share_decimals: 6,
+  price_decimals: 4,
   holidays: [],
 };
 
@@ -107,6 +115,8 @@ export function withMarketDefaults(m: Partial<Market> & { code: MarketCode }): M
     adjective: m.adjective || (m.code === "EG" ? "Egyptian" : m.short_name || m.code),
     score_calibrated: m.score_calibrated ?? m.code === "EG",
     indices: m.indices ?? [],
+    share_decimals: m.share_decimals ?? fallbackMarket(m.code).share_decimals,
+    price_decimals: m.price_decimals ?? fallbackMarket(m.code).price_decimals,
   };
 }
 

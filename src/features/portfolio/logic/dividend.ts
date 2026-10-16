@@ -6,7 +6,7 @@
  */
 import type { PortfolioHolding, Sale } from "@/shared/types";
 import { todayIso } from "@/lib/dates";
-import { parseMoney, parseShares } from "./money";
+import { EG_INPUT_RULES, parseMoney, parseShares, type InputRules } from "./money";
 
 export interface DividendSymbolOption {
   symbol: string;
@@ -70,10 +70,12 @@ export function buildDividendPayload(input: {
   sharesText: string;
   notes: string;
   today?: string;
+  rules?: InputRules;
 }): { ok: true; payload: DividendPayload } | { ok: false; errors: DividendFormErrors } {
-  const amount = parseMoney(input.amountText);
+  const rules = input.rules ?? EG_INPUT_RULES;
+  const amount = parseMoney(input.amountText, rules.priceDecimals);
   const sharesBlank = input.sharesText.trim() === "";
-  const shares = sharesBlank ? null : parseShares(input.sharesText);
+  const shares = sharesBlank ? null : parseShares(input.sharesText, undefined, rules.shareDecimals);
   const today = input.today ?? todayIso();
   const errors: DividendFormErrors = {
     symbol: input.symbol ? null : "Pick a stock",
@@ -103,8 +105,8 @@ export function buildDividendPayload(input: {
   };
 }
 
-export function perShareAmount(amountText: string, sharesText: string): number | null {
-  const amount = parseMoney(amountText);
-  const shares = parseShares(sharesText);
+export function perShareAmount(amountText: string, sharesText: string, rules: InputRules = EG_INPUT_RULES): number | null {
+  const amount = parseMoney(amountText, rules.priceDecimals);
+  const shares = parseShares(sharesText, undefined, rules.shareDecimals);
   return amount.ok && shares.ok ? amount.value / shares.value : null;
 }

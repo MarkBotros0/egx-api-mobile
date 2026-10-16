@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { inputRules } from "../logic/money";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { FEW_LOCAL_MATCHES, useTickerSearch } from "@/features/market/hooks/useTickerSearch";
 import { useMarket } from "@/providers/market";
@@ -109,7 +110,8 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
     return [...local, ...extra];
   }, [local, remoteFound]);
   const listOpen = showList && !picked && suggestions.length > 0;
-  const result = buildHoldingPayload({ ticker: effective, quantityText, priceText, buyDate, initial: initialValues });
+  const rules = inputRules(market);
+  const result = buildHoldingPayload({ ticker: effective, quantityText, priceText, buyDate, initial: initialValues, rules });
   const errors = result.ok ? null : result.errors;
   const canSubmit = result.ok && validation !== "validating" && validation !== "invalid" && !submitting;
 
@@ -186,7 +188,7 @@ export function AddHoldingForm({ tickers, initialValues, onSubmit, onCancel, err
           setQuantityText(t);
           edited();
         }}
-        keyboardType="number-pad"
+        keyboardType={rules.shareDecimals > 0 ? "decimal-pad" : "number-pad"}
         placeholder="100"
         error={errors?.quantity ?? null}
       />

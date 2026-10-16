@@ -71,7 +71,7 @@ export function groupHoldings(holdings: HoldingAnalysis[]): Position[] {
       continue;
     }
 
-    const quantity = priced.reduce((n, l) => n + l.quantity, 0);
+    const quantity = roundShares(priced.reduce((n, l) => n + l.quantity, 0));
     const invested = priced.reduce((n, l) => n + l.invested, 0);
     const current_value = priced.reduce((n, l) => n + l.current_value, 0);
     const pnl = priced.reduce((n, l) => n + l.pnl, 0);
@@ -108,6 +108,15 @@ export function groupHoldings(holdings: HoldingAnalysis[]): Position[] {
   return positions;
 }
 
+/**
+ * Share counts are whole on the EGX and fractional (≤ 6 decimals) in the US.
+ * Floats add 0.1 + 0.2 to 0.30000000000000004, so every sum and difference of
+ * share counts is rounded back to six places — a no-op on whole numbers.
+ */
+export function roundShares(n: number): number {
+  return Math.round(n * 1e6) / 1e6;
+}
+
 export interface SalePart {
   id: string;
   quantity: number;
@@ -130,9 +139,9 @@ export function planSale(lots: SalePart[], quantity: number): SalePart[] {
   for (const lot of [...lots].sort(byBuyDate)) {
     if (remaining <= 0) break;
     if (lot.quantity <= 0) continue;
-    const take = Math.min(lot.quantity, remaining);
+    const take = roundShares(Math.min(lot.quantity, remaining));
     plan.push({ ...lot, quantity: take });
-    remaining -= take;
+    remaining = roundShares(remaining - take);
   }
   return plan;
 }

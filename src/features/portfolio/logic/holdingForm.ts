@@ -7,7 +7,7 @@
 import { TICKER_SEARCH_LIMIT } from "@/shared/constants";
 import type { PortfolioHolding, Ticker } from "@/shared/types";
 import { todayIso } from "@/lib/dates";
-import { parseMoney, parseShares } from "./money";
+import { EG_INPUT_RULES, parseMoney, parseShares, type InputRules } from "./money";
 
 export type TickerValidation = "idle" | "validating" | "valid" | "invalid" | "error";
 
@@ -75,9 +75,11 @@ export function buildHoldingPayload(input: {
   buyDate: string;
   initial?: HoldingInitialValues;
   today?: string;
+  rules?: InputRules;
 }): { ok: true; payload: HoldingPayload } | { ok: false; errors: HoldingFormErrors } {
-  const quantity = parseShares(input.quantityText);
-  const price = parseMoney(input.priceText);
+  const rules = input.rules ?? EG_INPUT_RULES;
+  const quantity = parseShares(input.quantityText, undefined, rules.shareDecimals);
+  const price = parseMoney(input.priceText, rules.priceDecimals);
   const today = input.today ?? todayIso();
   const date = !input.buyDate
     ? "Pick a buy date"

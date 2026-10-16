@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { inputRules } from "../logic/money";
+import { useMarket } from "@/providers/market";
 import { View } from "react-native";
 import { formatPrice } from "@/shared/money";
 import { AppText, Button, DateField, TextField } from "@/ui";
@@ -29,7 +31,9 @@ export function SellHoldingForm({ position, currency, onSubmit, onCancel, error 
   const { run, pending: submitting } = useSingleFlight();
 
   const today = todayIso();
-  const p = previewSale(position, quantityText, priceText);
+  const { market } = useMarket();
+  const rules = inputRules(market);
+  const p = previewSale(position, quantityText, priceText, rules);
   const dateError = sellDateError(sellDate, p.earliestSellDate, today, p.multiLot);
   const canSubmit = p.quantity.ok && p.price.ok && !dateError && !submitting;
 
@@ -59,7 +63,7 @@ export function SellHoldingForm({ position, currency, onSubmit, onCancel, error 
             setQuantityText(t);
             edited();
           }}
-          keyboardType="number-pad"
+          keyboardType={rules.shareDecimals > 0 ? "decimal-pad" : "number-pad"}
           placeholder="Shares to sell"
           error={p.quantity.ok ? null : p.quantity.error}
         />

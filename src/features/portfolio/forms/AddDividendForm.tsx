@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { inputRules } from "../logic/money";
+import { useMarket } from "@/providers/market";
 import { View } from "react-native";
 import { formatPrice } from "@/shared/money";
 import { AppText, Button, DateField, Pill, PillRow, TextField } from "@/ui";
@@ -35,9 +37,11 @@ export function AddDividendForm({ symbols, presetSymbol, currency, onSubmit, onC
   const { run, pending: submitting } = useSingleFlight();
 
   const today = todayIso();
-  const result = buildDividendPayload({ symbol, options: symbols, amountText, payDate, sharesText, notes, today });
+  const { market } = useMarket();
+  const rules = inputRules(market);
+  const result = buildDividendPayload({ symbol, options: symbols, amountText, payDate, sharesText, notes, today, rules });
   const errors = result.ok ? null : result.errors;
-  const perShare = perShareAmount(amountText, sharesText);
+  const perShare = perShareAmount(amountText, sharesText, rules);
   const canSubmit = result.ok && !submitting;
 
   const edited = () => {
@@ -114,7 +118,7 @@ export function AddDividendForm({ symbols, presetSymbol, currency, onSubmit, onC
             setSharesText(t);
             edited();
           }}
-          keyboardType="number-pad"
+          keyboardType={rules.shareDecimals > 0 ? "decimal-pad" : "number-pad"}
           placeholder="500"
           error={errors?.shares ?? null}
         />

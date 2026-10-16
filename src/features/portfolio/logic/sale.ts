@@ -6,7 +6,8 @@
  */
 import { planSale, type SalePart } from "@/shared/positions";
 import type { PortfolioHolding } from "@/shared/types";
-import { parseMoney, parseShares, type Parsed } from "./money";
+import { roundShares } from "@/shared/positions";
+import { EG_INPUT_RULES, parseMoney, parseShares, type InputRules, type Parsed } from "./money";
 
 export interface SellPosition {
   symbol: string;
@@ -53,11 +54,16 @@ export interface SalePreview {
   earliestSellDate: string;
 }
 
-export function previewSale(position: SellPosition, quantityText: string, priceText: string): SalePreview {
-  const held = position.lots.reduce((n, l) => n + l.quantity, 0);
+export function previewSale(
+  position: SellPosition,
+  quantityText: string,
+  priceText: string,
+  rules: InputRules = EG_INPUT_RULES
+): SalePreview {
+  const held = roundShares(position.lots.reduce((n, l) => n + l.quantity, 0));
   const cost = position.lots.reduce((n, l) => n + l.buy_price * l.quantity, 0);
-  const quantity = parseShares(quantityText, held);
-  const price = parseMoney(priceText);
+  const quantity = parseShares(quantityText, held, rules.shareDecimals);
+  const price = parseMoney(priceText, rules.priceDecimals);
 
   const plan = quantity.ok ? planSale(position.lots, quantity.value) : [];
   const parts: SalePartPreview[] = plan.map((part) => ({
